@@ -12,19 +12,12 @@ var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Сидирование тестовых пользователей и синтетических данных
-app.UseAuthModuleSeed();
-await app.UseSyntheticDataSeedAsync();
+// использование тестовых пользователей и синтетических данных
+// app.UseAuthModuleSeed();
+// await app.UseSyntheticDataSeedAsync();
 
-app.MapGet("/", () => new
-{
-    status = "SmartKabinet API is running",
-    environment = app.Environment.EnvironmentName,
-    time = DateTimeOffset.UtcNow
-});
-
-// Регистрация эндпоинтов модулей
 app.MapAuthEndpoints();
+
 app.MapIntegrationsEndpoints();
 
 app.Run();

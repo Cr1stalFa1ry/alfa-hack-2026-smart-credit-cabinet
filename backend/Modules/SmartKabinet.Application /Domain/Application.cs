@@ -9,7 +9,7 @@ public class Application
     // Жизненный цикл и статус
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Draft;
     public CreditDecision Decision { get; set; }
-    public List<string> ReasonCodes { get; set; } = new();
+    public List<string> ReasonCodes { get; set; } = new();  
     
     // Основные параметры для кредита
     public BusinessStage Stage { get; set; }
