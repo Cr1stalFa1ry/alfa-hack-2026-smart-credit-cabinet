@@ -1,1 +1,10 @@
 .DS_Store
+AGENTS.md
+
+# .NET & IDE build artifacts
+**/bin/
+**/obj/
+.idea/
+*.user
+*.suo
+keys/
