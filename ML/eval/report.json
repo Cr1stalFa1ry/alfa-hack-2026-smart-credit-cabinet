@@ -1,0 +1,238 @@
+{
+  "mode": "rules+llm",
+  "statements": {
+    "files": [
+      {
+        "file": "ivanov.csv",
+        "status": "ok",
+        "metrics": [
+          {
+            "metric": "avgMonthlyRevenueRub",
+            "expected": 700000.0,
+            "predicted": 700000.0,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "avgMonthlyExpensesRub",
+            "expected": 250000.0,
+            "predicted": 250000.0,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "avgMonthlyNetRub",
+            "expected": 450000.0,
+            "predicted": 450000.0,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "avgMonthlyLoanPaymentsRub",
+            "expected": 30000.0,
+            "predicted": 30000.0,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "revenueCV",
+            "expected": 0.2,
+            "predicted": 0.2,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "monthsCount",
+            "expected": 12,
+            "predicted": 12,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "annualRevenueRub",
+            "expected": 8400000.0,
+            "predicted": 8400000.0,
+            "rel_error": 0.0,
+            "ok": true
+          }
+        ],
+        "matched": 7,
+        "total": 7
+      },
+      {
+        "file": "sidorova.csv",
+        "status": "ok",
+        "metrics": [
+          {
+            "metric": "avgMonthlyRevenueRub",
+            "expected": 400000.0,
+            "predicted": 400000.0,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "avgMonthlyExpensesRub",
+            "expected": 130000.0,
+            "predicted": 130000.0,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "avgMonthlyNetRub",
+            "expected": 270000.0,
+            "predicted": 270000.0,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "avgMonthlyLoanPaymentsRub",
+            "expected": 60000.0,
+            "predicted": 60000.0,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "revenueCV",
+            "expected": 0.45,
+            "predicted": 0.45,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "monthsCount",
+            "expected": 12,
+            "predicted": 12,
+            "rel_error": 0.0,
+            "ok": true
+          },
+          {
+            "metric": "annualRevenueRub",
+            "expected": 4800000.0,
+            "predicted": 4800000.0,
+            "rel_error": 0.0,
+            "ok": true
+          }
+        ],
+        "matched": 7,
+        "total": 7
+      }
+    ],
+    "matched": 14,
+    "total": 14
+  },
+  "bad_files": {
+    "files": [
+      {
+        "file": "bad_values.csv",
+        "status": "manual_input_required",
+        "reason": "UNREADABLE",
+        "ok": true
+      },
+      {
+        "file": "empty.csv",
+        "status": "manual_input_required",
+        "reason": "EMPTY_FILE",
+        "ok": true
+      },
+      {
+        "file": "garbage.csv",
+        "status": "manual_input_required",
+        "reason": "UNREADABLE",
+        "ok": true
+      },
+      {
+        "file": "header_only.csv",
+        "status": "manual_input_required",
+        "reason": "EMPTY_FILE",
+        "ok": true
+      },
+      {
+        "file": "mostly_unclear.csv",
+        "status": "manual_input_required",
+        "reason": "TOO_MANY_UNCLEAR",
+        "ok": true
+      },
+      {
+        "file": "short_2_months.csv",
+        "status": "manual_input_required",
+        "reason": "SHORT_HISTORY",
+        "ok": true
+      },
+      {
+        "file": "wrong_columns.csv",
+        "status": "manual_input_required",
+        "reason": "MISSING_COLUMNS",
+        "ok": true
+      }
+    ],
+    "passed": 7,
+    "total": 7
+  },
+  "labels": {
+    "total": 28,
+    "accuracy": 0.9643,
+    "coverage": 0.9643,
+    "precision_on_covered": 0.963,
+    "wrong_confident": 1,
+    "errors": [
+      {
+        "description": "Перевод",
+        "sign": "-",
+        "expected": "unclear",
+        "predicted": "own_transfer",
+        "source": "llm"
+      }
+    ]
+  },
+  "hard_cases": {
+    "total": 16,
+    "accuracy": 0.625,
+    "coverage": 0.25,
+    "precision_on_covered": 1.0,
+    "wrong_confident": 0,
+    "errors": [
+      {
+        "description": "Перевод по СБП за ремонт обуви",
+        "sign": "+",
+        "expected": "revenue",
+        "predicted": "unclear",
+        "source": "none"
+      },
+      {
+        "description": "Зачисление от покупателя по накладной 45",
+        "sign": "+",
+        "expected": "revenue",
+        "predicted": "unclear",
+        "source": "none"
+      },
+      {
+        "description": "Поступление от ООО Вектор по УПД 118",
+        "sign": "+",
+        "expected": "revenue",
+        "predicted": "unclear",
+        "source": "none"
+      },
+      {
+        "description": "Перечисление денежных средств за поставленную продукцию",
+        "sign": "+",
+        "expected": "revenue",
+        "predicted": "unclear",
+        "source": "none"
+      },
+      {
+        "description": "Возмещение НДС из бюджета",
+        "sign": "+",
+        "expected": "refund",
+        "predicted": "unclear",
+        "source": "none"
+      },
+      {
+        "description": "Перечисление в подотчёт на хозяйственные нужды",
+        "sign": "-",
+        "expected": "expense",
+        "predicted": "unclear",
+        "source": "none"
+      }
+    ]
+  }
+}
