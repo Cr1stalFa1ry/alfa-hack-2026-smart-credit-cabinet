@@ -1,5 +1,6 @@
 .DS_Store
 AGENTS.md
+REST_API.md
 
 # .NET & IDE build artifacts
 **/bin/
