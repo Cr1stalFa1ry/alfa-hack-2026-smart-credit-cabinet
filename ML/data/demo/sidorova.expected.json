@@ -1,0 +1,14 @@
+{
+  "owner_name": "Сидорова Мария Петровна",
+  "as_of": "2026-10-21",
+  "metrics": {
+    "avgMonthlyRevenueRub": 400000.0,
+    "avgMonthlyExpensesRub": 130000.0,
+    "avgMonthlyNetRub": 270000.0,
+    "avgMonthlyLoanPaymentsRub": 60000.0,
+    "revenueCV": 0.45,
+    "monthsCount": 12,
+    "annualRevenueRub": 4800000.0
+  },
+  "note": "Временная синтетика ML (FX01/FX03), заменить файлами Data."
+}

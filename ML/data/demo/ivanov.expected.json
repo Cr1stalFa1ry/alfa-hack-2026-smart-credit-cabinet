@@ -1,0 +1,14 @@
+{
+  "owner_name": "Иванов Иван Иванович",
+  "as_of": "2026-10-21",
+  "metrics": {
+    "avgMonthlyRevenueRub": 700000.0,
+    "avgMonthlyExpensesRub": 250000.0,
+    "avgMonthlyNetRub": 450000.0,
+    "avgMonthlyLoanPaymentsRub": 30000.0,
+    "revenueCV": 0.2,
+    "monthsCount": 12,
+    "annualRevenueRub": 8400000.0
+  },
+  "note": "Временная синтетика ML (FX01/FX03), заменить файлами Data."
+}

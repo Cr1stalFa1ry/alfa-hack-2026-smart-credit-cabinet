@@ -1,0 +1,21 @@
+# Без нейросети:      docker compose up --build ml
+# С нейросетью:       docker compose --profile llm up --build   (первый запуск скачает модель ~4.7 ГБ)
+services:
+  ml:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: qwen2.5:7b-instruct
+      LLM_ENABLED: "1"
+      LLM_TIMEOUT_S: "20"
+
+  ollama:
+    image: ollama/ollama:0.12.6
+    profiles: ["llm"]
+    ports: ["11434:11434"]
+    volumes: ["ollama:/root/.ollama"]
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 3 && ollama pull qwen2.5:7b-instruct && wait"]
+
+volumes:
+  ollama:
