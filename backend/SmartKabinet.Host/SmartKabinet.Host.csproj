@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Modules\SmartKabinet.Auth\SmartKabinet.Auth.csproj" />
+        <ProjectReference Include="..\Modules\SmartKabinet.Intergrations\SmartKabinet.Intergrations.csproj" />
     </ItemGroup>
 
 </Project>

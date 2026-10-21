@@ -22,16 +22,13 @@ public static class AuthModuleExtensions
 {
     public static IServiceCollection AddAuthModule(this IServiceCollection services, IConfiguration configuration)
     {
-        // 1. Конфигурация JWT
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
-
-        // 2. База данных AuthDbContext (InMemory для хакатона/демо/тестов, легко переключается на PostgreSQL)
+        
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         services.AddDbContext<AuthDbContext>(options =>
         {
             if (!string.IsNullOrWhiteSpace(connectionString) && !connectionString.Contains("InMemory", StringComparison.OrdinalIgnoreCase))
             {
-                // При наличии реальной БД можно подключить Npgsql
                 options.UseInMemoryDatabase("SmartKabinetAuthDb");
             }
             else
@@ -40,7 +37,7 @@ public static class AuthModuleExtensions
             }
         });
 
-        // 3. Сервисы безопасности
+        // Сервисы безопасности
         services.AddHttpContextAccessor();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IRsaKeyProvider, RsaKeyProvider>();
@@ -48,14 +45,14 @@ public static class AuthModuleExtensions
         services.AddScoped<IRefreshTokenProvider, RefreshTokenProvider>();
         services.AddScoped<IUserContext, UserContext>();
 
-        // 4. Handlers
+        // Handlers
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterHandler>();
         services.AddScoped<RefreshHandler>();
         services.AddScoped<RevokeCommandHandler>();
         services.AddScoped<GetCurrentUserQueryHandler>();
 
-        // 5. Настройка JWT Bearer Authentication с поддержкой заголовка Authorization и HttpOnly cookies
+        // Настройка JWT Bearer Authentication с поддержкой заголовка Authorization и HttpOnly cookies
         var sp = services.BuildServiceProvider();
         var keyProvider = sp.GetRequiredService<IRsaKeyProvider>();
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
@@ -114,10 +111,7 @@ public static class AuthModuleExtensions
         AuthDbContext.SeedDefaultUsers(db, hasher);
         return app;
     }
-
-    /// <summary>
-    /// Регистрация эндпоинтов модуля аутентификации
-    /// </summary>
+    
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Authentication");

@@ -11,10 +11,6 @@ public class User
     public string LastName { get; set; } = string.Empty;
     public string? MiddleName { get; set; }
     
-    /// <summary>
-    /// ИНН индивидуального предпринимателя (12 цифр для ИП).
-    /// Заполняется только для пользователей с ролью Client. Для сотрудников банка равен null.
-    /// </summary>
     public string? Inn { get; set; }
     
     public UserRole Role { get; set; } = UserRole.Client;

@@ -1,9 +1,11 @@
 using SmartKabinet.Auth;
+using SmartKabinet.Intergrations;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Модули
 builder.Services.AddAuthModule(builder.Configuration);
+builder.Services.AddIntegrationsModule(builder.Configuration);
 
 var app = builder.Build();
 
@@ -22,5 +24,6 @@ app.MapGet("/", () => new
 
 // Регистрация эндпоинтов модулей
 app.MapAuthEndpoints();
+app.MapIntegrationsEndpoints();
 
 app.Run();
