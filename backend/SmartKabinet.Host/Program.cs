@@ -12,8 +12,9 @@ var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Сидирование тестовых пользователей
+// Сидирование тестовых пользователей и синтетических данных
 app.UseAuthModuleSeed();
+await app.UseSyntheticDataSeedAsync();
 
 app.MapGet("/", () => new
 {
