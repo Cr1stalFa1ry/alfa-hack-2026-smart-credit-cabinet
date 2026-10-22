@@ -25,17 +25,12 @@ public static class BankEmployeeModuleExtensions
 {
     public static IServiceCollection AddBankEmployeeModule(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is required for BankEmployee module.");
+
         services.AddDbContext<BankEmployeeDbContext>(options =>
         {
-            if (!string.IsNullOrWhiteSpace(connectionString) && !connectionString.Contains("InMemory", StringComparison.OrdinalIgnoreCase))
-            {
-                options.UseNpgsql(connectionString, b => b.MigrationsHistoryTable("__EFMigrationsHistory_BankEmployee", "bank_employee"));
-            }
-            else
-            {
-                options.UseInMemoryDatabase("SmartKabinetBankEmployeeDb");
-            }
+            options.UseNpgsql(connectionString, b => b.MigrationsHistoryTable("__EFMigrationsHistory_BankEmployee", "bank_employee"));
         });
 
         return services;

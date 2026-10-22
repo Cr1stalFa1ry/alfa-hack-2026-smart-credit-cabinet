@@ -24,7 +24,8 @@ public class MlServiceClient : IMlServiceClient
         ["IP_NOT_FOUND"] = "Сведения об индивидуальном предпринимателе с указанным ИНН не найдены в государственных реестрах.",
         ["TAX_DEBT"] = "Обнаружена задолженность по налогам и сборам, превышающая допустимый лимит.",
         ["INACTIVE_IP"] = "По данным ЕГРИП статус индивидуального предпринимателя не является действующим.",
-        ["LOW_SCORE"] = "Кредитный рейтинг по совокупности факторов бизнеса недостаточен для одобрения на текущих условиях."
+        ["LOW_SCORE"] = "Кредитный рейтинг по совокупности факторов бизнеса недостаточен для одобрения на текущих условиях.",
+        ["NO_FEASIBLE_TERMS"] = "К сожалению, мы не смогли подобрать условия кредитования, удовлетворяющие нормативам долговой нагрузки."
     };
 
     public MlServiceClient(
@@ -91,16 +92,29 @@ public class MlServiceClient : IMlServiceClient
             var root = doc.RootElement;
 
             var status = root.TryGetProperty("status", out var s) ? s.GetString() ?? "ok" : "ok";
-            var reason = root.TryGetProperty("reason", out var r) ? r.GetString() : null;
-            var message = root.TryGetProperty("message", out var m) ? m.GetString() : null;
+            var reasonCode = root.TryGetProperty("reason", out var r) 
+                ? (r.ValueKind == JsonValueKind.Object && r.TryGetProperty("code", out var rc) ? rc.GetString() : r.GetString())
+                : null;
+            var message = root.TryGetProperty("message", out var m) 
+                ? m.GetString() 
+                : (root.TryGetProperty("reason", out var rm) && rm.ValueKind == JsonValueKind.Object && rm.TryGetProperty("message", out var rmsg) ? rmsg.GetString() : null);
 
             if (status.Equals("manual_input_required", StringComparison.OrdinalIgnoreCase))
             {
-                return new StatementAnalysisResult(status, reason, null, message ?? "Требуется ручной ввод показателей");
+                return new StatementAnalysisResult(status, reasonCode, null, message ?? "Требуется ручной ввод показателей");
             }
 
-            // Извлекаем метрики либо из root, либо из свойства "data"
-            var targetEl = root.TryGetProperty("data", out var d) && d.ValueKind == JsonValueKind.Object ? d : root;
+            // Извлекаем блок метрик: metrics -> data -> root
+            var targetEl = root.TryGetProperty("metrics", out var met) && met.ValueKind == JsonValueKind.Object 
+                ? met 
+                : (root.TryGetProperty("data", out var d) && d.ValueKind == JsonValueKind.Object ? d : root);
+
+            // Количество месяцев из периода или metrics
+            var monthsCount = GetInt(targetEl, "monthsCount", "months_count");
+            if (monthsCount == 0 && root.TryGetProperty("period", out var pEl) && pEl.TryGetProperty("months", out var pMonths))
+            {
+                monthsCount = pMonths.GetInt32();
+            }
 
             var metrics = new StatementMetrics(
                 AvgMonthlyRevenueRub: GetDecimal(targetEl, "avgMonthlyRevenueRub", "avg_monthly_revenue_rub"),
@@ -108,7 +122,7 @@ public class MlServiceClient : IMlServiceClient
                 AvgMonthlyNetRub: GetDecimal(targetEl, "avgMonthlyNetRub", "avg_monthly_net_rub"),
                 AvgMonthlyLoanPaymentsRub: GetDecimal(targetEl, "avgMonthlyLoanPaymentsRub", "avg_monthly_loan_payments_rub"),
                 RevenueCv: GetDecimal(targetEl, "revenueCV", "revenue_cv", "revenueCv"),
-                MonthsCount: GetInt(targetEl, "monthsCount", "months_count"),
+                MonthsCount: monthsCount,
                 AnnualRevenueRub: GetDecimal(targetEl, "annualRevenueRub", "annual_revenue_rub")
             );
 
@@ -139,10 +153,9 @@ public class MlServiceClient : IMlServiceClient
         {
             var payload = new
             {
-                reason_code = reasonCode,
-                reasonCode = reasonCode,
-                details = details ?? new Dictionary<string, object>(),
-                actor = actor ?? "client"
+                reason_codes = new[] { reasonCode },
+                context = details ?? new Dictionary<string, object>(),
+                use_llm = true
             };
 
             var response = await _httpClient.PostAsJsonAsync("v1/explain", payload, ct);
@@ -191,6 +204,10 @@ public class MlServiceClient : IMlServiceClient
         {
             if (el.TryGetProperty(name, out var val))
             {
+                if (val.ValueKind == JsonValueKind.Object && val.TryGetProperty("value", out var inner))
+                {
+                    val = inner;
+                }
                 if (val.ValueKind == JsonValueKind.Number && val.TryGetDecimal(out var d)) return d;
                 if (val.ValueKind == JsonValueKind.String && decimal.TryParse(val.GetString(), out var parsed)) return parsed;
             }
@@ -204,6 +221,10 @@ public class MlServiceClient : IMlServiceClient
         {
             if (el.TryGetProperty(name, out var val))
             {
+                if (val.ValueKind == JsonValueKind.Object && val.TryGetProperty("value", out var inner))
+                {
+                    val = inner;
+                }
                 if (val.ValueKind == JsonValueKind.Number && val.TryGetInt32(out var i)) return i;
                 if (val.ValueKind == JsonValueKind.String && int.TryParse(val.GetString(), out var parsed)) return parsed;
             }

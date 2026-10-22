@@ -8,12 +8,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using SmartKabinet.Auth.Features.Commands.Login;
-using SmartKabinet.Auth.Features.Commands.LoginBankEmp;
 using SmartKabinet.Auth.Features.Commands.Refresh;
 using SmartKabinet.Auth.Features.Commands.Register;
 using SmartKabinet.Auth.Features.Commands.RegisterBankEmp;
 using SmartKabinet.Auth.Features.Commands.RevokeRefreshToken;
-using SmartKabinet.Auth.Features.DTOs;
 using SmartKabinet.Auth.Features.Queries;
 using SmartKabinet.Auth.Infrastructure.Persistence;
 using SmartKabinet.Auth.Infrastructure.Security;
@@ -26,17 +24,12 @@ public static class AuthModuleExtensions
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is required for Auth module.");
+
         services.AddDbContext<AuthDbContext>(options =>
         {
-            if (!string.IsNullOrWhiteSpace(connectionString) && !connectionString.Contains("InMemory", StringComparison.OrdinalIgnoreCase))
-            {
-                options.UseNpgsql(connectionString, b => b.MigrationsHistoryTable("__EFMigrationsHistory_Auth", "auth"));
-            }
-            else
-            {
-                options.UseInMemoryDatabase("SmartKabinetAuthDb");
-            }
+            options.UseNpgsql(connectionString, b => b.MigrationsHistoryTable("__EFMigrationsHistory_Auth", "auth"));
         });
 
         // Сервисы безопасности
@@ -121,11 +114,11 @@ public static class AuthModuleExtensions
 
         // POST /api/auth/login
         group.MapPost("/login", async (
-            LoginClientRequest request,
+            LoginClientCommand command,
             LoginHandler handler,
             HttpResponse response) =>
         {
-            var authResponse = await handler.HandleAsync(request);
+            var authResponse = await handler.HandleAsync(command);
             if (authResponse is null)
             {
                 return Results.Unauthorized();

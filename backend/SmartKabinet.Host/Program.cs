@@ -18,7 +18,7 @@ using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Swagger / OpenAPI с поддержкой JWT Bearer авторизации
+// Swagger / OpenAPI с поддержкой JWT Bearer авторизации
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -26,7 +26,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "SmartKabinet API — Кредитный кабинет ИП (Alfa-Hack 2026)",
         Version = "v1",
-        Description = "API кредитного кабинета предпринимателя, рабочего места аналитика банка и симулятора скоринга."
+        Description = "API кредитного кабинета предпринимателя"
     });
 
     var scheme = new OpenApiSecurityScheme
@@ -46,7 +46,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// 2. Wolverine: Автосканирование сборок всех модулей и разрешение зависимостей DbContext
+// Wolverine: Автосканирование сборок всех модулей и разрешение зависимостей DbContext
 builder.Host.UseWolverine(opts =>
 {
     opts.ServiceLocationPolicy = JasperFx.CodeGeneration.Model.ServiceLocationPolicy.AlwaysAllowed;
@@ -58,7 +58,7 @@ builder.Host.UseWolverine(opts =>
     opts.Discovery.IncludeAssembly(typeof(SmartKabinet.Checking.CheckingModuleExtensions).Assembly);
 });
 
-// 3. Регистрация модулей
+// Регистрация модулей
 builder.Services.AddAuthModule(builder.Configuration);
 builder.Services.AddClientModule(builder.Configuration);
 builder.Services.AddBankEmployeeModule(builder.Configuration);
@@ -68,7 +68,7 @@ builder.Services.AddIntegrationsModule(builder.Configuration);
 
 var app = builder.Build();
 
-// 4. Swagger UI (доступен по /swagger и по корню /)
+// Swagger UI (доступен по /swagger и по корню /)
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -78,13 +78,13 @@ app.UseSwaggerUI(c =>
 
 app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 
-// 5. Инициализация БД и схем (PostgreSQL / InMemory fallback)
+// Инициализация БД
 await InitializeDatabasesAsync(app);
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 6. Маппинг эндпоинтов модулей
+// Маппинг эндпоинтов модулей
 app.MapAuthEndpoints();
 app.MapClientEndpoints();
 app.MapBankEmployeeEndpoints();
@@ -124,7 +124,7 @@ static async Task InitializeDatabasesAsync(WebApplication app)
     }
     catch (Exception ex)
     {
-        logger.LogWarning("Предупреждение при инициализации БД ({Message}). Если Postgres отключен, используется InMemory.", ex.Message);
+        logger.LogError(ex, "Ошибка при подключении или инициализации PostgreSQL: {Message}", ex.Message);
     }
 }
 
@@ -136,6 +136,54 @@ static async Task EnsureTablesExistAsync(DbContext db)
         if (!await creator.ExistsAsync())
         {
             await creator.CreateAsync();
+        }
+        
+        var firstEntity = db.Model.GetEntityTypes().FirstOrDefault();
+        if (firstEntity is not null)
+        {
+            var tableName = firstEntity.GetTableName();
+            var schemaName = firstEntity.GetSchema();
+
+            if (!string.IsNullOrEmpty(tableName))
+            {
+                try
+                {
+                    var conn = db.Database.GetDbConnection();
+                    var wasOpen = conn.State == System.Data.ConnectionState.Open;
+                    if (!wasOpen) await conn.OpenAsync();
+
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = string.IsNullOrEmpty(schemaName)
+                        ? "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = @tableName AND table_schema = current_schema());"
+                        : "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = @tableName AND table_schema = @schemaName);";
+
+                    var pTable = cmd.CreateParameter();
+                    pTable.ParameterName = "@tableName";
+                    pTable.Value = tableName;
+                    cmd.Parameters.Add(pTable);
+
+                    if (!string.IsNullOrEmpty(schemaName))
+                    {
+                        var pSchema = cmd.CreateParameter();
+                        pSchema.ParameterName = "@schemaName";
+                        pSchema.Value = schemaName;
+                        cmd.Parameters.Add(pSchema);
+                    }
+
+                    var exists = (bool)(await cmd.ExecuteScalarAsync() ?? false);
+                    if (!wasOpen) await conn.CloseAsync();
+
+                    if (exists)
+                    {
+                        // Таблицы данной схемы уже существуют — пропускаем CreateTablesAsync
+                        return;
+                    }
+                }
+                catch
+                {
+                    // В случае непредвиденных ошибок запроса к системному каталогу переходим к стандартному механизму
+                }
+            }
         }
 
         try

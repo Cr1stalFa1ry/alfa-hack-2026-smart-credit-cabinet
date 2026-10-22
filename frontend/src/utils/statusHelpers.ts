@@ -1,0 +1,106 @@
+import { ApplicationStatus, TransitionCode } from '../types/application';
+
+export interface StatusMeta {
+  label: string;
+  badgeClass: string;
+  bgLightClass: string;
+  borderClass: string;
+  textClass: string;
+  dotClass: string;
+  description: string;
+}
+
+export const STATUS_MAP: Record<ApplicationStatus, StatusMeta> = {
+  draft: {
+    label: 'Черновик',
+    badgeClass: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700',
+    bgLightClass: 'bg-slate-50 dark:bg-slate-800/40',
+    borderClass: 'border-slate-200 dark:border-slate-700',
+    textClass: 'text-slate-700 dark:text-slate-300',
+    dotClass: 'bg-slate-400',
+    description: 'Заявка создана и заполняется заёмщиком',
+  },
+  checking: {
+    label: 'Скоринг и проверка',
+    badgeClass: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800',
+    bgLightClass: 'bg-blue-50/50 dark:bg-blue-950/30',
+    borderClass: 'border-blue-200 dark:border-blue-800',
+    textClass: 'text-blue-700 dark:text-blue-300',
+    dotClass: 'bg-blue-500 animate-pulse',
+    description: 'Система рассчитывает баллы, проверяет БКИ, ФНС и стоп-факторы',
+  },
+  waiting_check: {
+    label: 'Ожидание сервиса',
+    badgeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800',
+    bgLightClass: 'bg-amber-50/40 dark:bg-amber-950/30',
+    borderClass: 'border-amber-200 dark:border-amber-800',
+    textClass: 'text-amber-800 dark:text-amber-300',
+    dotClass: 'bg-amber-500',
+    description: 'Внешний источник временно недоступен (503). Доступен повтор',
+  },
+  need_info: {
+    label: 'Нужны сведения',
+    badgeClass: 'bg-orange-50 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-800',
+    bgLightClass: 'bg-orange-50/40 dark:bg-orange-950/30',
+    borderClass: 'border-orange-200 dark:border-orange-800',
+    textClass: 'text-orange-800 dark:text-orange-300',
+    dotClass: 'bg-orange-500',
+    description: 'Банк ожидает от клиента уточняющие данные или документы',
+  },
+  review: {
+    label: 'Ручной разбор (Аналитик)',
+    badgeClass: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800',
+    bgLightClass: 'bg-purple-50/40 dark:bg-purple-950/30',
+    borderClass: 'border-purple-200 dark:border-purple-800',
+    textClass: 'text-purple-700 dark:text-purple-300',
+    dotClass: 'bg-purple-500',
+    description: 'Заявка на рабочем месте андеррайтера для детальной оценки',
+  },
+  offer: {
+    label: 'Одобрено (Оферта)',
+    badgeClass: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800',
+    bgLightClass: 'bg-emerald-50/40 dark:bg-emerald-950/30',
+    borderClass: 'border-emerald-200 dark:border-emerald-800',
+    textClass: 'text-emerald-700 dark:text-emerald-300',
+    dotClass: 'bg-emerald-500',
+    description: 'Кредит одобрен. Сформированы условия и график платежей',
+  },
+  declined: {
+    label: 'Отказ',
+    badgeClass: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800',
+    bgLightClass: 'bg-rose-50/40 dark:bg-rose-950/30',
+    borderClass: 'border-rose-200 dark:border-rose-800',
+    textClass: 'text-rose-700 dark:text-rose-300',
+    dotClass: 'bg-rose-500',
+    description: 'По заявке вынесен отказ с прозрачным указанием причины',
+  },
+  closed: {
+    label: 'Закрыта',
+    badgeClass: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-300 dark:border-slate-700',
+    bgLightClass: 'bg-gray-50 dark:bg-slate-800/30',
+    borderClass: 'border-gray-200 dark:border-slate-700',
+    textClass: 'text-gray-600 dark:text-slate-400',
+    dotClass: 'bg-gray-400',
+    description: 'Заявка отозвана заёмщиком либо закрыта по некредитным причинам',
+  },
+};
+
+export const TRANSITION_DESCRIPTIONS: Record<TransitionCode, string> = {
+  T01: 'Создание черновика (draft)',
+  T02: 'Сохранение черновика',
+  T03: 'Отправка заявки на проверку (checking)',
+  T04: 'Скоринг: запрос сведений (need_info)',
+  T05: 'Источник недоступен 503 (waiting_check)',
+  T06: 'Повторный запуск проверки (checking)',
+  T07: 'Скоринг: передача андеррайтеру (review)',
+  T08: 'Скоринг: авто-одобрение оферты (offer)',
+  T09: 'Скоринг: авто-отказ по стоп-фактору (declined)',
+  T10: 'Клиент ответил на запрос сведений (checking)',
+  T11: 'Аналитик запросил доп. сведения (need_info)',
+  T12: 'Решение аналитика: одобрение оферты (offer)',
+  T13: 'Решение аналитика: отказ с комментарием (declined)',
+  T14: 'Аналитик уточнил факты: повторный скоринг (checking)',
+  T15: 'Повторный скоринг: нужны сведения (need_info)',
+  T16: 'Некредитное препятствие (closed)',
+  T17: 'Клиент отозвал заявку (closed)',
+};

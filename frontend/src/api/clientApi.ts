@@ -1,0 +1,431 @@
+import { apiClient } from './apiClient';
+import { CreditApplication, CreateDraftRequest, UploadedDocument, ApplicationStatus } from '../types/application';
+import { mockStore } from './mockStore';
+import { userStore } from './userStore';
+import { egripApi } from './egripApi';
+
+function isDemoActive(): boolean {
+  return localStorage.getItem('smart_kabinet_demo_mode') === 'true';
+}
+
+function getCurrentUserId(): string {
+  try {
+    const raw = localStorage.getItem('smart_kabinet_user');
+    if (raw) {
+      const u = JSON.parse(raw);
+      return u.id || u.userId || 'current-user';
+    }
+  } catch {
+    // ignore
+  }
+  return 'current-user';
+}
+
+export function mapBackendApplication(item: any): CreditApplication {
+  return {
+    id: String(item.id || item.applicationId),
+    inn: item.inn || '',
+    companyName: item.companyName || `ИП (ИНН ${item.inn || ''})`,
+    businessType: item.stage === 2 || item.businessType === 'prelaunch' ? 'prelaunch' : 'operating',
+    requestedAmount: Number(item.requestedAmount || 0),
+    requestedTermMonths: Number(item.requestedTermMonths || 12),
+    purpose: item.purpose || 'Кредит на развитие бизнеса',
+    monthlyRevenue: Number(item.monthlyRevenue || 0),
+    monthlyExpenses: Number(item.monthlyExpenses || 0),
+    status: (item.status ? String(item.status).toLowerCase() : 'draft') as ApplicationStatus,
+    createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
+    documents: item.documents || [],
+    history: item.history || [],
+    needInfoPrompt: item.needInfoPrompt,
+    declineReason: item.declineReason,
+    offer: item.currentOffer || item.offer ? {
+      approvedAmount: Number(item.currentOffer?.approvedAmount || item.offer?.approvedAmount || item.requestedAmount),
+      approvedTermMonths: Number(item.currentOffer?.termMonths || item.offer?.approvedTermMonths || 12),
+      annualInterestRate: Number(item.currentOffer?.annualRatePercent || item.offer?.annualInterestRate || 18.5),
+      monthlyPayment: Number(item.currentOffer?.monthlyPayment || item.offer?.monthlyPayment || 0),
+      totalRepayment: Number(item.currentOffer?.totalRepayment || item.offer?.totalRepayment || 0),
+      expirationDate: item.currentOffer?.expirationDate || item.offer?.expirationDate || new Date(Date.now() + 30 * 86400000).toISOString(),
+      alternativeTerms: item.offer?.alternativeTerms,
+      isAccepted: item.offer?.isAccepted || false,
+    } : undefined,
+  };
+}
+
+export const clientApi = {
+  getMyApplications: async (): Promise<CreditApplication[]> => {
+    // In Demo Mode: return showcase mock applications
+    if (isDemoActive()) {
+      return mockStore.getAll();
+    }
+
+    // In Real Mode: fetch strictly from backend
+    const userId = getCurrentUserId();
+    try {
+      const res = await apiClient.get<any[]>('/client/applications', { timeout: 2500 });
+      if (Array.isArray(res.data)) {
+        return res.data.map(mapBackendApplication);
+      }
+    } catch {
+      // Backend offline or endpoint error: return ONLY this user's created applications (or [] if none)
+    }
+
+    return userStore.getApplications(userId);
+  },
+
+  getApplicationById: async (id: string): Promise<CreditApplication> => {
+    if (isDemoActive()) {
+      const app = mockStore.getById(id);
+      if (!app) throw new Error('Заявка не найдена');
+      return app;
+    }
+
+    const userId = getCurrentUserId();
+    try {
+      const res = await apiClient.get<any>(`/client/applications/${id}`, { timeout: 2500 });
+      if (res.data) {
+        return mapBackendApplication(res.data);
+      }
+    } catch {
+      // ignore
+    }
+
+    const localApp = userStore.getApplicationById(userId, id);
+    if (localApp) return localApp;
+
+    // Fallback if accessed via direct URL in demo
+    const fallbackApp = mockStore.getById(id);
+    if (fallbackApp) return fallbackApp;
+
+    throw new Error('Заявка не найдена');
+  },
+
+  createDraft: async (data: CreateDraftRequest): Promise<CreditApplication> => {
+    const userId = getCurrentUserId();
+    const egrip = await egripApi.getCompanyByInn(data.inn);
+    const companyTitle = egrip?.fullName || data.companyName || `ИП (ИНН ${data.inn})`;
+
+    let createdApp: CreditApplication = {
+      id: `app-${Date.now().toString().slice(-6)}`,
+      inn: data.inn,
+      companyName: companyTitle,
+      businessType: data.businessType,
+      requestedAmount: data.requestedAmount,
+      requestedTermMonths: data.requestedTermMonths,
+      purpose: data.purpose,
+      monthlyRevenue: data.monthlyRevenue,
+      monthlyExpenses: data.monthlyExpenses,
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      documents: [],
+      history: [
+        {
+          id: `hist-${Date.now()}`,
+          transitionCode: 'T01',
+          fromStatus: 'draft',
+          toStatus: 'draft',
+          actor: 'client',
+          actorName: 'Клиент ИП',
+          comment: 'Создание черновика заявки',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
+
+    // Try posting to backend
+    if (!isDemoActive()) {
+      try {
+        const res = await apiClient.post<any>('/client/applications', {
+          inn: data.inn,
+          requestedAmount: data.requestedAmount,
+          requestedTermMonths: data.requestedTermMonths,
+          purpose: data.purpose,
+          businessType: data.businessType,
+          monthlyRevenue: data.monthlyRevenue,
+          monthlyExpenses: data.monthlyExpenses,
+          bkiConsent: true,
+          personalDataConsent: true,
+        }, { timeout: 2500 });
+
+        if (res.data?.id || res.data?.applicationId) {
+          createdApp.id = String(res.data.id || res.data.applicationId);
+        }
+      } catch {
+        // saved locally
+      }
+      userStore.saveApplication(userId, createdApp);
+      return createdApp;
+    }
+
+    mockStore.save(createdApp);
+    return createdApp;
+  },
+
+  updateDraft: async (id: string, patch: Partial<CreditApplication>): Promise<CreditApplication> => {
+    const userId = getCurrentUserId();
+
+    if (!isDemoActive()) {
+      try {
+        await apiClient.put(`/client/applications/${id}/draft`, {
+          requestedAmount: patch.requestedAmount,
+          requestedTermMonths: patch.requestedTermMonths,
+          bkiConsent: true,
+          personalDataConsent: true,
+        }, { timeout: 2500 });
+      } catch {
+        // fallback
+      }
+
+      const app = userStore.getApplicationById(userId, id);
+      if (app) {
+        const updated = { ...app, ...patch, updatedAt: new Date().toISOString() };
+        userStore.saveApplication(userId, updated);
+        return updated;
+      }
+    }
+
+    const app = mockStore.getById(id);
+    if (!app) throw new Error('Заявка не найдена');
+    const updated: CreditApplication = {
+      ...app,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+    mockStore.save(updated);
+    return updated;
+  },
+
+  submitApplication: async (id: string): Promise<CreditApplication> => {
+    const userId = getCurrentUserId();
+
+    if (!isDemoActive()) {
+      try {
+        await apiClient.post(`/client/applications/${id}/submit`, {}, { timeout: 2500 });
+      } catch {
+        // fallback
+      }
+
+      return userStore.transition(
+        userId,
+        id,
+        'T03',
+        'checking',
+        'client',
+        'Клиент ИП',
+        'Заявка успешно отправлена на скоринг и проверку стоп-факторов'
+      );
+    }
+
+    const updated = mockStore.transition(
+      id,
+      'T03',
+      'checking',
+      'client',
+      'Клиент ИП',
+      'Заявка успешно отправлена на скоринг и проверку стоп-факторов'
+    );
+
+    // In demo mode: simulate auto-progression after 3 seconds
+    setTimeout(() => {
+      const current = mockStore.getById(id);
+      if (current && current.status === 'checking') {
+        if (current.requestedAmount > 2000000) {
+          mockStore.transition(
+            id,
+            'T07',
+            'review',
+            'system',
+            'SmartKabinet.Checking',
+            'Сумма кредита превышает лимит экспресс-проверки. Передано аналитику банка'
+          );
+        } else {
+          mockStore.transition(
+            id,
+            'T08',
+            'offer',
+            'system',
+            'SmartKabinet.Checking',
+            'Автоматическое одобрение скорингом. Оферта сформирована',
+            undefined,
+            {
+              offer: {
+                approvedAmount: current.requestedAmount,
+                approvedTermMonths: current.requestedTermMonths,
+                annualInterestRate: 15.2,
+                monthlyPayment: Math.round((current.requestedAmount * 1.15) / current.requestedTermMonths),
+                totalRepayment: Math.round(current.requestedAmount * 1.15),
+                expirationDate: new Date(Date.now() + 30 * 86400000).toISOString(),
+              },
+            }
+          );
+        }
+      }
+    }, 3000);
+
+    return updated;
+  },
+
+  retryCheck: async (id: string): Promise<CreditApplication> => {
+    const userId = getCurrentUserId();
+    if (!isDemoActive()) {
+      try {
+        await apiClient.post(`/client/applications/${id}/retry-check`, {}, { timeout: 2500 });
+      } catch {
+        // fallback
+      }
+      return userStore.transition(
+        userId,
+        id,
+        'T06',
+        'checking',
+        'client',
+        'Клиент ИП',
+        'Повторный запуск проверки после сбоя внешнего сервиса'
+      );
+    }
+
+    return mockStore.transition(
+      id,
+      'T06',
+      'checking',
+      'client',
+      'Клиент ИП',
+      'Повторный запуск проверки после сбоя внешнего сервиса'
+    );
+  },
+
+  replyNeedInfo: async (id: string, responseText: string): Promise<CreditApplication> => {
+    const userId = getCurrentUserId();
+    if (!isDemoActive()) {
+      try {
+        await apiClient.post(`/client/applications/${id}/respond-info`, {
+          comment: responseText,
+        }, { timeout: 2500 });
+      } catch {
+        // fallback
+      }
+      return userStore.transition(
+        userId,
+        id,
+        'T10',
+        'checking',
+        'client',
+        'Клиент ИП',
+        'Клиент предоставил запрошенные банком сведения',
+        undefined,
+        { needInfoResponse: responseText }
+      );
+    }
+
+    return mockStore.transition(
+      id,
+      'T10',
+      'checking',
+      'client',
+      'Клиент ИП',
+      'Клиент предоставил запрошенные банком сведения',
+      undefined,
+      { needInfoResponse: responseText }
+    );
+  },
+
+  withdrawApplication: async (id: string, reason?: string): Promise<CreditApplication> => {
+    const userId = getCurrentUserId();
+    if (!isDemoActive()) {
+      try {
+        await apiClient.post(`/client/applications/${id}/withdraw`, {}, { timeout: 2500 });
+      } catch {
+        // fallback
+      }
+      return userStore.transition(
+        userId,
+        id,
+        'T17',
+        'closed',
+        'client',
+        'Клиент ИП',
+        reason || 'Клиент отозвал заявку по собственному желанию'
+      );
+    }
+
+    return mockStore.transition(
+      id,
+      'T17',
+      'closed',
+      'client',
+      'Клиент ИП',
+      reason || 'Клиент отозвал заявку по собственному желанию'
+    );
+  },
+
+  acceptOffer: async (id: string, useAlternativeTerm: boolean = false): Promise<CreditApplication> => {
+    const userId = getCurrentUserId();
+    const app = isDemoActive() ? mockStore.getById(id) : userStore.getApplicationById(userId, id);
+    if (!app || !app.offer) throw new Error('Оферта не найдена');
+
+    const updatedOffer = {
+      ...app.offer,
+      isAccepted: true,
+      approvedTermMonths: useAlternativeTerm && app.offer.alternativeTerms
+        ? app.offer.alternativeTerms.newTermMonths
+        : app.offer.approvedTermMonths,
+      monthlyPayment: useAlternativeTerm && app.offer.alternativeTerms
+        ? app.offer.alternativeTerms.newMonthlyPayment
+        : app.offer.monthlyPayment,
+    };
+
+    if (!isDemoActive()) {
+      return userStore.transition(
+        userId,
+        id,
+        'T12',
+        'offer',
+        'client',
+        'Клиент ИП',
+        `Клиент подтвердил согласие с условиями оферты (${updatedOffer.approvedTermMonths} мес, ${updatedOffer.monthlyPayment} ₽/мес)`,
+        undefined,
+        { offer: updatedOffer }
+      );
+    }
+
+    return mockStore.transition(
+      id,
+      'T12',
+      'offer',
+      'client',
+      'Клиент ИП',
+      `Клиент подтвердил согласие с условиями оферты (${updatedOffer.approvedTermMonths} мес, ${updatedOffer.monthlyPayment} ₽/мес)`,
+      undefined,
+      { offer: updatedOffer }
+    );
+  },
+
+  uploadDocument: async (id: string, file: File): Promise<UploadedDocument> => {
+    const doc: UploadedDocument = {
+      id: `doc-${Date.now()}`,
+      fileName: file.name,
+      fileSizeBytes: file.size,
+      fileType: file.name.endsWith('.pdf') ? 'bank_statement' : 'other',
+      uploadedAt: new Date().toISOString(),
+      status: 'uploaded',
+    };
+
+    const userId = getCurrentUserId();
+    if (!isDemoActive()) {
+      const app = userStore.getApplicationById(userId, id);
+      if (app) {
+        app.documents = [...(app.documents || []), doc];
+        userStore.saveApplication(userId, app);
+      }
+    } else {
+      const app = mockStore.getById(id);
+      if (app) {
+        app.documents = [...(app.documents || []), doc];
+        mockStore.save(app);
+      }
+    }
+
+    return doc;
+  },
+};

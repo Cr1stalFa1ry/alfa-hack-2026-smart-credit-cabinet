@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartKabinet.Infrastructure
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartKabinet.Intergrations", "Modules\SmartKabinet.Intergrations\SmartKabinet.Intergrations.csproj", "{3B012FB5-14B3-432C-882F-3EC80CC759EC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartKabinet.Shared", "Shared\SmartKabinet.Shared\SmartKabinet.Shared.csproj", "{05650B11-83BD-41CB-99D7-E24215852C93}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,6 +60,10 @@ Global
 		{3B012FB5-14B3-432C-882F-3EC80CC759EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B012FB5-14B3-432C-882F-3EC80CC759EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3B012FB5-14B3-432C-882F-3EC80CC759EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05650B11-83BD-41CB-99D7-E24215852C93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05650B11-83BD-41CB-99D7-E24215852C93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05650B11-83BD-41CB-99D7-E24215852C93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05650B11-83BD-41CB-99D7-E24215852C93}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C1A80C00-540A-4314-A507-29122A4EAF29} = {837E814A-9D6E-41C6-8B1F-45076FCBE5EF}
@@ -67,5 +73,6 @@ Global
 		{B2037AEA-9ACE-44CA-BCF9-F035AEC9C7E1} = {837E814A-9D6E-41C6-8B1F-45076FCBE5EF}
 		{019BD8EC-C83A-4F4F-A54D-F7D011DF5284} = {837E814A-9D6E-41C6-8B1F-45076FCBE5EF}
 		{3B012FB5-14B3-432C-882F-3EC80CC759EC} = {837E814A-9D6E-41C6-8B1F-45076FCBE5EF}
+		{05650B11-83BD-41CB-99D7-E24215852C93} = {3363307D-7EA2-4E01-95A3-B2B18671B7BE}
 	EndGlobalSection
 EndGlobal

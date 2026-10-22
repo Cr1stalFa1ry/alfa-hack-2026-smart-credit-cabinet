@@ -6,24 +6,15 @@ using SmartKabinet.BankEmployee.Infrastructure.Persistence;
 
 namespace SmartKabinet.BankEmployee.Features.EventHandlers;
 
-public class BankEmployeeRegisteredHandler
+public class BankEmployeeRegisteredHandler(BankEmployeeDbContext dbContext, ILogger<BankEmployeeRegisteredHandler> logger)
 {
-    private readonly BankEmployeeDbContext _dbContext;
-    private readonly ILogger<BankEmployeeRegisteredHandler> _logger;
-
-    public BankEmployeeRegisteredHandler(BankEmployeeDbContext dbContext, ILogger<BankEmployeeRegisteredHandler> logger)
-    {
-        _dbContext = dbContext;
-        _logger = logger;
-    }
-
     public async Task Handle(BankEmployeeRegistered @event)
     {
-        _logger.LogInformation(
+        logger.LogInformation(
             "[Wolverine: Auth -> BankEmployee] Регистрация сотрудника банка: UserId={UserId}, Username={Username}, ФИО={FirstName} {LastName}",
             @event.UserId, @event.Username, @event.FirstName, @event.LastName);
 
-        var exists = await _dbContext.Employees.AnyAsync(e => e.UserId == @event.UserId);
+        var exists = await dbContext.Employees.AnyAsync(e => e.UserId == @event.UserId);
         if (!exists)
         {
             var profile = new BankEmployeeProfile
@@ -37,9 +28,9 @@ public class BankEmployeeRegisteredHandler
                 CreatedAt = @event.RegisteredAt
             };
 
-            _dbContext.Employees.Add(profile);
-            await _dbContext.SaveChangesAsync();
-            _logger.LogInformation("[BankEmployee Module] Создан профиль сотрудника банка Id={EmployeeId}", profile.Id);
+            dbContext.Employees.Add(profile);
+            await dbContext.SaveChangesAsync();
+            logger.LogInformation("[BankEmployee Module] Создан профиль сотрудника банка Id={EmployeeId}", profile.Id);
         }
     }
 }

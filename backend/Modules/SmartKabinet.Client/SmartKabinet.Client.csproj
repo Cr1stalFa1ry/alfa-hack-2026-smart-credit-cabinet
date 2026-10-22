@@ -18,9 +18,17 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.13" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
         <PackageReference Include="WolverineFx" Version="6.51.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Features\Applications\RespondRequestedInfoApplication\" />
+      <Folder Include="Features\Applications\RetryApplicationCheck\" />
+      <Folder Include="Features\Applications\SaveDraft\" />
+      <Folder Include="Features\Applications\SubmitApplication\" />
+      <Folder Include="Features\Applications\UploadAndAnalyzeStatement\" />
+      <Folder Include="Features\Applications\WithdrawApplication\" />
     </ItemGroup>
 
 </Project>
