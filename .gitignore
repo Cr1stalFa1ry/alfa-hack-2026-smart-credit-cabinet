@@ -1,6 +1,11 @@
 .DS_Store
-AGENTS.md
+BACKEND.md
 REST_API.md
+features.md
+
+# Agent customizations & skills
+.agents/
+.gemini/
 
 # .NET & IDE build artifacts
 **/bin/
@@ -9,3 +14,7 @@ REST_API.md
 *.user
 *.suo
 keys/
+
+# Local cache & nuget temp
+**/.nuget/
+**/.local/

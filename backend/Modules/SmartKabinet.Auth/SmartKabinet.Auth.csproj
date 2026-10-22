@@ -11,11 +11,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Features\Commands\Login\" />
       <Folder Include="Features\Commands\Refresh\" />
-      <Folder Include="Features\Commands\Register\" />
       <Folder Include="Features\Commands\RevokeRefreshToken\" />
-      <Folder Include="Features\Commands\UpdateUser\" />
       <Folder Include="Features\Queries\" />
     </ItemGroup>
 
@@ -24,6 +21,8 @@
       <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.13" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+      <PackageReference Include="WolverineFx" Version="6.51.2" />
     </ItemGroup>
 
 </Project>

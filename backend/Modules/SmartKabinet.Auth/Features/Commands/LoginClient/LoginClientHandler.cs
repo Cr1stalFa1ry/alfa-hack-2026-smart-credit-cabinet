@@ -5,8 +5,6 @@ using SmartKabinet.Auth.Infrastructure.Security;
 
 namespace SmartKabinet.Auth.Features.Commands.Login;
 
-public record LoginRequest(string Username, string Password);
-
 public class LoginHandler
 {
     private readonly AuthDbContext _dbContext;
@@ -26,7 +24,7 @@ public class LoginHandler
         _refreshTokenProvider = refreshTokenProvider;
     }
 
-    public async Task<AuthResponse?> HandleAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    public async Task<AuthResponse?> HandleAsync(LoginClientRequest request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users
             .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower() && u.IsActive, cancellationToken);

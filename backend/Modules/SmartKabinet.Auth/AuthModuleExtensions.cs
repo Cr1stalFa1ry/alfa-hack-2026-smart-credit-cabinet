@@ -8,8 +8,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using SmartKabinet.Auth.Features.Commands.Login;
+using SmartKabinet.Auth.Features.Commands.LoginBankEmp;
 using SmartKabinet.Auth.Features.Commands.Refresh;
 using SmartKabinet.Auth.Features.Commands.Register;
+using SmartKabinet.Auth.Features.Commands.RegisterBankEmp;
 using SmartKabinet.Auth.Features.Commands.RevokeRefreshToken;
 using SmartKabinet.Auth.Features.DTOs;
 using SmartKabinet.Auth.Features.Queries;
@@ -29,7 +31,7 @@ public static class AuthModuleExtensions
         {
             if (!string.IsNullOrWhiteSpace(connectionString) && !connectionString.Contains("InMemory", StringComparison.OrdinalIgnoreCase))
             {
-                options.UseInMemoryDatabase("SmartKabinetAuthDb");
+                options.UseNpgsql(connectionString, b => b.MigrationsHistoryTable("__EFMigrationsHistory_Auth", "auth"));
             }
             else
             {
@@ -48,6 +50,7 @@ public static class AuthModuleExtensions
         // Handlers
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterHandler>();
+        services.AddScoped<RegisterBankEmployeeHandler>();
         services.AddScoped<RefreshHandler>();
         services.AddScoped<RevokeCommandHandler>();
         services.AddScoped<GetCurrentUserQueryHandler>();
@@ -118,7 +121,7 @@ public static class AuthModuleExtensions
 
         // POST /api/auth/login
         group.MapPost("/login", async (
-            LoginRequest request,
+            LoginClientRequest request,
             LoginHandler handler,
             HttpResponse response) =>
         {
@@ -161,6 +164,31 @@ public static class AuthModuleExtensions
         })
         .WithName("Register")
         .WithSummary("Регистрация нового ИП заёмщика");
+
+        // POST /api/auth/employee/register
+        group.MapPost("/employee/register", async (
+            RegisterBankEmployeeRequest request,
+            RegisterBankEmployeeHandler handler,
+            HttpResponse response) =>
+        {
+            var (authResponse, error) = await handler.HandleAsync(request);
+            if (!string.IsNullOrEmpty(error))
+            {
+                return Results.BadRequest(new { error });
+            }
+
+            if (authResponse is null)
+            {
+                return Results.BadRequest(new { error = "Не удалось зарегистрировать сотрудника банка." });
+            }
+
+            AuthCookieHelper.SetAuthCookie(response, authResponse.AccessToken, 60);
+            AuthCookieHelper.SetRefreshCookie(response, authResponse.RefreshToken, 7);
+
+            return Results.Created($"/api/auth/me", authResponse);
+        })
+        .WithName("RegisterBankEmployee")
+        .WithSummary("Регистрация сотрудника банка (аналитика)");
 
         // POST /api/auth/refresh
         group.MapPost("/refresh", async (

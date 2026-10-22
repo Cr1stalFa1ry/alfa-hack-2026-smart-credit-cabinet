@@ -1,19 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using SmartKabinet.Auth.Contracts;
 using SmartKabinet.Auth.Domain;
 using SmartKabinet.Auth.Features.DTOs;
 using SmartKabinet.Auth.Infrastructure.Persistence;
 using SmartKabinet.Auth.Infrastructure.Security;
+using Wolverine;
 
 namespace SmartKabinet.Auth.Features.Commands.Register;
-
-public record RegisterClientRequest(
-    string Username,
-    string Password,
-    string Inn,
-    string FirstName,
-    string LastName,
-    string? MiddleName = null
-);
 
 public class RegisterHandler
 {
@@ -21,17 +14,20 @@ public class RegisterHandler
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtProvider _jwtProvider;
     private readonly IRefreshTokenProvider _refreshTokenProvider;
+    private readonly IMessageBus _messageBus;
 
     public RegisterHandler(
         AuthDbContext dbContext,
         IPasswordHasher passwordHasher,
         IJwtProvider jwtProvider,
-        IRefreshTokenProvider refreshTokenProvider)
+        IRefreshTokenProvider refreshTokenProvider,
+        IMessageBus messageBus)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _jwtProvider = jwtProvider;
         _refreshTokenProvider = refreshTokenProvider;
+        _messageBus = messageBus;
     }
 
     public async Task<(AuthResponse? Response, string? Error)> HandleAsync(
@@ -43,18 +39,13 @@ public class RegisterHandler
             return (null, "Username and password are required.");
         }
 
-        if (string.IsNullOrWhiteSpace(request.Inn) || request.Inn.Length != 12 || !request.Inn.All(char.IsDigit))
-        {
-            return (null, "ИНН индивидуального предпринимателя должен состоять из 12 цифр.");
-        }
-
         var exists = await _dbContext.Users.AnyAsync(
-            u => u.Username.ToLower() == request.Username.ToLower() || u.Inn == request.Inn, 
+            u => u.Username.ToLower() == request.Username.ToLower(), 
             cancellationToken);
 
         if (exists)
         {
-            return (null, "Пользователь с таким именем или ИНН уже зарегистрирован.");
+            return (null, "Пользователь с таким именем уже зарегистрирован.");
         }
 
         var user = new User
@@ -62,10 +53,10 @@ public class RegisterHandler
             UserId = Guid.NewGuid(),
             Username = request.Username,
             PasswordHash = _passwordHasher.HashPassword(request.Password),
-            Inn = request.Inn,
             FirstName = request.FirstName,
             LastName = request.LastName,
             MiddleName = request.MiddleName,
+            Inn = request.Inn,
             Role = UserRole.Client,
             IsActive = true
         };
@@ -76,6 +67,16 @@ public class RegisterHandler
         _dbContext.Users.Add(user);
         _dbContext.RefreshTokens.Add(refreshToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Публикация события в шину Wolverine для других модулей (SmartKabinet.Client)
+        await _messageBus.PublishAsync(new ClientRegistered(
+            user.UserId,
+            user.Username,
+            user.Inn ?? string.Empty,
+            user.FirstName,
+            user.LastName,
+            DateTimeOffset.UtcNow
+        ));
 
         var profile = new UserProfileDto(
             user.UserId,
