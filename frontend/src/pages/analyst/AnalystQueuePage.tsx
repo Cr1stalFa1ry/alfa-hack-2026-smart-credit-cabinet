@@ -17,7 +17,7 @@ import {
 export const AnalystQueuePage: React.FC = () => {
   const navigate = useNavigate();
   const [applications, setApplications] = useState<CreditApplication[]>([]);
-  const [filterStatus, setFilterStatus] = useState<string>('review');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,6 +35,11 @@ export const AnalystQueuePage: React.FC = () => {
     }
   };
 
+  const reviewCount = applications.filter((a) => a.status === 'review').length;
+  const needInfoCount = applications.filter((a) => a.status === 'need_info').length;
+  const offerCount = applications.filter((a) => a.status === 'offer').length;
+  const checkingCount = applications.filter((a) => a.status === 'checking').length;
+
   const filteredApplications = applications.filter((app) => {
     const matchesFilter = filterStatus === 'all' || app.status === filterStatus;
     const company = app.companyName || `ИП (ИНН ${app.inn || ''})`;
@@ -47,9 +52,6 @@ export const AnalystQueuePage: React.FC = () => {
       id.toLowerCase().includes(q);
     return matchesFilter && matchesSearch;
   });
-
-  const reviewCount = applications.filter((a) => a.status === 'review').length;
-  const needInfoCount = applications.filter((a) => a.status === 'need_info').length;
 
   return (
     <div className="space-y-6">
@@ -90,10 +92,11 @@ export const AnalystQueuePage: React.FC = () => {
 
           <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
             {[
+              { id: 'all', label: 'Все заявки', count: applications.length },
               { id: 'review', label: 'На разборе', count: reviewCount },
               { id: 'need_info', label: 'Ожидают инфо', count: needInfoCount },
-              { id: 'offer', label: 'Одобрено' },
-              { id: 'all', label: 'Все заявки' },
+              { id: 'offer', label: 'Одобрено', count: offerCount },
+              { id: 'checking', label: 'На проверке', count: checkingCount },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -104,7 +107,7 @@ export const AnalystQueuePage: React.FC = () => {
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                {tab.label} {tab.count !== undefined && `(${tab.count})`}
+                {tab.label} ({tab.count})
               </button>
             ))}
           </div>
@@ -116,8 +119,32 @@ export const AnalystQueuePage: React.FC = () => {
         {isLoading ? (
           <div className="p-12 text-center text-slate-400 dark:text-slate-500">Загрузка очереди...</div>
         ) : filteredApplications.length === 0 ? (
-          <Card className="text-center py-12 text-slate-400 dark:text-slate-500">
-            В выбранной очереди нет заявок
+          <Card className="text-center py-12 text-slate-400 dark:text-slate-500 space-y-3">
+            <p>
+              {applications.length === 0
+                ? 'В очереди пока нет заявок. Создайте заявку от лица клиента ИП в кредитном кабинете.'
+                : `В категории «${
+                    filterStatus === 'review'
+                      ? 'На разборе'
+                      : filterStatus === 'need_info'
+                      ? 'Ожидают инфо'
+                      : filterStatus === 'offer'
+                      ? 'Одобрено'
+                      : filterStatus === 'checking'
+                      ? 'На проверке'
+                      : 'Все'
+                  }» нет заявок.`}
+            </p>
+            {applications.length > 0 && filterStatus !== 'all' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilterStatus('all')}
+                className="mt-2"
+              >
+                Показать все заявки ({applications.length})
+              </Button>
+            )}
           </Card>
         ) : (
           filteredApplications.map((app) => (

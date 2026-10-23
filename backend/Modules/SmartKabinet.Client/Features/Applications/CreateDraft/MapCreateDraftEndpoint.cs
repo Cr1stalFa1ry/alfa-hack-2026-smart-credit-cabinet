@@ -34,6 +34,7 @@ public static class CreateDraftEndpoint
             CancellationToken ct) => 
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var cmd = new CreateDraftCommand(
                 userContext.UserId.Value,
@@ -53,7 +54,7 @@ public static class CreateDraftEndpoint
             return result.ToHttpResult(appId => 
                 Results.Created($"/api/client/applications/{appId.Value}", new { applicationId = appId.Value, status = "draft" }));
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("CreateApplicationDraft")
         .WithSummary("T01: Создание черновика заявки на кредит");
         

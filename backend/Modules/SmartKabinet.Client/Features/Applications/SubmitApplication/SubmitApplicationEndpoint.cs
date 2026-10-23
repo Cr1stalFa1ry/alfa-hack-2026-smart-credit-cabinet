@@ -20,6 +20,7 @@ public static class SubmitApplicationEndpoint
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var cmd = new SubmitApplicationCommand(id, userContext.UserId.Value);
             var result = await service.SubmitAsync(cmd, ct);
@@ -27,7 +28,7 @@ public static class SubmitApplicationEndpoint
             return result.ToHttpResult(() => 
                 Results.Ok(new { message = "Заявка успешно отправлена на проверку", applicationId = id, status = "checking" }));
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("SubmitApplication")
         .WithSummary("T03: Отправка заявки на проверку (переход в checking)");
 

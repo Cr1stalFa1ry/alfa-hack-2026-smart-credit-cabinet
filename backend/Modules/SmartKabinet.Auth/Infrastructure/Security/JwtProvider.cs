@@ -31,9 +31,19 @@ public class JwtProvider : IJwtProvider
             new("userId", user.UserId.ToString()),
             new(ClaimTypes.Name, user.Username),
             new("username", user.Username),
+            new(ClaimTypes.Role, user.Role.ToString()),
             new(ClaimTypes.Role, user.Role.ToString().ToLowerInvariant()),
+            new("role", user.Role.ToString()),
             new("role", user.Role.ToString().ToLowerInvariant())
         };
+
+        if (user.Role is UserRole.Analyst or UserRole.Admin)
+        {
+            claims.Add(new(ClaimTypes.Role, "BankEmployee"));
+            claims.Add(new(ClaimTypes.Role, "bankemployee"));
+            claims.Add(new("role", "BankEmployee"));
+            claims.Add(new("role", "bankemployee"));
+        }
 
         // ИНН привязывается к токену только для роли Client (индивидуального предпринимателя)
         if (user.Role == UserRole.Client && !string.IsNullOrWhiteSpace(user.Inn))

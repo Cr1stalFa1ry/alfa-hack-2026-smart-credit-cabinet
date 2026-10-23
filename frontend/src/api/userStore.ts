@@ -21,6 +21,32 @@ export const userStore = {
     return apps.find((a) => a.id === id);
   },
 
+  getAllApplications: (): CreditApplication[] => {
+    const allApps: CreditApplication[] = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('smart_kabinet_user_apps_')) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const list = JSON.parse(raw);
+            if (Array.isArray(list)) {
+              allApps.push(...list);
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return allApps;
+  },
+
+  findApplicationAcrossUsers: (id: string): CreditApplication | undefined => {
+    const apps = userStore.getAllApplications();
+    return apps.find((a) => a.id === id);
+  },
+
   saveApplication: (userId: string, app: CreditApplication): void => {
     if (!userId) return;
     const apps = userStore.getApplications(userId);

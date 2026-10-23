@@ -19,6 +19,12 @@ using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Сериализация enum в виде строковых значений ("Review", "Offer", etc.)
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+});
+
 // Swagger / OpenAPI с поддержкой JWT Bearer авторизации
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

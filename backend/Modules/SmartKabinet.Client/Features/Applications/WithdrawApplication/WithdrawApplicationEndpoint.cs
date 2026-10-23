@@ -20,6 +20,7 @@ public static class WithdrawApplicationEndpoint
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var cmd = new WithdrawCommand(id, userContext.UserId.Value);
             var result = await service.WithdrawAsync(cmd, ct);
@@ -27,7 +28,7 @@ public static class WithdrawApplicationEndpoint
             return result.ToHttpResult(() =>
                 Results.Ok(new { message = "Заявка успешно отозвана и закрыта", applicationId = id, status = "closed" }));
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("WithdrawApplication")
         .WithSummary("T17: Отзыв заявки клиентом (переход в closed)");
 

@@ -1,33 +1,43 @@
 import { apiClient } from './apiClient';
 import { CreditApplication, CreditOffer } from '../types/application';
 import { mockStore } from './mockStore';
+import { userStore } from './userStore';
 import { mapBackendApplication } from './clientApi';
 
 function isDemoActive(): boolean {
   return localStorage.getItem('smart_kabinet_demo_mode') === 'true';
 }
 
+function getLocalQueueFallback(): CreditApplication[] {
+  const map = new Map<string, CreditApplication>();
+  mockStore.getAll().forEach((a) => map.set(a.id, a));
+  userStore.getAllApplications().forEach((a) => map.set(a.id, a));
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
 export const analystApi = {
   getReviewQueue: async (): Promise<CreditApplication[]> => {
     if (isDemoActive()) {
-      return mockStore.getAll();
+      return getLocalQueueFallback();
     }
 
     try {
       const res = await apiClient.get<any[]>('/employee/applications/queue', { timeout: 2500 });
-      if (Array.isArray(res.data)) {
+      if (Array.isArray(res.data) && res.data.length > 0) {
         return res.data.map(mapBackendApplication);
       }
-      return [];
     } catch {
-      // In real analyst mode, if queue is empty or offline, return empty list
-      return [];
+      // offline or backend fallback
     }
+
+    return getLocalQueueFallback();
   },
 
   getApplicationDetails: async (id: string): Promise<CreditApplication> => {
     if (isDemoActive()) {
-      const app = mockStore.getById(id);
+      const app = userStore.findApplicationAcrossUsers(id) || mockStore.getById(id);
       if (!app) throw new Error('Заявка не найдена');
       return app;
     }
@@ -41,7 +51,7 @@ export const analystApi = {
       // ignore
     }
 
-    const fallbackApp = mockStore.getById(id);
+    const fallbackApp = userStore.findApplicationAcrossUsers(id) || mockStore.getById(id);
     if (fallbackApp) return fallbackApp;
 
     throw new Error('Заявка не найдена');

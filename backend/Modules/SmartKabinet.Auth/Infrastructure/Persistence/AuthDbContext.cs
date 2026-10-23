@@ -47,11 +47,6 @@ public class AuthDbContext : DbContext
     /// </summary>
     public static void SeedDefaultUsers(AuthDbContext context, Security.IPasswordHasher passwordHasher)
     {
-        if (context.Users.Any())
-        {
-            return;
-        }
-
         var defaultPasswordHash = passwordHasher.HashPassword("password123");
         var analystPasswordHash = passwordHasher.HashPassword("analyst123");
         var adminPasswordHash = passwordHasher.HashPassword("admin123");
@@ -130,7 +125,13 @@ public class AuthDbContext : DbContext
             }
         };
 
-        context.Users.AddRange(users);
+        foreach (var u in users)
+        {
+            if (!context.Users.Any(existing => existing.Username.ToLower() == u.Username.ToLower()))
+            {
+                context.Users.Add(u);
+            }
+        }
         context.SaveChanges();
     }
 }

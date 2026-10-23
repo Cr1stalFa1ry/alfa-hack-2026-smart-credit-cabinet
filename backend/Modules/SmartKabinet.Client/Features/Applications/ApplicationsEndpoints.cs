@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using SmartKabinet.Auth.Infrastructure.Security;
 using SmartKabinet.Client.Features.Applications.CreateDraft;
 using SmartKabinet.Client.Features.Applications.GetApplicationById;
 using SmartKabinet.Client.Features.Applications.GetApplications;
@@ -18,7 +19,9 @@ public static class ApplicationsEndpoints
 {
     public static IEndpointRouteBuilder MapApplicationsEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/client/applications").WithTags("Client Applications");
+        var group = app.MapGroup("/api/client/applications")
+            .WithTags("Client Applications")
+            .RequireAuthorization(AuthPolicies.ClientOnly);
 
         group.MapCreateDraftEndpoint();
         group.MapSaveDraftEndpoint();

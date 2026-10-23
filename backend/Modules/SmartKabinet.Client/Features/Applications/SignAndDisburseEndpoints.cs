@@ -21,6 +21,7 @@ public static class SignAndDisburseEndpoints
             ApplicationDbContext appDb) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
@@ -72,7 +73,7 @@ public static class SignAndDisburseEndpoints
                 message = "Кредитная оферта принята, договор подписан и средства успешно зачислены на счёт ИП (симуляция T21–T23)."
             });
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("AcceptCreditOffer")
         .WithSummary("T21: Принятие кредитной оферты клиентом");
 
@@ -84,6 +85,7 @@ public static class SignAndDisburseEndpoints
             ApplicationDbContext appDb) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
@@ -117,7 +119,7 @@ public static class SignAndDisburseEndpoints
                 message = "Договор подписан. Заявка готова к зачислению кредитных средств."
             });
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("SignCreditAgreement")
         .WithSummary("T22: Симуляция подписания кредитного договора клиентом");
 
@@ -128,6 +130,7 @@ public static class SignAndDisburseEndpoints
             ApplicationDbContext appDb) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
@@ -162,7 +165,7 @@ public static class SignAndDisburseEndpoints
                 message = "Кредит успешно выдан. Средства переведены на расчётный счёт ИП в Альфа-Банке."
             });
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("DisburseCreditFunds")
         .WithSummary("T23: Моделируемая выдача кредитных средств на расчётный счёт предпринимателя");
 

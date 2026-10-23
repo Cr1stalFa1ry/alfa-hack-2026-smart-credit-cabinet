@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Modules\SmartKabinet.Infrastructure\SmartKabinet.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Shared\SmartKabinet.Shared\SmartKabinet.Shared.csproj" />
+    <ProjectReference Include="..\..\Modules\SmartKabinet.Auth\SmartKabinet.Auth.csproj" />
   </ItemGroup>
 
 </Project>

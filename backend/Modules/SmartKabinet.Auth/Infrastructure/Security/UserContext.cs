@@ -11,6 +11,8 @@ public interface IUserContext
     string? Inn { get; }
     UserRole? Role { get; }
     bool IsAuthenticated { get; }
+    bool IsClient { get; }
+    bool IsBankEmployee { get; }
 }
 
 public class UserContext : IUserContext
@@ -52,7 +54,16 @@ public class UserContext : IUserContext
             var value = User?.FindFirst(ClaimTypes.Role)?.Value 
                         ?? User?.FindFirst("role")?.Value;
 
+            if (string.Equals(value, "bankemployee", StringComparison.OrdinalIgnoreCase))
+            {
+                return UserRole.Analyst;
+            }
+
             return Enum.TryParse<UserRole>(value, true, out var role) ? role : null;
         }
     }
+
+    public bool IsClient => Role == UserRole.Client;
+
+    public bool IsBankEmployee => Role is UserRole.Analyst or UserRole.Admin;
 }

@@ -32,6 +32,7 @@ public static class SaveDraftEndpoint
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var cmd = new SaveDraftCommand(
                 id,
@@ -48,7 +49,7 @@ public static class SaveDraftEndpoint
             var result = await service.SaveDraftAsync(cmd, ct);
             return result.ToHttpResult(() => Results.Ok(new { message = "Черновик успешно сохранён", applicationId = id, status = "draft" }));
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("UpdateApplicationDraft")
         .WithSummary("T02: Сохранение изменений в черновике заявки");
 

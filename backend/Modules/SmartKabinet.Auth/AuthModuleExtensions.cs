@@ -92,7 +92,14 @@ public static class AuthModuleExtensions
             };
         });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(AuthPolicies.ClientOnly, policy =>
+                policy.RequireRole("Client", "client"));
+
+            options.AddPolicy(AuthPolicies.EmployeeOnly, policy =>
+                policy.RequireRole("Analyst", "analyst", "Admin", "admin", "BankEmployee", "bankemployee"));
+        });
 
         return services;
     }

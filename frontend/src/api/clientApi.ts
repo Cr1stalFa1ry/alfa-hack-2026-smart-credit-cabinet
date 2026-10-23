@@ -23,6 +23,47 @@ function getCurrentUserId(): string {
   return 'current-user';
 }
 
+const NUMERIC_STATUS_MAP: Record<string, ApplicationStatus> = {
+  '0': 'draft',
+  '1': 'checking',
+  '2': 'checking',
+  '3': 'waiting_check',
+  '4': 'need_info',
+  '5': 'checking',
+  '6': 'review',
+  '7': 'offer',
+  '8': 'closed',
+  '9': 'closed',
+  '10': 'declined',
+  '11': 'accepted',
+  '12': 'signed_sim',
+  '13': 'closed',
+  'draft': 'draft',
+  'submitted': 'checking',
+  'checking': 'checking',
+  'waitingcheck': 'waiting_check',
+  'waiting_check': 'waiting_check',
+  'needinfo': 'need_info',
+  'need_info': 'need_info',
+  'inforeceived': 'checking',
+  'review': 'review',
+  'offer': 'offer',
+  'declined': 'declined',
+  'accepted': 'accepted',
+  'signedsim': 'signed_sim',
+  'signed_sim': 'signed_sim',
+  'disbursedsim': 'disbursed_sim',
+  'disbursed_sim': 'disbursed_sim',
+  'closed': 'closed',
+};
+
+export function normalizeStatus(val: any): ApplicationStatus {
+  if (val === undefined || val === null) return 'draft';
+  const raw = String(val).trim();
+  const lower = raw.toLowerCase().replace(/_/g, '');
+  return NUMERIC_STATUS_MAP[raw] || NUMERIC_STATUS_MAP[lower] || (raw.toLowerCase() as ApplicationStatus);
+}
+
 export function mapBackendApplication(item: any): CreditApplication {
   const stage = item.stage === 2 || item.businessType === 'prelaunch' ? 'prelaunch' : 'operating';
   const purposeCode = item.purpose === 1 || item.purposeCode === 'equipment' || String(item.purpose).toLowerCase().includes('оборудован')
@@ -62,7 +103,7 @@ export function mapBackendApplication(item: any): CreditApplication {
     specialistNotes: item.specialistNotes,
     scenario: item.scenario,
     submissionPayload: item.submissionPayload,
-    status: (item.status ? String(item.status).toLowerCase() : 'draft') as ApplicationStatus,
+    status: normalizeStatus(item.status),
     createdAt: item.createdAt || new Date().toISOString(),
     updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
     documents: item.documents || [],

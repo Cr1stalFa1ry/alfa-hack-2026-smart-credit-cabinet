@@ -20,6 +20,7 @@ public static class RetryApplicationCheckEndpoint
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var cmd = new RetryCheckCommand(id, userContext.UserId.Value);
             var result = await service.RetryCheckAsync(cmd, ct);
@@ -27,7 +28,7 @@ public static class RetryApplicationCheckEndpoint
             return result.ToHttpResult(() =>
                 Results.Ok(new { message = "Повторная проверка запущена", applicationId = id, status = "checking" }));
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("RetryApplicationCheck")
         .WithSummary("T06: Повторный запуск проверки клиентом (из waiting_check в checking)");
 

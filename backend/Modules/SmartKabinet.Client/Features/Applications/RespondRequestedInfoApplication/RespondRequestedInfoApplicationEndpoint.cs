@@ -27,6 +27,7 @@ public static class RespondRequestedInfoApplicationEndpoint
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var cmd = new RespondInfoCommand(
                 id,
@@ -40,7 +41,7 @@ public static class RespondRequestedInfoApplicationEndpoint
             return result.ToHttpResult(() =>
                 Results.Ok(new { message = "Сведения переданы, заявка возвращена на проверку", applicationId = id, status = "checking" }));
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("RespondRequestedInfo")
         .WithSummary("T10: Ответ клиента на дозапрос банка (переход в checking)");
 

@@ -17,13 +17,14 @@ public static class GetProfileEndpoint
             ClientDbContext dbContext) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var profile = await dbContext.Clients.FirstOrDefaultAsync(c => c.UserId == userContext.UserId.Value);
             return profile is not null 
                 ? Results.Ok(profile) 
                 : Results.NotFound(new { error = "Профиль клиента не найден." });
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("GetClientProfile")
         .WithSummary("Получение профиля текущего клиента ИП");
 

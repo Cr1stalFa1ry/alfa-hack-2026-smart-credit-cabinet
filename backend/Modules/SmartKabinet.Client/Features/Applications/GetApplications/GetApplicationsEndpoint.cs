@@ -17,11 +17,12 @@ public static class GetApplicationsEndpoint
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var list = await service.ListForClientAsync(userContext.UserId.Value, ct);
             return Results.Ok(list);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("GetClientApplications")
         .WithSummary("Список всех заявок текущего клиента ИП");
 

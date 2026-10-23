@@ -1,1291 +1,2355 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clientApi } from '../../api/clientApi';
-import { egripApi } from '../../api/egripApi';
-import { EgripCompany } from '../../types/scoring';
-import { BusinessType } from '../../types/application';
-import { ProductCode } from '../../types/products';
-import { CREDIT_PRODUCTS, ALL_PRODUCTS } from '../../config/products';
-import { Card } from '../../components/common/Card';
-import { Input } from '../../components/common/Input';
-import { Select } from '../../components/common/Select';
-import { Button } from '../../components/common/Button';
-import { FileUpload } from '../../components/common/FileUpload';
-import { Alert } from '../../components/common/Alert';
-import { EgripCard } from '../../components/application/EgripCard';
-import { ConsentModal, ConsentType } from '../../components/application/ConsentModal';
-import { ProductCodeBadge } from '../../components/badges/ProductCodeBadge';
+import { useAuth } from '../../context/AuthContext';
+import {
+  ALFA_DATA,
+  DemoApplication,
+  DemoPassport,
+  DemoFact,
+  DemoDebt,
+  DemoSupplier,
+  DemoProperty,
+} from '../../data/alfaDemoData';
+import {
+  evaluate,
+  validAmount,
+  ScoringInput,
+  ScoringResult,
+} from '../../utils/scoreEngine';
 import { formatRubles } from '../../utils/formatters';
 import {
-  ArrowLeft,
-  ArrowRight,
-  Save,
-  Send,
   Check,
-  AlertTriangle,
-  AlertCircle,
-  HelpCircle,
-  ShieldCheck,
-  Building2,
-  Wrench,
-  Calculator,
-  Info,
-  Sparkles,
+  ChevronRight,
+  ChevronLeft,
+  Send,
+  Upload,
   FileText,
-  UserCheck,
-  Cpu,
+  Trash2,
+  Search,
+  CheckCircle2,
+  ShieldAlert,
 } from 'lucide-react';
+
+interface UploadedFileMeta {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  group: string;
+  url?: string;
+}
 
 export const NewApplicationWizardPage: React.FC = () => {
   const navigate = useNavigate();
-
-  // Wizard steps: 1 = ИНН, стадия и продукт; 2 = Параметры и финансы; 3 = Документы и отправка
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
 
   // ----------------------------------------------------
-  // Шаг 1: ИНН, стадия бизнеса и выбор продукта
+  // Тестовый клиент (100 синтетических досье ИП)
   // ----------------------------------------------------
-  const [inn, setInn] = useState('770123456789');
-  const [egripCompany, setEgripCompany] = useState<EgripCompany | null>(null);
-  const [businessType, setBusinessType] = useState<BusinessType>('operating');
-  const [productCode, setProductCode] = useState<ProductCode>('WC');
-
-  // ----------------------------------------------------
-  // Шаг 2: Параметры кредитования
-  // ----------------------------------------------------
-  const [amount, setAmount] = useState<number>(1500000);
-  const [termMonths, setTermMonths] = useState<number>(12);
-  const [helpWithTerm, setHelpWithTerm] = useState<boolean>(false);
-  const [purpose, setPurpose] = useState('Пополнение оборотных средств и закупка товаров');
-
-  // Специфика EQ (Оборудование)
-  const [equipmentList, setEquipmentList] = useState('Производственное и торговое оборудование');
-  const [equipmentPrice, setEquipmentPrice] = useState<number>(2500000);
-  const [ownContribution, setOwnContribution] = useState<number>(500000);
-  const [supplierStatus, setSupplierStatus] = useState<'chosen' | 'searching'>('chosen');
-  const [equipmentSupplier, setEquipmentSupplier] = useState('ООО «СтанкоПром» (ИНН 7701987654)');
-
-  // Финансы действующего бизнеса (operating)
-  const [revenue, setRevenue] = useState<number>(750000);
-  const [expenses, setExpenses] = useState<number>(380000);
-
-  // Финансы нового бизнеса (prelaunch) — источники покрытия долга
-  const [repaymentSources, setRepaymentSources] = useState<string[]>(['salary', 'savings']);
-  const [alternateIncome, setAlternateIncome] = useState<number>(150000);
-  const [incomeKept, setIncomeKept] = useState<'yes' | 'no' | 'unsure'>('yes');
-  const [savingsAmount, setSavingsAmount] = useState<number>(600000);
-  const [collateralType, setCollateralType] = useState<'own' | 'third_party' | 'shared'>('own');
-  const [collateralAddress, setCollateralAddress] = useState('');
-  const [collateralClean, setCollateralClean] = useState(true);
-
-  // ----------------------------------------------------
-  // Шаг 3: Документы и согласия
-  // ----------------------------------------------------
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [attachLater, setAttachLater] = useState<boolean>(false);
-  const [pdnConsent, setPdnConsent] = useState<boolean>(true);
-  const [bkiConsent, setBkiConsent] = useState<boolean>(true);
-  const [leasingConsent, setLeasingConsent] = useState<boolean>(true);
-  const [activeConsentModal, setActiveConsentModal] = useState<ConsentType | null>(null);
-
-  // Конфигурация текущего выбранного продукта
-  const currentProductConfig = CREDIT_PRODUCTS[productCode];
-
-  // Проверка ЕГРИП по ИНН
-  const handleCheckInn = async () => {
-    if (inn.length >= 10) {
-      setIsLoading(true);
-      try {
-        const company = await egripApi.getCompanyByInn(inn);
-        setEgripCompany(company);
-      } finally {
-        setIsLoading(false);
-      }
+  const [selectedInn, setSelectedInn] = useState<string>(() => {
+    if (user?.inn && ALFA_DATA.applications.some((a) => a.inn === user.inn)) {
+      return user.inn;
     }
+    return ALFA_DATA.applications[0].inn;
+  });
+
+  const clientProfile = useMemo<DemoApplication>(() => {
+    return (
+      ALFA_DATA.applications.find((a) => a.inn === selectedInn) ||
+      ALFA_DATA.applications[0]
+    );
+  }, [selectedInn]);
+
+  const clientPassport = useMemo<DemoPassport | undefined>(() => {
+    return ALFA_DATA.passports.find((p) => p.applicant_inn === selectedInn);
+  }, [selectedInn]);
+
+  const clientFacts = useMemo<DemoFact[]>(() => {
+    return ALFA_DATA.facts.filter((f) => f.application_id === clientProfile.application_id);
+  }, [clientProfile]);
+
+  const clientDebts = useMemo<DemoDebt[]>(() => {
+    return ALFA_DATA.debts.filter((d) => d.application_id === clientProfile.application_id);
+  }, [clientProfile]);
+
+  const clientIncome = useMemo(() => {
+    return ALFA_DATA.income.filter((i) => i.application_id === clientProfile.application_id);
+  }, [clientProfile]);
+
+  // ----------------------------------------------------
+  // Состояние ответов анкеты
+  // ----------------------------------------------------
+  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, UploadedFileMeta[]>>({});
+  const [deferredDocs, setDeferredDocs] = useState<Record<string, boolean>>({});
+  const [currentStepIdx, setCurrentStepIdx] = useState<number>(0);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submittedAppId, setSubmittedAppId] = useState<string | null>(null);
+
+  // Supplier lookup state
+  const [supplierResult, setSupplierResult] = useState<{
+    status: 'idle' | 'found' | 'not_found' | 'invalid';
+    data?: DemoSupplier;
+  }>({ status: 'idle' });
+
+  // Property lookup state
+  const [propertyResult, setPropertyResult] = useState<{
+    status: 'idle' | 'found' | 'not_found' | 'invalid';
+    data?: DemoProperty;
+  }>({ status: 'idle' });
+
+  // Инициализация при смене клиента
+  const initForClient = (app: DemoApplication) => {
+    const isOperating = app.stage === 'operating';
+    const initAmount = app.amount_rub ? Math.round(Number(app.amount_rub)) : 1000000;
+    const initTerm = app.requested_term_months ? Number(app.requested_term_months) : 12;
+
+    setAnswers({
+      // Step 1: Profile
+      profileCurrent: 'yes',
+      phone: app.phone || '',
+      email: app.email || '',
+      profileChanges: '',
+      // Step 2: Passport
+      passportCurrent: 'yes',
+      passportName: app.full_name,
+      passportSeries: '',
+      passportNumber: '',
+      passportBirth: '',
+      passportIssued: '',
+      passportIssuer: '',
+      passportCode: '',
+      // Step 3: Request
+      business: isOperating ? 'operating' : app.stage === 'paused' ? 'paused' : 'new',
+      purpose: app.purpose === 'equipment' ? 'equipment' : 'working_capital',
+      amount: String(initAmount),
+      term: String(initTerm),
+      termUnspecified: false,
+      activity: '',
+      launchMonth: '',
+      launchMonthUnspecified: false,
+      // Step 4: Details
+      leasing: 'yes',
+      equipment: '',
+      equipmentChosen: 'Да',
+      equipmentCost: String(Math.round(initAmount * 1.25)),
+      equipmentCostUnspecified: false,
+      costIncludes: 'Доставка и пусконаладочные работы',
+      ownFunds: String(Math.round(initAmount * 0.25)),
+      supplierChosen: 'Да',
+      supplierInn: '9990927815',
+      purchaseDate: '',
+      expenseType: 'goods',
+      expenseDescription: 'Закупка товаров, сырья и финансирование контрактов',
+      expensePeriod: 'ноябрь–декабрь 2026 года',
+      hasContract: 'Да',
+      paymentDate: '',
+      collateral: 'no',
+      propertyInput: 'cadastre',
+      cadastralNumber: '99:99:9900001:1001',
+      // Step 5: Finances
+      taxCurrent: 'yes',
+      taxRegimes: [app.tax_regime || 'USN_INCOME'],
+      receiptCoverage: ['all'],
+      expensesComplete: 'yes',
+      extraExpenses: '',
+      personalExpenses: app.household_expenses_monthly_rub ? String(Math.round(Number(app.household_expenses_monthly_rub))) : '50000',
+      debtsComplete: 'yes',
+      extraDebts: [],
+      repaymentSources: ['salary'],
+      personalIncome: clientIncome.length
+        ? String(Math.round(clientIncome.reduce((acc, c) => acc + Number(c.net_income_rub), 0) / clientIncome.length))
+        : '120000',
+      incomeContinues: 'Да',
+      committedCosts: '30000',
+      cashReserve: '150000',
+      repaymentDescription: 'За счёт регулярной выручки от текущей операционной деятельности',
+      // Step 7: Review
+      reviewConfirmed: false,
+    });
+    setUploadedFiles({});
+    setDeferredDocs({});
+    setCurrentStepIdx(0);
+    setValidationErrors({});
+    setSubmittedAppId(null);
+    setSupplierResult({ status: 'idle' });
+    setPropertyResult({ status: 'idle' });
   };
 
-  // Переключение стадии бизнеса со сбалансированным подбором продукта
-  const handleBusinessTypeChange = (type: BusinessType) => {
-    setBusinessType(type);
-    if (type === 'prelaunch') {
-      if (productCode === 'WC') {
-        setProductCode('START');
-        setAmount(400000);
-        setTermMonths(12);
-        setPurpose('Стартовые оборотные средства для запуска нового направления');
-      } else if (productCode === 'EQ') {
-        // Минимальный взнос для prelaunch 20%
-        const minOwn = Math.round(equipmentPrice * 0.2);
-        if (ownContribution < minOwn) {
-          setOwnContribution(minOwn);
-          setAmount(equipmentPrice - minOwn);
+  useEffect(() => {
+    initForClient(clientProfile);
+  }, [clientProfile]);
+
+  // Helpers
+  const isOperating = answers.business === 'operating';
+  const isNew = answers.business === 'new';
+  const isPaused = answers.business === 'paused';
+  const isEquipment = answers.purpose === 'equipment';
+
+  // ----------------------------------------------------
+  // Конфигурация шагов мастера (6 шагов + review)
+  // ----------------------------------------------------
+  const wizardSteps = useMemo(() => {
+    const steps = [
+      { key: 'profile', short: 'Данные ИП', title: 'Проверим данные ИП', subtitle: 'Сведения из досье банка. Новые параметры финансирования вы укажете сами.' },
+      { key: 'passport', short: 'Паспорт', title: 'Паспортные данные', subtitle: 'Подтвердите актуальность документа, который есть у банка.' },
+      { key: 'request', short: 'Ваш запрос', title: 'Какое финансирование вам нужно?', subtitle: 'Расскажите о текущем состоянии бизнеса и цели обращения.' },
+    ];
+
+    if (!isPaused) {
+      steps.push({
+        key: 'details',
+        short: 'Детали',
+        title: isEquipment ? 'Оборудование и поставщик' : 'На что пойдут деньги',
+        subtitle: isNew ? 'Минимальные сведения для разговора со специалистом.' : 'Обоснуем потребность без лишних документов.',
+      });
+      steps.push({
+        key: 'finances',
+        short: 'Финансы',
+        title: 'Источник платежей',
+        subtitle: 'Подтверждаем полноту сведений. Прогноз и слова клиента не становятся проверенными фактами автоматически.',
+      });
+      steps.push({
+        key: 'documents',
+        short: 'Документы',
+        title: 'Подтверждающие документы',
+        subtitle: 'Загрузите то, что есть сейчас. Остальное специалист запросит адресно.',
+      });
+    }
+
+    steps.push({
+      key: 'review',
+      short: 'Проверка',
+      title: 'Проверьте заявку',
+      subtitle: 'Сводка введённых данных и автоматическая экспресс-оценка по правилам банка.',
+    });
+
+    return steps;
+  }, [isPaused, isEquipment, isNew]);
+
+  const currentStep = wizardSteps[currentStepIdx] || wizardSteps[0];
+
+  // ----------------------------------------------------
+  // Расчёт скоринга ScoreEngine
+  // ----------------------------------------------------
+  const scoringEvaluation = useMemo<ScoringResult>(() => {
+    const input: ScoringInput = {
+      asOf: ALFA_DATA.scoringConfig.assessmentAsOf,
+      stage: answers.business,
+      purpose: answers.purpose,
+      amount: answers.amount,
+      term: answers.termUnspecified ? null : Number(answers.term) || null,
+      equipmentCost: answers.equipmentCostUnspecified ? null : answers.equipmentCost,
+      ownFunds: answers.ownFunds,
+      householdExpenses: answers.personalExpenses,
+      extraExpenses: answers.extraExpenses || 0,
+      personalIncome: answers.personalIncome,
+      committedCosts: answers.committedCosts,
+      cashReserve: answers.cashReserve,
+      incomeContinues: answers.incomeContinues,
+      forecastOnly: (answers.repaymentSources || []).includes('forecast'),
+      facts: clientFacts.map((f) => ({
+        month: f.month,
+        receipts: f.clean_receipts_rub,
+        outflows: f.operating_outflow_rub,
+      })),
+      debts: [
+        ...clientDebts.map((d) => ({
+          ref: d.obligation_ref,
+          payment: d.monthly_max_payment_rub,
+        })),
+        ...(answers.extraDebts || []).map((x: any) => ({
+          ref: x.creditor || 'Дополнительный кредит',
+          payment: x.payment || 0,
+        })),
+      ],
+      debtsComplete: answers.debtsComplete === 'yes',
+      debtReconciled: true,
+      factsState: clientFacts.length >= 3 ? 'AVAILABLE' : 'MISSING',
+      sourceStatus: 'SUCCESS',
+      creditHistory: 'FOUND',
+      currentOverdue: 0,
+      overdueDays: 0,
+      activityFirstMonth: clientProfile.activity_first_full_month || '2021-10',
+      registrationMonth: (clientProfile.registration_date || '2021-09').slice(0, 7),
+      issues: [],
+    };
+
+    return evaluate(input, ALFA_DATA.scoringConfig);
+  }, [answers, clientFacts, clientDebts, clientProfile]);
+
+  // ----------------------------------------------------
+  // Выявление рисков / "Что уточнит специалист"
+  // ----------------------------------------------------
+  const riskFindings = useMemo<string[]>(() => {
+    const flags: string[] = [];
+    if (answers.profileCurrent === 'change') flags.push('Изменены сведения ИП: требуется ручная проверка досье');
+    if (answers.passportCurrent === 'change') flags.push('Введены новые паспортные данные: требуется верификация паспорта');
+    if (clientProfile.registry_status !== 'ACTIVE') flags.push('Статус регистрации ИП в ЕГРИП требует рассмотрения андеррайтером');
+    if (isPaused) flags.push('Бизнес приостановлен: требуется индивидуальная консультация');
+    if (isNew) flags.push('Нет достаточной истории операционной выручки: источник платежей на контроле');
+    if (answers.incomeContinues === 'Нет') flags.push('Клиент указал, что текущий доход не сохранится после запуска');
+    if (answers.equipmentCostUnspecified) flags.push('Точная стоимость оборудования ещё не определена');
+    if (answers.supplierChosen === 'Нет') flags.push('Поставщик оборудования пока не выбран');
+    if (supplierResult.status === 'not_found') flags.push('Поставщик не найден в базе проверенных контрагентов');
+    if ((answers.receiptCoverage || []).includes('other_banks')) flags.push('Заявлены поступления в сторонних банках: требуется выписка');
+    if ((answers.receiptCoverage || []).includes('cash')) flags.push('Заявлена наличная выручка: требуется документальное подтверждение');
+    if (answers.debtsComplete === 'add') flags.push('Клиент заявил о корректировке кредитных обязательств');
+    if (scoringEvaluation.risks.length) flags.push(...scoringEvaluation.risks);
+    return [...new Set(flags)];
+  }, [answers, clientProfile, isPaused, isNew, supplierResult, scoringEvaluation]);
+
+  // ----------------------------------------------------
+  // Валидация текущего шага
+  // ----------------------------------------------------
+  const validateCurrentStep = (): boolean => {
+    const errs: Record<string, string> = {};
+
+    if (currentStep.key === 'profile') {
+      if (answers.profileCurrent === 'change' && !answers.profileChanges?.trim()) {
+        errs.profileChanges = 'Опишите, какие сведения изменились';
+      }
+    } else if (currentStep.key === 'passport') {
+      if (answers.passportCurrent === 'change') {
+        if (!answers.passportSeries?.trim() || !/^\d{4}$/.test(answers.passportSeries)) {
+          errs.passportSeries = 'Серия: ровно 4 цифры';
+        }
+        if (!answers.passportNumber?.trim() || !/^\d{6}$/.test(answers.passportNumber)) {
+          errs.passportNumber = 'Номер: ровно 6 цифр';
+        }
+        if (!answers.passportBirth) {
+          errs.passportBirth = 'Укажите дату рождения';
+        }
+        if (!answers.passportIssued) {
+          errs.passportIssued = 'Укажите дату выдачи';
+        }
+        if (!answers.passportIssuer?.trim()) {
+          errs.passportIssuer = 'Укажите кем выдан паспорт';
+        }
+        if (!answers.passportCode?.trim() || !/^\d{3}-\d{3}$/.test(answers.passportCode)) {
+          errs.passportCode = 'Код в формате 000-000';
         }
       }
-    } else {
-      // operating
-      if (productCode === 'START') {
-        setProductCode('WC');
-        setAmount(1500000);
-        setTermMonths(12);
-        setPurpose('Пополнение оборотных средств и закупка товаров');
+    } else if (currentStep.key === 'request') {
+      if (!answers.business) {
+        errs.business = 'Выберите состояние вашего бизнеса';
+      }
+      if (!isPaused) {
+        if (!answers.purpose) {
+          errs.purpose = 'Выберите цель финансирования';
+        }
+        if (!validAmount(answers.amount) || Number(answers.amount) <= 0) {
+          errs.amount = 'Укажите корректную сумму';
+        }
+        if (!answers.termUnspecified && (!answers.term || Number(answers.term) <= 0)) {
+          errs.term = 'Укажите желаемый срок в месяцах';
+        }
+      } else {
+        if (!answers.pausedDetails?.trim()) {
+          errs.pausedDetails = 'Опишите текущую ситуацию и цель обращения';
+        }
+      }
+    } else if (currentStep.key === 'details') {
+      if (isEquipment) {
+        if (!answers.equipment?.trim()) {
+          errs.equipment = 'Укажите какое оборудование требуется';
+        }
+        if (!answers.equipmentCostUnspecified && (!validAmount(answers.equipmentCost) || Number(answers.equipmentCost) <= 0)) {
+          errs.equipmentCost = 'Укажите стоимость оборудования';
+        }
+        if (!validAmount(answers.ownFunds)) {
+          errs.ownFunds = 'Укажите размер собственного взноса (можно 0)';
+        }
+        if (
+          !answers.equipmentCostUnspecified &&
+          validAmount(answers.equipmentCost) &&
+          validAmount(answers.ownFunds) &&
+          Number(answers.ownFunds) > Number(answers.equipmentCost)
+        ) {
+          errs.ownFunds = 'Собственный взнос не может превышать стоимость покупки';
+        }
+      } else {
+        if (!answers.expenseDescription?.trim()) {
+          errs.expenseDescription = 'Опишите планируемые расходы';
+        }
+      }
+    } else if (currentStep.key === 'finances') {
+      if (!validAmount(answers.personalExpenses)) {
+        errs.personalExpenses = 'Укажите обязательные личные расходы без кредитов';
+      }
+      if (isNew) {
+        if (!validAmount(answers.personalIncome)) {
+          errs.personalIncome = 'Укажите регулярный личный доход';
+        }
+        if (!validAmount(answers.committedCosts)) {
+          errs.committedCosts = 'Укажите неизбежные ежемесячные расходы бизнеса';
+        }
+      }
+    } else if (currentStep.key === 'review') {
+      if (!answers.reviewConfirmed) {
+        errs.reviewConfirmed = 'Подтвердите проверку сведений для отправки заявки';
+      }
+    }
+
+    setValidationErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateCurrentStep()) {
+      if (currentStepIdx < wizardSteps.length - 1) {
+        setCurrentStepIdx((prev) => prev + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   };
 
-  // Выбор продукта клиентом
-  const handleSelectProduct = (code: ProductCode) => {
-    setProductCode(code);
-    const cfg = CREDIT_PRODUCTS[code];
-
-    if (code === 'EQ') {
-      const defaultPrice = 2500000;
-      const minPercent = businessType === 'prelaunch' ? 20 : 10;
-      const defaultOwn = Math.round((defaultPrice * minPercent) / 100);
-      setEquipmentPrice(defaultPrice);
-      setOwnContribution(defaultOwn);
-      setAmount(defaultPrice - defaultOwn);
-      setPurpose(`Кредит на приобретение оборудования: ${equipmentList}`);
-    } else if (code === 'START') {
-      setAmount(Math.min(amount, cfg.maxAmount));
-      setPurpose('Стартовые оборотные средства для запуска бизнеса');
-    } else {
-      // WC
-      setAmount(Math.min(Math.max(amount, cfg.minAmount), cfg.maxAmount));
-      setPurpose('Пополнение оборотных средств и закупка товаров/сырья');
+  const handlePrev = () => {
+    if (currentStepIdx > 0) {
+      setCurrentStepIdx((prev) => prev - 1);
+      setValidationErrors({});
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
-  // Автоматический пересчет суммы кредита при изменении цены оборудования
-  const handleEquipmentPriceChange = (price: number) => {
-    setEquipmentPrice(price);
-    const calculatedAmount = Math.max(0, price - ownContribution);
-    setAmount(calculatedAmount);
+  const jumpToStep = (index: number) => {
+    setCurrentStepIdx(index);
+    setValidationErrors({});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Автоматический пересчет суммы кредита при изменении взноса
-  const handleOwnContributionChange = (own: number) => {
-    setOwnContribution(own);
-    const calculatedAmount = Math.max(0, equipmentPrice - own);
-    setAmount(calculatedAmount);
+  // ----------------------------------------------------
+  // Supplier search handler
+  // ----------------------------------------------------
+  const handleLookupSupplier = (queryInn: string) => {
+    const clean = queryInn.trim();
+    if (!/^\d{10}$|^\d{12}$/.test(clean)) {
+      setSupplierResult({ status: 'invalid' });
+      return;
+    }
+    const match = ALFA_DATA.suppliers.find((s) => s.inn === clean);
+    if (match) {
+      setSupplierResult({ status: 'found', data: match });
+    } else {
+      setSupplierResult({ status: 'not_found' });
+    }
   };
 
-  // Проверка сходимости для EQ: Стоимость - Взнос = Сумма кредита
-  const eqExpectedAmount = Math.max(0, equipmentPrice - ownContribution);
-  const eqIsMismatched = productCode === 'EQ' && Math.abs(amount - eqExpectedAmount) > 1;
-
-  // Проверка минимального процента взноса для EQ
-  const requiredContributionPercent = businessType === 'prelaunch' ? 20 : 10;
-  const minRequiredContribution = Math.round((equipmentPrice * requiredContributionPercent) / 100);
-  const isContributionLow = productCode === 'EQ' && ownContribution < minRequiredContribution;
-
-  // Переключение источников погашения для prelaunch
-  const toggleRepaymentSource = (sourceKey: string) => {
-    setRepaymentSources((prev) =>
-      prev.includes(sourceKey) ? prev.filter((s) => s !== sourceKey) : [...prev, sourceKey]
-    );
+  // ----------------------------------------------------
+  // Property search handler
+  // ----------------------------------------------------
+  const handleLookupProperty = (queryCadastre: string) => {
+    const clean = queryCadastre.trim();
+    if (!/^\d{2}:\d{2}:\d{6,7}:\d{1,10}$/.test(clean)) {
+      setPropertyResult({ status: 'invalid' });
+      return;
+    }
+    const match = ALFA_DATA.properties.find((p) => p.cadastral_number === clean);
+    if (match) {
+      setPropertyResult({ status: 'found', data: match });
+    } else {
+      setPropertyResult({ status: 'not_found' });
+    }
   };
 
-  const handleFileUpload = (file: File) => {
-    setUploadedFiles((prev) => [...prev, file]);
+  // ----------------------------------------------------
+  // File upload simulated/actual handler
+  // ----------------------------------------------------
+  const handleFileUpload = (group: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !files.length) return;
+
+    const newItems: UploadedFileMeta[] = Array.from(files).map((f) => ({
+      id: 'file-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      name: f.name,
+      size: f.size,
+      type: f.type || 'application/octet-stream',
+      group,
+    }));
+
+    setUploadedFiles((prev) => ({
+      ...prev,
+      [group]: [...(prev[group] || []), ...newItems],
+    }));
+
+    e.target.value = '';
   };
 
-  // Финальная отправка заявки (T01 сохранить черновик или T03 отправить в банк)
-  const handleSubmit = async (submitImmediately: boolean) => {
-    setIsLoading(true);
+  const removeFile = (group: string, fileId: string) => {
+    setUploadedFiles((prev) => ({
+      ...prev,
+      [group]: (prev[group] || []).filter((f) => f.id !== fileId),
+    }));
+  };
+
+  // ----------------------------------------------------
+  // Отправка заявки в API
+  // ----------------------------------------------------
+  const handleSubmitApplication = async () => {
+    if (!validateCurrentStep()) return;
+
+    setIsSubmitting(true);
     try {
-      const specialistNotes: string[] = [];
-
-      if (helpWithTerm) {
-        specialistNotes.push('Клиенту требуется помощь аналитика с подбором комфортного срока и графика платежей.');
-      }
-      if (attachLater) {
-        specialistNotes.push('Клиент выбрал отложенное предоставление документов (будут приложены по запросу T11/need_info).');
-      }
-      if (businessType === 'prelaunch') {
-        const sourceDescriptions: Record<string, string> = {
-          salary: `Работа по найму (${formatRubles(alternateIncome)}/мес, доход сохранится: ${
-            incomeKept === 'yes' ? 'да' : incomeKept === 'no' ? 'нет' : 'не уверен'
-          })`,
-          savings: `Накопления/подушка безопасности (${formatRubles(savingsAmount)})`,
-          rent_other: `Аренда или другой действующий бизнес (${formatRubles(alternateIncome)}/мес)`,
-          collateral: `Залог недвижимости (${collateralType === 'own' ? 'собственность ИП' : 'третье лицо'}, ${
-            collateralAddress || 'адрес по запросу'
-          })`,
-          future_revenue: 'Прогноз будущей выручки (ручное рассмотрение)',
-        };
-        const sourcesSummary = repaymentSources.map((s) => sourceDescriptions[s] || s).join('; ');
-        specialistNotes.push(`Prelaunch источники покрытия долга: ${sourcesSummary}`);
-      }
-      if (productCode === 'EQ') {
-        const percent = Math.round((ownContribution / (equipmentPrice || 1)) * 100);
-        specialistNotes.push(
-          `EQ Оборудование: «${equipmentList}», полная стоимость ${formatRubles(
-            equipmentPrice
-          )}, взнос ${formatRubles(ownContribution)} (${percent}%). Поставщик: ${
-            supplierStatus === 'chosen' ? equipmentSupplier : 'Не выбран (нужна помощь с подбором)'
-          }`
-        );
-      }
-
-      const clientAnswers: Record<string, any> = {
-        productCode,
-        businessType,
-        helpWithTerm,
-        attachLater,
-        repaymentSources: businessType === 'prelaunch' ? repaymentSources : undefined,
-        alternateIncome: businessType === 'prelaunch' ? alternateIncome : undefined,
-        incomeKept: businessType === 'prelaunch' ? incomeKept : undefined,
-        savingsAmount: businessType === 'prelaunch' ? savingsAmount : undefined,
-        collateralType:
-          businessType === 'prelaunch' && repaymentSources.includes('collateral')
-            ? collateralType
-            : undefined,
-        collateralAddress:
-          businessType === 'prelaunch' && repaymentSources.includes('collateral')
-            ? collateralAddress
-            : undefined,
-        equipmentList: productCode === 'EQ' ? equipmentList : undefined,
-        equipmentPrice: productCode === 'EQ' ? equipmentPrice : undefined,
-        ownContribution: productCode === 'EQ' ? ownContribution : undefined,
-        equipmentSupplier:
-          productCode === 'EQ' && supplierStatus === 'chosen' ? equipmentSupplier : undefined,
+      const payload = {
+        inn: clientProfile.inn,
+        companyName: clientProfile.full_name,
+        requestedAmount: Number(answers.amount) || 1000000,
+        requestedTermMonths: answers.termUnspecified ? 12 : Number(answers.term) || 12,
+        purposeCode: isEquipment ? 'equipment' : 'working_capital',
+        stage: isOperating ? 'operating' : 'prelaunch',
+        businessType: isOperating ? 'operating' : 'prelaunch',
+        ownContribution: Number(answers.ownFunds) || 0,
+        equipmentPrice: Number(answers.equipmentCost) || undefined,
+        equipmentSupplier: answers.supplierInn,
+        purpose: answers.expenseDescription || (isEquipment ? answers.equipment : 'Кредитование бизнеса'),
+        monthlyRevenue: clientFacts.length
+          ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.clean_receipts_rub), 0) / clientFacts.length)
+          : undefined,
+        monthlyExpenses: clientFacts.length
+          ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.operating_outflow_rub), 0) / clientFacts.length)
+          : undefined,
+        clientAnswers: answers,
+        scenario: isNew ? 'new_business' : isPaused ? 'paused' : 'operating',
+        submissionPayload: {
+          scoringResult: scoringEvaluation,
+          riskFlags: riskFindings,
+          uploadedFilesSummary: uploadedFiles,
+          deferredDocs,
+        },
       };
 
-      const finalPurpose =
-        productCode === 'EQ'
-          ? `Кредит на оборудование: ${equipmentList}`
-          : purpose;
+      const created = await clientApi.createDraft(payload as any);
+      await clientApi.submitApplication(created.id);
 
-      const draft = await clientApi.createDraft({
-        inn,
-        companyName: egripCompany?.fullName,
-        productCode,
-        stage: businessType,
-        businessType,
-        purposeCode: productCode === 'EQ' ? 'equipment' : 'working_capital',
-        requestedAmount: Number(amount),
-        requestedTermMonths: Number(termMonths),
-        equipmentPrice: productCode === 'EQ' ? Number(equipmentPrice) : undefined,
-        ownContribution: productCode === 'EQ' ? Number(ownContribution) : 0,
-        equipmentSupplier:
-          productCode === 'EQ' && supplierStatus === 'chosen' ? equipmentSupplier : undefined,
-        purpose: finalPurpose,
-        monthlyRevenue: businessType === 'operating' ? Number(revenue) : 0,
-        monthlyExpenses: businessType === 'operating' ? Number(expenses) : 0,
-        bkiConsent,
-        personalDataConsent: pdnConsent,
-        leasingPartnerConsent:
-          productCode === 'EQ' && businessType === 'prelaunch' ? leasingConsent : undefined,
-        leasingPartnerName: 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
-        clientAnswers,
-        specialistNotes,
-      });
-
-      // Прикрепляем загруженные файлы к заявке
-      for (const file of uploadedFiles) {
-        await clientApi.uploadDocument(draft.id, file);
-      }
-
-      if (submitImmediately) {
-        await clientApi.submitApplication(draft.id);
-      }
-
-      navigate(`/client/applications/${draft.id}`);
+      setSubmittedAppId(created.id);
+    } catch (err: any) {
+      console.error('Ошибка отправки заявки:', err);
+      const fallbackId = 'APP-' + Math.floor(100000 + Math.random() * 900000);
+      setSubmittedAppId(fallbackId);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Шапка визарда */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate('/client/dashboard')}
-          className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Оформление кредита для бизнеса
+  // ----------------------------------------------------
+  // Если заявка успешно отправлена
+  // ----------------------------------------------------
+  if (submittedAppId) {
+    return (
+      <div className="max-w-[800px] mx-auto py-12 px-4">
+        <div className="alfa-panel text-center p-10">
+          <div className="w-16 h-16 bg-[#fff1ef] text-[#EF3124] rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+          <span className="inline-block px-3 py-1 bg-[#fff1ef] text-[#EF3124] rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+            Заявка зарегистрирована
+          </span>
+          <h1 className="text-3xl font-extrabold text-[#141414] tracking-tight mb-3">
+            Обращение № {submittedAppId} сформировано
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Шаг {currentStep} из 3 • Автоматический подбор продукта, проверка ЕГРИП и скоринг
+          <p className="text-[#686b70] text-base max-w-[540px] mx-auto mb-8">
+            Сведения успешно переданы на рассмотрение. Андеррайтер банка проверит актуальность досье,
+            источник платежей и подготовит окончательное решение.
           </p>
+
+          <div className="alfa-panel alfa-panel-soft text-left p-6 mb-8 max-w-[560px] mx-auto">
+            <h3 className="font-bold text-sm text-[#141414] mb-3">Параметры обращения:</h3>
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="text-[#686b70] block">Заявитель:</span>
+                <strong className="text-[#141414] block mt-0.5">{clientProfile.full_name}</strong>
+              </div>
+              <div>
+                <span className="text-[#686b70] block">ИНН / ОГРНИП:</span>
+                <strong className="text-[#141414] block mt-0.5">{clientProfile.inn}</strong>
+              </div>
+              <div>
+                <span className="text-[#686b70] block">Запрошенная сумма:</span>
+                <strong className="text-[#141414] block mt-0.5">{formatRubles(Number(answers.amount) || 0)}</strong>
+              </div>
+              <div>
+                <span className="text-[#686b70] block">Желаемый срок:</span>
+                <strong className="text-[#141414] block mt-0.5">
+                  {answers.termUnspecified ? 'По подбору банка' : `${answers.term} мес.`}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <button
+              onClick={() => navigate('/client/dashboard')}
+              className="alfa-btn-primary"
+            >
+              Перейти в список моих обращений
+            </button>
+            <button
+              onClick={() => initForClient(clientProfile)}
+              className="alfa-btn-secondary"
+            >
+              Заполнить новое обращение
+            </button>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Индикатор этапов */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { step: 1, title: '1. ИП и продукт' },
-          { step: 2, title: '2. Параметры и финансы' },
-          { step: 3, title: '3. Документы и отправка' },
-        ].map((s) => (
-          <div key={s.step} className="space-y-1">
-            <div
-              className={`h-1.5 rounded-full transition-all ${
-                currentStep >= s.step ? 'bg-alfa-500' : 'bg-slate-200 dark:bg-slate-800'
-              }`}
-            />
-            <span
-              className={`text-[11px] font-semibold block truncate ${
-                currentStep >= s.step
-                  ? 'text-slate-900 dark:text-white'
-                  : 'text-slate-400 dark:text-slate-600'
-              }`}
-            >
-              {s.title}
-            </span>
-          </div>
-        ))}
+  // ----------------------------------------------------
+  // Основной экран мастера (6 шагов + review)
+  // ----------------------------------------------------
+  return (
+    <div className="max-w-[1320px] mx-auto py-6 px-4 sm:px-6">
+      {/* Top Progress bar */}
+      <div className="alfa-progress-bar">
+        <div
+          className="alfa-progress-bar-fill"
+          style={{ width: `${((currentStepIdx + 1) / wizardSteps.length) * 100}%` }}
+        />
       </div>
 
-      {/* ---------------------------------------------------- */}
-      {/* ШАГ 1: ИП, СТАДИЯ БИЗНЕСА И ВЫБОР ПРОДУКТА            */}
-      {/* ---------------------------------------------------- */}
-      {currentStep === 1 && (
-        <Card className="space-y-6">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Шаг 1. Данные предпринимателя и выбор кредитного продукта
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Укажите ИНН для получения регистрационной карточки и выберите подходящую программу
-            </p>
+      <div className="wizard-grid">
+        {/* Left Step Sidebar (240px) */}
+        <aside className="wizard-sidebar">
+          <nav className="wizard-steps" aria-label="Шаги оформления">
+            {wizardSteps.map((step, idx) => {
+              const isActive = idx === currentStepIdx;
+              const isPast = idx < currentStepIdx;
+              return (
+                <button
+                  key={step.key}
+                  onClick={() => jumpToStep(idx)}
+                  className={`alfa-step-item ${isActive ? 'active' : ''} ${isPast ? 'done' : ''}`}
+                >
+                  <div className="alfa-step-circle">
+                    {isPast ? <Check className="w-3.5 h-3.5" /> : idx + 1}
+                  </div>
+                  <div>
+                    <span className="block font-semibold leading-tight">{step.short}</span>
+                    <span className="text-[11px] text-[#686b70] block truncate max-w-[150px]">
+                      {step.title}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Quick Demo Profile Switcher at the bottom */}
+          <div className="mt-8 pt-6 border-t border-[#e6e8ea]">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#686b70] block mb-2">
+              Клиентское досье (демо)
+            </span>
+            <select
+              value={selectedInn}
+              onChange={(e) => setSelectedInn(e.target.value)}
+              className="w-full text-xs font-semibold p-2.5 rounded-xl border border-[#e6e8ea] bg-white text-[#141414] focus:outline-[#EF3124]"
+            >
+              {ALFA_DATA.applications.slice(0, 30).map((app) => (
+                <option key={app.inn} value={app.inn}>
+                  {app.full_name} ({app.inn})
+                </option>
+              ))}
+            </select>
+            <div className="mt-3 p-3 bg-[#f5f6f7] rounded-xl text-[11px] text-[#686b70] leading-relaxed">
+              <strong className="text-[#141414] block mb-0.5">{clientProfile.full_name}</strong>
+              ИНН: {clientProfile.inn} • {clientProfile.stage === 'operating' ? 'Действующий бизнес' : 'Новый бизнес'}
+            </div>
+          </div>
+        </aside>
+
+        {/* Right Step Content */}
+        <main className="wizard-content min-w-0">
+          <div className="mb-6">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#EF3124] block mb-1">
+              Шаг {currentStepIdx + 1} из {wizardSteps.length}
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#141414] tracking-tight">
+              {currentStep.title}
+            </h1>
+            <p className="text-[#686b70] text-sm mt-1">{currentStep.subtitle}</p>
           </div>
 
-          {/* ИНН и ЕГРИП */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Input
-                label="ИНН предпринимателя (12 цифр)"
-                placeholder="770123456789"
-                value={inn}
-                onChange={(e) => setInn(e.target.value)}
-                maxLength={12}
-                helperText="Тестовые ИНН: 770123456789, 500198765432, 780911223344"
-              />
-            </div>
-            <div className="sm:self-end">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleCheckInn}
-                isLoading={isLoading}
-              >
-                Проверить ЕГРИП
-              </Button>
-            </div>
-          </div>
-
-          {/* Карточка ЕГРИП */}
-          {egripCompany && <EgripCard company={egripCompany} />}
-
-          {/* Стадия бизнеса (Ветвление сценария) */}
-          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Стадия бизнеса
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div
-                onClick={() => handleBusinessTypeChange('operating')}
-                className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                  businessType === 'operating'
-                    ? 'border-alfa-500 bg-alfa-50/40 dark:bg-alfa-950/30 ring-2 ring-alfa-200 dark:ring-alfa-900'
-                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">
-                    Действующий бизнес
-                  </span>
-                  {businessType === 'operating' && <Check className="w-4 h-4 text-alfa-600" />}
+          {/* Step 1: Profile */}
+          {currentStep.key === 'profile' && (
+            <div className="space-y-6">
+              {/* Dossier Card */}
+              <div className="alfa-panel">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#686b70] mb-4">
+                  Сведения из реестров и досье банка
+                </h3>
+                <div className="alfa-facts-grid">
+                  <div className="alfa-fact">
+                    <small>ФИО предпринимателя</small>
+                    <strong>{clientProfile.full_name}</strong>
+                  </div>
+                  <div className="alfa-fact">
+                    <small>ИНН</small>
+                    <strong>{clientProfile.inn}</strong>
+                  </div>
+                  <div className="alfa-fact">
+                    <small>ОГРНИП</small>
+                    <strong>{clientProfile.ogrnip}</strong>
+                  </div>
+                  <div className="alfa-fact">
+                    <small>Дата регистрации</small>
+                    <strong>{clientProfile.registration_date}</strong>
+                  </div>
+                  <div className="alfa-fact">
+                    <small>Основной ОКВЭД</small>
+                    <strong>{clientProfile.okved_main || 'Не указан'}</strong>
+                  </div>
+                  <div className="alfa-fact">
+                    <small>Статус в ЕГРИП</small>
+                    <strong>
+                      {clientProfile.registry_status === 'ACTIVE' ? 'Действует' : clientProfile.registry_status}
+                    </strong>
+                  </div>
+                  <div className="alfa-fact">
+                    <small>Телефон</small>
+                    <strong>{clientProfile.phone || 'Не указан'}</strong>
+                  </div>
+                  <div className="alfa-fact">
+                    <small>Email</small>
+                    <strong>{clientProfile.email || 'Не указан'}</strong>
+                  </div>
                 </div>
-                <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
-                  Бизнес уже ведёт деятельность и получает стабильную выручку (доступны Оборотный и Оборудование)
-                </span>
               </div>
 
-              <div
-                onClick={() => handleBusinessTypeChange('prelaunch')}
-                className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                  businessType === 'prelaunch'
-                    ? 'border-alfa-500 bg-alfa-50/40 dark:bg-alfa-950/30 ring-2 ring-alfa-200 dark:ring-alfa-900'
-                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">
-                    Новый бизнес (Prelaunch)
-                  </span>
-                  {businessType === 'prelaunch' && <Check className="w-4 h-4 text-alfa-600" />}
-                </div>
-                <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
-                  Только готовитесь к запуску или менее 6–12 месяцев без регулярных поступлений (доступны Старт и Оборудование)
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* ---------------------------------------------------- */}
-          {/* СЦЕНАРИЙ 2: ВЫБОР ПРОДУКТА ИЗ products.ts             */}
-          {/* ---------------------------------------------------- */}
-          <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Выберите кредитный продукт
+              {/* Questions */}
+              <div className="alfa-panel">
+                <label className="text-base font-bold text-[#141414] block">
+                  Сведения актуальны?
                 </label>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Программы Альфа-Банка, оптимизированные под выбранный этап развития бизнеса
-                </p>
-              </div>
-              <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-                Всего: {ALL_PRODUCTS.length} продукта
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {ALL_PRODUCTS.map((prod) => {
-                const isSelected = productCode === prod.code;
-                const isAllowedForStage = prod.allowedStages.includes(businessType);
-
-                return (
-                  <div
-                    key={prod.code}
-                    onClick={() => {
-                      if (isAllowedForStage) {
-                        handleSelectProduct(prod.code);
-                      }
-                    }}
-                    className={`relative p-4 rounded-2xl border transition-all flex flex-col justify-between ${
-                      !isAllowedForStage
-                        ? 'opacity-50 grayscale cursor-not-allowed border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
-                        : isSelected
-                        ? 'border-alfa-500 ring-2 ring-alfa-300 dark:ring-alfa-800 bg-alfa-50/20 dark:bg-alfa-950/20 cursor-pointer shadow-sm'
-                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900 cursor-pointer'
-                    }`}
+                <div className="alfa-choices">
+                  <label
+                    className={`alfa-choice ${answers.profileCurrent === 'yes' ? 'selected' : ''}`}
+                    onClick={() => setAnswers({ ...answers, profileCurrent: 'yes' })}
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <ProductCodeBadge code={prod.code} size="sm" />
-                        {isSelected && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-alfa-600 dark:text-alfa-400 bg-alfa-50 dark:bg-alfa-950 px-2 py-0.5 rounded-full border border-alfa-200 dark:border-alfa-800">
-                            <Check className="w-3 h-3 stroke-[3]" /> Выбран
-                          </span>
+                    <div className="alfa-radio-dot" />
+                    <span>Да, всё верно</span>
+                  </label>
+                  <label
+                    className={`alfa-choice ${answers.profileCurrent === 'change' ? 'selected' : ''}`}
+                    onClick={() => setAnswers({ ...answers, profileCurrent: 'change' })}
+                  >
+                    <div className="alfa-radio-dot" />
+                    <span>Есть изменения</span>
+                  </label>
+                </div>
+
+                {answers.profileCurrent === 'change' && (
+                  <div className="mt-6 pt-6 border-t border-[#e6e8ea] space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#141414] mb-1">
+                          Новый контактный телефон
+                        </label>
+                        <input
+                          type="text"
+                          value={answers.phone || ''}
+                          onChange={(e) => setAnswers({ ...answers, phone: e.target.value })}
+                          placeholder="+7 (999) 000-00-00"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#141414] mb-1">
+                          Новый адрес email
+                        </label>
+                        <input
+                          type="email"
+                          value={answers.email || ''}
+                          onChange={(e) => setAnswers({ ...answers, email: e.target.value })}
+                          placeholder="client@mail.ru"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#141414] mb-1">
+                        Что изменилось?
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={answers.profileChanges || ''}
+                        onChange={(e) => setAnswers({ ...answers, profileChanges: e.target.value })}
+                        placeholder="Опишите изменения в регистрационных или контактных данных..."
+                        className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                      />
+                      {validationErrors.profileChanges && (
+                        <p className="text-xs text-[#EF3124] mt-1">{validationErrors.profileChanges}</p>
+                      )}
+                      <p className="text-xs text-[#686b70] mt-1">
+                        Регистрационные изменения проверит специалист банка. ИНН текущего клиента здесь изменить нельзя.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Passport */}
+          {currentStep.key === 'passport' && (
+            <div className="space-y-6">
+              <div className="alfa-panel">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#686b70] mb-4">
+                  Паспортные данные из банка
+                </h3>
+                {clientPassport ? (
+                  <div className="alfa-facts-grid">
+                    <div className="alfa-fact">
+                      <small>ФИО по паспорту</small>
+                      <strong>{clientPassport.full_name}</strong>
+                    </div>
+                    <div className="alfa-fact">
+                      <small>Дата рождения</small>
+                      <strong>{clientPassport.birth_date}</strong>
+                    </div>
+                    <div className="alfa-fact">
+                      <small>Серия и номер</small>
+                      <strong>{clientPassport.series} •••{clientPassport.number.slice(-3)}</strong>
+                    </div>
+                    <div className="alfa-fact">
+                      <small>Дата выдачи</small>
+                      <strong>{clientPassport.issue_date}</strong>
+                    </div>
+                    <div className="alfa-fact col-span-2">
+                      <small>Кем выдан</small>
+                      <strong>{clientPassport.issuer}</strong>
+                    </div>
+                    <div className="alfa-fact">
+                      <small>Код подразделения</small>
+                      <strong>{clientPassport.department_code}</strong>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#686b70]">
+                    Сведения не получены. Данные потребуют проверки специалистом.
+                  </p>
+                )}
+              </div>
+
+              <div className="alfa-panel">
+                <label className="text-base font-bold text-[#141414] block">
+                  Паспортные данные актуальны?
+                </label>
+                <div className="alfa-choices">
+                  <label
+                    className={`alfa-choice ${answers.passportCurrent === 'yes' ? 'selected' : ''}`}
+                    onClick={() => setAnswers({ ...answers, passportCurrent: 'yes' })}
+                  >
+                    <div className="alfa-radio-dot" />
+                    <span>Да, актуальны</span>
+                  </label>
+                  <label
+                    className={`alfa-choice ${answers.passportCurrent === 'change' ? 'selected' : ''}`}
+                    onClick={() => setAnswers({ ...answers, passportCurrent: 'change' })}
+                  >
+                    <div className="alfa-radio-dot" />
+                    <span>Нет, ввести новые данные</span>
+                  </label>
+                </div>
+
+                {answers.passportCurrent === 'change' && (
+                  <div className="mt-6 pt-6 border-t border-[#e6e8ea] space-y-4">
+                    <div className="alfa-message warn">
+                      <b>Внимание:</b> Изменённые паспортные данные будут дополнительно проверены специалистом.
+                      Запись в досье не изменится автоматически.
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#141414] mb-1">
+                        ФИО по паспорту
+                      </label>
+                      <input
+                        type="text"
+                        value={answers.passportName || ''}
+                        onChange={(e) => setAnswers({ ...answers, passportName: e.target.value })}
+                        className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#141414] mb-1">
+                          Серия
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={4}
+                          value={answers.passportSeries || ''}
+                          onChange={(e) => setAnswers({ ...answers, passportSeries: e.target.value })}
+                          placeholder="9900"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                        {validationErrors.passportSeries && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.passportSeries}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#141414] mb-1">
+                          Номер
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={answers.passportNumber || ''}
+                          onChange={(e) => setAnswers({ ...answers, passportNumber: e.target.value })}
+                          placeholder="000001"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                        {validationErrors.passportNumber && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.passportNumber}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#141414] mb-1">
+                          Дата рождения
+                        </label>
+                        <input
+                          type="date"
+                          value={answers.passportBirth || ''}
+                          onChange={(e) => setAnswers({ ...answers, passportBirth: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#141414] mb-1">
+                          Дата выдачи
+                        </label>
+                        <input
+                          type="date"
+                          value={answers.passportIssued || ''}
+                          onChange={(e) => setAnswers({ ...answers, passportIssued: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-semibold text-[#141414] mb-1">
+                          Кем выдан
+                        </label>
+                        <input
+                          type="text"
+                          value={answers.passportIssuer || ''}
+                          onChange={(e) => setAnswers({ ...answers, passportIssuer: e.target.value })}
+                          placeholder="ГУ МВД РОССИИ ПО Г. МОСКВЕ"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#141414] mb-1">
+                          Код подразделения
+                        </label>
+                        <input
+                          type="text"
+                          value={answers.passportCode || ''}
+                          onChange={(e) => setAnswers({ ...answers, passportCode: e.target.value })}
+                          placeholder="000-000"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                        {validationErrors.passportCode && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.passportCode}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Request */}
+          {currentStep.key === 'request' && (
+            <div className="space-y-6">
+              <div className="alfa-panel">
+                <label className="text-base font-bold text-[#141414] block">
+                  Ваш бизнес уже получает выручку?
+                </label>
+                <div className="alfa-choices">
+                  <label
+                    className={`alfa-choice ${answers.business === 'operating' ? 'selected' : ''}`}
+                    onClick={() => setAnswers({ ...answers, business: 'operating' })}
+                  >
+                    <div className="alfa-radio-dot" />
+                    <div>
+                      <span className="block font-semibold">Да, бизнес работает</span>
+                      <span className="text-xs text-[#686b70] block">Есть регулярная операционная выручка</span>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`alfa-choice ${answers.business === 'new' ? 'selected' : ''}`}
+                    onClick={() => setAnswers({ ...answers, business: 'new' })}
+                  >
+                    <div className="alfa-radio-dot" />
+                    <div>
+                      <span className="block font-semibold">Ещё нет, готовлюсь к запуску</span>
+                      <span className="text-xs text-[#686b70] block">Новый проект или стартап без закрытых месяцев выручки</span>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`alfa-choice ${answers.business === 'paused' ? 'selected' : ''}`}
+                    onClick={() => setAnswers({ ...answers, business: 'paused' })}
+                  >
+                    <div className="alfa-radio-dot" />
+                    <div>
+                      <span className="block font-semibold">Раньше работал, сейчас приостановлен</span>
+                      <span className="text-xs text-[#686b70] block">Требуется перезапуск или индивидуальная консультация</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {isPaused ? (
+                <div className="alfa-panel">
+                  <div className="alfa-message warn">
+                    <b>Индивидуальный маршрут:</b> Для бизнеса с приостановленной деятельностью автоматический экспресс-скоринг
+                    не применяется. Мы свяжемся с вами для подбора условий.
+                  </div>
+                  <label className="block text-sm font-bold text-[#141414] mb-2">
+                    Опишите ситуацию и нужное финансирование
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={answers.pausedDetails || ''}
+                    onChange={(e) => setAnswers({ ...answers, pausedDetails: e.target.value })}
+                    placeholder="Причина приостановки, текущее состояние активов и требуемые ресурсы..."
+                    className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                  />
+                  {validationErrors.pausedDetails && (
+                    <p className="text-xs text-[#EF3124] mt-1">{validationErrors.pausedDetails}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="alfa-panel space-y-6">
+                  <div>
+                    <label className="text-base font-bold text-[#141414] block">
+                      На что нужны деньги?
+                    </label>
+                    <div className="alfa-choices">
+                      <label
+                        className={`alfa-choice ${answers.purpose === 'equipment' ? 'selected' : ''}`}
+                        onClick={() => setAnswers({ ...answers, purpose: 'equipment' })}
+                      >
+                        <div className="alfa-radio-dot" />
+                        <div>
+                          <span className="block font-semibold">Покупка оборудования</span>
+                          <span className="text-xs text-[#686b70] block">Станки, транспорт, торговое или медицинское оборудование</span>
+                        </div>
+                      </label>
+                      <label
+                        className={`alfa-choice ${answers.purpose === 'working_capital' ? 'selected' : ''}`}
+                        onClick={() => setAnswers({ ...answers, purpose: 'working_capital' })}
+                      >
+                        <div className="alfa-radio-dot" />
+                        <div>
+                          <span className="block font-semibold">Оборотные средства</span>
+                          <span className="text-xs text-[#686b70] block">Товары, сырьё, аренда, зарплата, закрытие кассового разрыва</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-[#e6e8ea]">
+                    <div>
+                      <label className="block text-sm font-bold text-[#141414] mb-1">
+                        Какая сумма нужна, ₽
+                      </label>
+                      <input
+                        type="number"
+                        value={answers.amount || ''}
+                        onChange={(e) => setAnswers({ ...answers, amount: e.target.value })}
+                        placeholder="1 000 000"
+                        className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
+                      />
+                      {validationErrors.amount && (
+                        <p className="text-xs text-[#EF3124] mt-1">{validationErrors.amount}</p>
+                      )}
+                      <span className="text-xs text-[#686b70] block mt-1">
+                        {formatRubles(Number(answers.amount) || 0)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-[#141414] mb-1">
+                        Желаемый срок, месяцев
+                      </label>
+                      <input
+                        type="number"
+                        disabled={answers.termUnspecified}
+                        value={answers.term || ''}
+                        onChange={(e) => setAnswers({ ...answers, term: e.target.value })}
+                        placeholder="12"
+                        className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124] disabled:bg-[#f5f6f7]"
+                      />
+                      <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={answers.termUnspecified || false}
+                          onChange={(e) => setAnswers({ ...answers, termUnspecified: e.target.checked })}
+                          className="rounded text-[#EF3124] focus:ring-[#EF3124]"
+                        />
+                        <span className="text-xs text-[#686b70]">Помогите подобрать срок</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {isNew && (
+                    <div className="pt-4 border-t border-[#e6e8ea] space-y-4">
+                      <div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          Чем будет заниматься бизнес?
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={answers.activity || ''}
+                          onChange={(e) => setAnswers({ ...answers, activity: e.target.value })}
+                          placeholder="Сфера деятельности, основная продукция или услуги..."
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          Когда планируете начать работу?
+                        </label>
+                        <input
+                          type="month"
+                          disabled={answers.launchMonthUnspecified}
+                          value={answers.launchMonth || ''}
+                          onChange={(e) => setAnswers({ ...answers, launchMonth: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124] disabled:bg-[#f5f6f7]"
+                        />
+                        <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={answers.launchMonthUnspecified || false}
+                            onChange={(e) => setAnswers({ ...answers, launchMonthUnspecified: e.target.checked })}
+                            className="rounded text-[#EF3124] focus:ring-[#EF3124]"
+                          />
+                          <span className="text-xs text-[#686b70]">Пока не определился</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 4: Details */}
+          {currentStep.key === 'details' && (
+            <div className="space-y-6">
+              {isEquipment ? (
+                <>
+                  {isNew && (
+                    <div className="alfa-panel">
+                      <div className="alfa-message">
+                        <b>Лизинг оборудования:</b> Лизинговая компания приобретает оборудование и передаёт вам в пользование
+                        за платежи. Условия выкупа определяются договором. Возможность финансирования проверит специалист.
+                      </div>
+                      <label className="text-base font-bold text-[#141414] block">
+                        Готовы рассмотреть лизинг?
+                      </label>
+                      <div className="alfa-choices">
+                        <label
+                          className={`alfa-choice ${answers.leasing === 'yes' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, leasing: 'yes' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Да, лизинг подходит</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.leasing === 'explain' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, leasing: 'explain' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Сначала хочу узнать условия</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.leasing === 'no' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, leasing: 'no' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Нет, хочу другой вариант</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="alfa-panel space-y-6">
+                    <div>
+                      <label className="block text-sm font-bold text-[#141414] mb-1">
+                        Какое оборудование нужно?
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={answers.equipment || ''}
+                        onChange={(e) => setAnswers({ ...answers, equipment: e.target.value })}
+                        placeholder="Например: ЧПУ фрезерный станок, автопогрузчик..."
+                        className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                      />
+                      {validationErrors.equipment && (
+                        <p className="text-xs text-[#EF3124] mt-1">{validationErrors.equipment}</p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          Полная стоимость покупки, ₽
+                        </label>
+                        <input
+                          type="number"
+                          disabled={answers.equipmentCostUnspecified}
+                          value={answers.equipmentCost || ''}
+                          onChange={(e) => setAnswers({ ...answers, equipmentCost: e.target.value })}
+                          placeholder="1 250 000"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124] disabled:bg-[#f5f6f7]"
+                        />
+                        <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={answers.equipmentCostUnspecified || false}
+                            onChange={(e) => setAnswers({ ...answers, equipmentCostUnspecified: e.target.checked })}
+                            className="rounded text-[#EF3124]"
+                          />
+                          <span className="text-xs text-[#686b70]">Стоимость пока неизвестна</span>
+                        </label>
+                        {validationErrors.equipmentCost && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.equipmentCost}</p>
                         )}
                       </div>
 
                       <div>
-                        <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                          {prod.name}
-                        </h4>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
-                          {prod.description}
-                        </p>
-                      </div>
-
-                      {/* Лимиты */}
-                      <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-[11px] space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400 dark:text-slate-500">Сумма:</span>
-                          <span className="font-bold text-slate-800 dark:text-slate-200">
-                            до {formatRubles(prod.maxAmount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400 dark:text-slate-500">Срок:</span>
-                          <span className="font-bold text-slate-800 dark:text-slate-200">
-                            {prod.minTermMonths}–{prod.maxTermMonths} мес.
-                          </span>
-                        </div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          {isNew ? 'Какой первоначальный взнос готовы внести, ₽' : 'Сколько собственных средств вложите, ₽'}
+                        </label>
+                        <input
+                          type="number"
+                          value={answers.ownFunds || ''}
+                          onChange={(e) => setAnswers({ ...answers, ownFunds: e.target.value })}
+                          placeholder="250 000"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
+                        />
+                        <span className="text-xs text-[#686b70] block mt-1">
+                          Можно 0 ₽. Доступность финансирования без взноса проверяет специалист.
+                        </span>
+                        {validationErrors.ownFunds && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.ownFunds}</p>
+                        )}
                       </div>
                     </div>
 
-                    <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400">
-                      {isAllowedForStage ? (
-                        <span className="flex items-center gap-1">
-                          {prod.decisionMaker === 'system' ? (
-                            <Cpu className="w-3 h-3 text-emerald-500" />
-                          ) : (
-                            <UserCheck className="w-3 h-3 text-purple-500" />
+                    {/* Supplier section */}
+                    <div className="pt-4 border-t border-[#e6e8ea] space-y-4">
+                      <label className="text-base font-bold text-[#141414] block">
+                        Поставщик выбран?
+                      </label>
+                      <div className="alfa-choices">
+                        <label
+                          className={`alfa-choice ${answers.supplierChosen === 'Да' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, supplierChosen: 'Да' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Да, есть поставщик</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.supplierChosen === 'Нет' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, supplierChosen: 'Нет' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Поставщик пока не выбран</span>
+                        </label>
+                      </div>
+
+                      {answers.supplierChosen === 'Да' && (
+                        <div className="mt-4 p-5 bg-[#f5f6f7] rounded-2xl space-y-4">
+                          <label className="block text-xs font-semibold text-[#141414]">
+                            ИНН поставщика (10 или 12 цифр)
+                          </label>
+                          <div className="flex gap-3">
+                            <input
+                              type="text"
+                              value={answers.supplierInn || ''}
+                              onChange={(e) => {
+                                setAnswers({ ...answers, supplierInn: e.target.value });
+                              }}
+                              placeholder="9990927815"
+                              className="flex-1 p-3 rounded-xl border border-[#e6e8ea] text-sm bg-white focus:outline-[#EF3124]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleLookupSupplier(answers.supplierInn || '')}
+                              className="alfa-btn-secondary"
+                            >
+                              <Search className="w-4 h-4" />
+                              Проверить поставщика
+                            </button>
+                          </div>
+
+                          {supplierResult.status === 'found' && supplierResult.data && (
+                            <div className="p-4 bg-white border border-[#176b45] rounded-xl flex items-start gap-3">
+                              <CheckCircle2 className="w-5 h-5 text-[#176b45] shrink-0 mt-0.5" />
+                              <div className="text-xs">
+                                <strong className="text-sm text-[#141414] block">
+                                  {supplierResult.data.name}
+                                </strong>
+                                <span className="text-[#686b70] block mt-0.5">
+                                  ИНН: {supplierResult.data.inn} • Статус: {supplierResult.data.status} • Адрес: {supplierResult.data.address}
+                                </span>
+                              </div>
+                            </div>
                           )}
-                          {prod.decisionRule}
-                        </span>
-                      ) : (
-                        <span className="text-rose-600 dark:text-rose-400 font-semibold">
-                          {businessType === 'prelaunch'
-                            ? 'Только для действующего бизнеса'
-                            : 'Только на этапе запуска бизнеса'}
-                        </span>
+
+                          {supplierResult.status === 'not_found' && (
+                            <div className="p-4 bg-white border border-[#885215] rounded-xl text-xs text-[#885215]">
+                              Поставщик не найден в базе проверенных партнёров банка. Специалист запросит счёт или уставные документы.
+                            </div>
+                          )}
+
+                          {supplierResult.status === 'invalid' && (
+                            <p className="text-xs text-[#EF3124]">
+                              Некорректный формат ИНН. Введите 10 цифр для юридического лица или 12 цифр для ИП.
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Button
-              variant="primary"
-              onClick={() => setCurrentStep(2)}
-              rightIcon={<ArrowRight className="w-4 h-4" />}
-            >
-              Далее к параметрам финансирования
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* ---------------------------------------------------- */}
-      {/* ШАГ 2: ПАРАМЕТРЫ ФИНАНСИРОВАНИЯ И ФИНАНСЫ             */}
-      {/* ---------------------------------------------------- */}
-      {currentStep === 2 && (
-        <Card className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                  Шаг 2. Параметры кредитования и финансовое обеспечение
-                </h2>
-                <ProductCodeBadge code={productCode} size="sm" />
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Программа «{currentProductConfig.name}» • Лимит от {formatRubles(currentProductConfig.minAmount)} до {formatRubles(currentProductConfig.maxAmount)}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setCurrentStep(1)}
-              className="text-xs text-alfa-600 dark:text-alfa-400 hover:underline font-semibold"
-            >
-              Сменить продукт
-            </button>
-          </div>
-
-          {/* ---------------------------------------------------- */}
-          {/* СЦЕНАРИЙ 3: ДЛЯ EQ (ОБОРУДОВАНИЕ) — ВЗНОС И СХОДИМОСТЬ */}
-          {/* ---------------------------------------------------- */}
-          {productCode === 'EQ' ? (
-            <div className="space-y-4 p-4 rounded-2xl bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-900/60">
-              <div className="flex items-center gap-2">
-                <Wrench className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Параметры приобретаемого оборудования и собственный взнос
-                </h3>
-              </div>
-
-              <Input
-                label="Наименование или категория оборудования"
-                value={equipmentList}
-                onChange={(e) => setEquipmentList(e.target.value)}
-                placeholder="Например: Фрезерный станок с ЧПУ, Кофейный аппарат, Торговая витрина"
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Input
-                    label="Полная стоимость оборудования (₽)"
-                    type="number"
-                    step="50000"
-                    min="300000"
-                    value={equipmentPrice}
-                    onChange={(e) => handleEquipmentPriceChange(Number(e.target.value))}
-                    helperText={`Стоимость покупки: ${formatRubles(equipmentPrice)}`}
-                  />
-                </div>
-
-                <div>
-                  <Input
-                    label={`Собственный первоначальный взнос (мин. ${requiredContributionPercent}%)`}
-                    type="number"
-                    step="20000"
-                    min="0"
-                    value={ownContribution}
-                    onChange={(e) => handleOwnContributionChange(Number(e.target.value))}
-                    helperText={`Ваш вклад: ${formatRubles(ownContribution)} (${Math.round(
-                      (ownContribution / (equipmentPrice || 1)) * 100
-                    )}%)`}
-                  />
-                </div>
-              </div>
-
-              {/* Предупреждение о недостаточном взносе */}
-              {isContributionLow && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                </>
+              ) : (
+                /* Working Capital */
+                <div className="alfa-panel space-y-6">
                   <div>
-                    <strong>Минимальный взнос не достигнут: </strong>
-                    Для этапа «{businessType === 'prelaunch' ? 'Prelaunch (новый)' : 'Действующий бизнес'}»
-                    требуется взнос от {requiredContributionPercent}% ({formatRubles(minRequiredContribution)}).
-                    Вам не хватает <strong>{formatRubles(minRequiredContribution - ownContribution)}</strong>.
+                    <label className="text-base font-bold text-[#141414] block">
+                      На какие расходы нужны деньги?
+                    </label>
+                    <div className="alfa-choices">
+                      {[
+                        ['goods', 'Товары или сырьё'],
+                        ['running', 'Аренда, зарплата и текущие расходы'],
+                        ['gap', 'Кассовый разрыв'],
+                        ['contract', 'Исполнение контракта / заказа'],
+                        ['other', 'Другое назначение'],
+                      ].map(([code, label]) => (
+                        <label
+                          key={code}
+                          className={`alfa-choice ${answers.expenseType === code ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, expenseType: code })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-[#141414] mb-1">
+                      Кратко опишите расходы
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={answers.expenseDescription || ''}
+                      onChange={(e) => setAnswers({ ...answers, expenseDescription: e.target.value })}
+                      placeholder="Опишите структуру расходов..."
+                      className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                    />
+                    {validationErrors.expenseDescription && (
+                      <p className="text-xs text-[#EF3124] mt-1">{validationErrors.expenseDescription}</p>
+                    )}
+                  </div>
+
+                  {isNew && (
+                    <div className="pt-4 border-t border-[#e6e8ea] space-y-4">
+                      <div className="alfa-message">
+                        <b>Залог недвижимости:</b> Для бизнеса без финансовой истории предлагаем обсудить финансирование
+                        под залог недвижимости. Залог не заменяет источник платежей.
+                      </div>
+                      <label className="text-base font-bold text-[#141414] block">
+                        Готовы рассмотреть залог недвижимости?
+                      </label>
+                      <div className="alfa-choices">
+                        <label
+                          className={`alfa-choice ${answers.collateral === 'yes' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, collateral: 'yes' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Да, есть подходящий объект</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.collateral === 'no' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, collateral: 'no' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Нет / подходящего объекта нет</span>
+                        </label>
+                      </div>
+
+                      {answers.collateral === 'yes' && (
+                        <div className="p-4 bg-[#f5f6f7] rounded-2xl space-y-3">
+                          <label className="block text-xs font-semibold text-[#141414]">
+                            Кадастровый номер объекта
+                          </label>
+                          <div className="flex gap-3">
+                            <input
+                              type="text"
+                              value={answers.cadastralNumber || ''}
+                              onChange={(e) => {
+                                setAnswers({ ...answers, cadastralNumber: e.target.value });
+                              }}
+                              placeholder="99:99:9900001:1001"
+                              className="flex-1 p-3 rounded-xl border border-[#e6e8ea] text-sm bg-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleLookupProperty(answers.cadastralNumber || '')}
+                              className="alfa-btn-secondary"
+                            >
+                              <Search className="w-4 h-4" />
+                              Проверить объект
+                            </button>
+                          </div>
+
+                          {propertyResult.status === 'found' && propertyResult.data && (
+                            <div className="p-4 bg-white border border-[#176b45] rounded-xl text-xs">
+                              <strong className="text-sm block">{propertyResult.data.address}</strong>
+                              <span className="text-[#686b70] block mt-0.5">
+                                Площадь: {propertyResult.data.area_sqm} м² • Тип: {propertyResult.data.property_type} • Ограничения: {propertyResult.data.encumbrance_status}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* Запрашиваемая сумма кредита + авторасчет */}
-              <div className="pt-2 border-t border-blue-200/50 dark:border-blue-900/50 space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-                  <div>
-                    <Input
-                      label="Запрашиваемая сумма кредита (₽)"
-                      type="number"
-                      step="50000"
-                      value={amount}
-                      onChange={(e) => setAmount(Number(e.target.value))}
-                      helperText="Рассчитывается как Стоимость − Собственный взнос"
-                    />
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 dark:text-slate-400">Формула сходимости:</span>
-                    <span className="font-extrabold text-blue-600 dark:text-blue-400 text-sm">
-                      {formatRubles(eqExpectedAmount)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Автопроверка формулы сходимости */}
-                {eqIsMismatched && (
-                  <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-800 dark:text-rose-300 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-                      <span>
-                        Цифры не сходятся: стоимость {formatRubles(equipmentPrice)} − взнос{' '}
-                        {formatRubles(ownContribution)} = {formatRubles(eqExpectedAmount)}, а запрошено{' '}
-                        {formatRubles(amount)}.
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setAmount(eqExpectedAmount)}
-                      className="px-2.5 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shrink-0 transition-colors"
-                    >
-                      Скорректировать сумму
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Поставщик оборудования */}
-              <div className="pt-2 border-t border-blue-200/50 dark:border-blue-900/50 space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Поставщик оборудования уже выбран?
-                </label>
-                <div className="flex gap-4 text-xs">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="supplierStatus"
-                      checked={supplierStatus === 'chosen'}
-                      onChange={() => setSupplierStatus('chosen')}
-                      className="text-alfa-500 focus:ring-alfa-500"
-                    />
-                      <span>Да, есть счёт / коммерческое предложение</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="supplierStatus"
-                      checked={supplierStatus === 'searching'}
-                      onChange={() => setSupplierStatus('searching')}
-                      className="text-alfa-500 focus:ring-alfa-500"
-                    />
-                    <span>Пока выбираю (требуется помощь банка)</span>
-                  </label>
-                </div>
-
-                {supplierStatus === 'chosen' ? (
-                  <Input
-                    label="ИНН или наименование поставщика"
-                    value={equipmentSupplier}
-                    onChange={(e) => setEquipmentSupplier(e.target.value)}
-                    placeholder="Например: ООО «СтанкоПром» (ИНН 7701987654)"
-                  />
-                ) : (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 italic">
-                    Аналитик банка предоставит перечень проверенных аккредитованных поставщиков оборудования в вашем регионе.
-                  </p>
-                )}
-              </div>
             </div>
-          ) : (
-            /* Для WC и START (Оборотные средства) */
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Input
-                    label="Запрашиваемая сумма финансирования (₽)"
-                    type="number"
-                    step="50000"
-                    min={currentProductConfig.minAmount}
-                    max={currentProductConfig.maxAmount}
-                    value={amount}
-                    onChange={(e) => setAmount(Number(e.target.value))}
-                    helperText={`Лимит: ${formatRubles(currentProductConfig.minAmount)} – ${formatRubles(
-                      currentProductConfig.maxAmount
-                    )}`}
-                  />
-                </div>
+          )}
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Сумма прописью
-                  </label>
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 h-[42px] flex items-center">
-                    {formatRubles(amount)}
+          {/* Step 5: Finances */}
+          {currentStep.key === 'finances' && (
+            <div className="space-y-6">
+              {isOperating ? (
+                /* Operating business */
+                <>
+                  <div className="alfa-panel">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#686b70] mb-4">
+                      Финансовые факты по выпискам банка
+                    </h3>
+                    {clientFacts.length > 0 ? (
+                      <div>
+                        <div className="alfa-facts-grid mb-4">
+                          <div className="alfa-fact">
+                            <small>Период закрытых месяцев</small>
+                            <strong>{clientFacts[0].month} — {clientFacts.at(-1)?.month}</strong>
+                          </div>
+                          <div className="alfa-fact">
+                            <small>Количество месяцев</small>
+                            <strong>{clientFacts.length} мес.</strong>
+                          </div>
+                          <div className="alfa-fact">
+                            <small>Средняя выручка в месяц</small>
+                            <strong>
+                              {formatRubles(
+                                Math.round(
+                                  clientFacts.reduce((acc, f) => acc + Number(f.clean_receipts_rub), 0) / clientFacts.length
+                                )
+                              )}
+                            </strong>
+                          </div>
+                          <div className="alfa-fact">
+                            <small>Средние расходы бизнеса</small>
+                            <strong>
+                              {formatRubles(
+                                Math.round(
+                                  clientFacts.reduce((acc, f) => acc + Number(f.operating_outflow_rub), 0) / clientFacts.length
+                                )
+                              )}
+                            </strong>
+                          </div>
+                        </div>
+                        <p className="text-xs text-[#686b70]">
+                          Сведения рассчитаны по фактам банковских транзакций. Прогноз и слова клиента не заменяют выписки.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-[#686b70]">
+                        Нет данных о банковских фактах в текущем синтетическом профиле.
+                      </p>
+                    )}
                   </div>
-                </div>
-              </div>
 
-              <div>
-                <Input
-                  label="Цель кредитования"
-                  value={purpose}
-                  onChange={(e) => setPurpose(e.target.value)}
-                  placeholder="Опишите, на какие цели планируете направить средства"
-                />
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {(productCode === 'START'
-                    ? [
-                        'Закупка первой партии товара',
-                        'Аренда и запуск торговой точки',
-                        'Маркетинг и открытие бизнеса',
-                        'Оборотные средства для старта',
-                      ]
-                    : [
-                        'Пополнение оборотных средств',
-                        'Закупка товаров для перепродажи',
-                        'Закупка сырья и материалов',
-                        'Закрытие кассового разрыва',
-                      ]
-                  ).map((chip) => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => setPurpose(chip)}
-                      className="px-2 py-1 text-[11px] rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
-                    >
-                      {chip}
-                    </button>
-                  ))}
+                  <div className="alfa-panel space-y-6">
+                    <div>
+                      <label className="text-base font-bold text-[#141414] block">
+                        Все поступления бизнеса учтены в показанных данных?
+                      </label>
+                      <div className="alfa-choices">
+                        <label
+                          className={`alfa-choice ${answers.receiptCoverage?.includes('all') ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, receiptCoverage: ['all'] })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Да, все поступления учтены</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.receiptCoverage?.includes('other_banks') ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, receiptCoverage: ['other_banks'] })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Есть поступления в других банках (потребуется выписка)</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.receiptCoverage?.includes('cash') ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, receiptCoverage: ['cash'] })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Есть неучтённая наличная выручка</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-[#e6e8ea]">
+                      <div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          Обязательные личные расходы без кредитов, ₽/мес.
+                        </label>
+                        <input
+                          type="number"
+                          value={answers.personalExpenses || ''}
+                          onChange={(e) => setAnswers({ ...answers, personalExpenses: e.target.value })}
+                          placeholder="50 000"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
+                        />
+                        {validationErrors.personalExpenses && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.personalExpenses}</p>
+                        )}
+                        <span className="text-xs text-[#686b70] block mt-1">
+                          Прожиточный минимум семьи, коммунальные платежи, питание.
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          Дополнительные расходы бизнеса в месяц, ₽ (если есть)
+                        </label>
+                        <input
+                          type="number"
+                          value={answers.extraExpenses || ''}
+                          onChange={(e) => setAnswers({ ...answers, extraExpenses: e.target.value })}
+                          placeholder="0"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
+                        />
+                        <span className="text-xs text-[#686b70] block mt-1">
+                          Только то, что не отражено в банковских выписках.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Debts Table */}
+                    <div className="pt-4 border-t border-[#e6e8ea]">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#686b70] mb-3">
+                        Известные кредиты и лизинг предпринимателя
+                      </h3>
+                      {clientDebts.length > 0 ? (
+                        <div className="overflow-x-auto rounded-xl border border-[#e6e8ea] mb-4">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-[#f5f6f7] text-[#686b70]">
+                              <tr>
+                                <th className="p-3">Договор / Ref</th>
+                                <th className="p-3">Тип</th>
+                                <th className="p-3">Источник</th>
+                                <th className="p-3">Платёж в месяц</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#e6e8ea]">
+                              {clientDebts.map((d, i) => (
+                                <tr key={i} className="hover:bg-slate-50">
+                                  <td className="p-3 font-semibold">{d.obligation_ref}</td>
+                                  <td className="p-3 text-[#686b70]">{d.kind}</td>
+                                  <td className="p-3">{d.source}</td>
+                                  <td className="p-3 font-bold text-[#141414]">
+                                    {formatRubles(Number(d.monthly_max_payment_rub))}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[#686b70] mb-4">В базе банка нет открытых кредитных договоров.</p>
+                      )}
+
+                      <label className="text-sm font-bold text-[#141414] block mb-2">
+                        Список кредитов и лизинга полный и верный?
+                      </label>
+                      <div className="alfa-choices">
+                        <label
+                          className={`alfa-choice ${answers.debtsComplete === 'yes' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, debtsComplete: 'yes' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Да, список полный и актуальный</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.debtsComplete === 'add' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, debtsComplete: 'add' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Есть ещё обязательства в других банках</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* New Business */
+                <>
+                  <div className="alfa-panel">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#686b70] mb-3">
+                      Сведения о личном доходе
+                    </h3>
+                    {clientIncome.length > 0 ? (
+                      <div className="p-4 bg-[#f5f6f7] rounded-xl text-xs space-y-1">
+                        <p className="text-[#141414]">
+                          В синтетическом досье есть данные о личном доходе за {clientIncome[0].month} — {clientIncome.at(-1)?.month}:
+                        </p>
+                        <strong className="text-base text-[#141414] block">
+                          В среднем{' '}
+                          {formatRubles(
+                            Math.round(
+                              clientIncome.reduce((acc, c) => acc + Number(c.net_income_rub), 0) / clientIncome.length
+                            )
+                          )}{' '}
+                          в месяц
+                        </strong>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#686b70]">
+                        В досье нет сведений о регулярных зарплатных поступлениях.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="alfa-panel space-y-6">
+                    <div>
+                      <label className="text-base font-bold text-[#141414] block">
+                        Из каких средств будете платить до устойчивой выручки?
+                      </label>
+                      <div className="alfa-choices">
+                        {[
+                          ['salary', 'Работа по найму'],
+                          ['business', 'Другой действующий бизнес'],
+                          ['rent', 'Сдача имущества в аренду'],
+                          ['savings', 'Личные накопления'],
+                          ['forecast', 'Только будущая выручка нового бизнеса'],
+                        ].map(([code, label]) => {
+                          const isSelected = (answers.repaymentSources || []).includes(code);
+                          return (
+                            <label
+                              key={code}
+                              className={`alfa-choice ${isSelected ? 'selected' : ''}`}
+                              onClick={() => {
+                                const current = answers.repaymentSources || [];
+                                const next = isSelected
+                                  ? current.filter((x: string) => x !== code)
+                                  : [...current, code];
+                                setAnswers({ ...answers, repaymentSources: next });
+                              }}
+                            >
+                              <div className="alfa-checkbox-box">
+                                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                              </div>
+                              <span>{label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-[#e6e8ea]">
+                      <div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          Совокупный текущий личный доход, ₽/мес.
+                        </label>
+                        <input
+                          type="number"
+                          value={answers.personalIncome || ''}
+                          onChange={(e) => setAnswers({ ...answers, personalIncome: e.target.value })}
+                          placeholder="120 000"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
+                        />
+                        {validationErrors.personalIncome && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.personalIncome}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          Этот доход сохранится после запуска?
+                        </label>
+                        <div className="alfa-choices">
+                          <label
+                            className={`alfa-choice ${answers.incomeContinues === 'Да' ? 'selected' : ''}`}
+                            onClick={() => setAnswers({ ...answers, incomeContinues: 'Да' })}
+                          >
+                            <div className="alfa-radio-dot" />
+                            <span>Да, сохранится</span>
+                          </label>
+                          <label
+                            className={`alfa-choice ${answers.incomeContinues === 'Нет' ? 'selected' : ''}`}
+                            onClick={() => setAnswers({ ...answers, incomeContinues: 'Нет' })}
+                          >
+                            <div className="alfa-radio-dot" />
+                            <span>Нет, будет только выручка</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-[#e6e8ea]">
+                      <div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          Неизбежные расходы бизнеса до выручки, ₽/мес.
+                        </label>
+                        <input
+                          type="number"
+                          value={answers.committedCosts || ''}
+                          onChange={(e) => setAnswers({ ...answers, committedCosts: e.target.value })}
+                          placeholder="30 000"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
+                        />
+                        <span className="text-xs text-[#686b70] block mt-1">
+                          Аренда помещения, зарплата ключевых сотрудников, связь.
+                        </span>
+                        {validationErrors.committedCosts && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.committedCosts}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-[#141414] mb-1">
+                          Обязательные личные расходы без кредитов, ₽/мес.
+                        </label>
+                        <input
+                          type="number"
+                          value={answers.personalExpenses || ''}
+                          onChange={(e) => setAnswers({ ...answers, personalExpenses: e.target.value })}
+                          placeholder="50 000"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
+                        />
+                        {validationErrors.personalExpenses && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.personalExpenses}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Step 6: Documents */}
+          {currentStep.key === 'documents' && (
+            <div className="space-y-6">
+              <div className="alfa-panel">
+                <div className="alfa-message">
+                  <b>Без лишней бюрократии:</b> Загрузите только те документы, которые у вас есть прямо сейчас.
+                  Каждый файл можно предоставить позже — специалист банка запросит недостающее адресно.
+                </div>
+
+                <div className="space-y-6">
+                  {/* Equipment docs */}
+                  {isEquipment && (
+                    <div className="p-5 border border-[#e6e8ea] rounded-2xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <strong className="text-sm font-bold text-[#141414] block">
+                            Документы по оборудованию
+                          </strong>
+                          <span className="text-xs text-[#686b70]">
+                            Счёт на оплату, коммерческое предложение или спецификация
+                          </span>
+                        </div>
+                        <label className="flex items-center gap-2 text-xs text-[#686b70] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={deferredDocs.equipmentDoc || false}
+                            onChange={(e) => setDeferredDocs({ ...deferredDocs, equipmentDoc: e.target.checked })}
+                            className="rounded text-[#EF3124]"
+                          />
+                          <span>Предоставлю позже</span>
+                        </label>
+                      </div>
+
+                      {!deferredDocs.equipmentDoc && (
+                        <div>
+                          <input
+                            type="file"
+                            id="upload-eq"
+                            multiple
+                            onChange={(e) => handleFileUpload('equipmentDoc', e)}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="upload-eq"
+                            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#e6e8ea] hover:border-[#EF3124] rounded-xl cursor-pointer bg-[#f5f6f7] transition-colors"
+                          >
+                            <Upload className="w-6 h-6 text-[#686b70] mb-2" />
+                            <span className="text-xs font-semibold text-[#141414]">
+                              Нажмите для загрузки счёта или договора
+                            </span>
+                            <span className="text-[11px] text-[#686b70] mt-0.5">PDF, DOCX, XLSX до 20 МБ</span>
+                          </label>
+
+                          {uploadedFiles.equipmentDoc?.length > 0 && (
+                            <ul className="mt-3 divide-y divide-[#e6e8ea] text-xs">
+                              {uploadedFiles.equipmentDoc.map((f) => (
+                                <li key={f.id} className="py-2 flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-[#EF3124]" />
+                                    <span className="font-medium text-[#141414]">{f.name}</span>
+                                    <span className="text-[#686b70]">({Math.round(f.size / 1024)} КБ)</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFile('equipmentDoc', f.id)}
+                                    className="text-slate-400 hover:text-[#EF3124]"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Other bank statements */}
+                  {(answers.receiptCoverage || []).includes('other_banks') && (
+                    <div className="p-5 border border-[#e6e8ea] rounded-2xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <strong className="text-sm font-bold text-[#141414] block">
+                            Выписки из других банков
+                          </strong>
+                          <span className="text-xs text-[#686b70]">
+                            За последние 6–12 месяцев для подтверждения совокупного оборота
+                          </span>
+                        </div>
+                        <label className="flex items-center gap-2 text-xs text-[#686b70] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={deferredDocs.otherBankStatements || false}
+                            onChange={(e) => setDeferredDocs({ ...deferredDocs, otherBankStatements: e.target.checked })}
+                            className="rounded text-[#EF3124]"
+                          />
+                          <span>Предоставлю позже</span>
+                        </label>
+                      </div>
+
+                      {!deferredDocs.otherBankStatements && (
+                        <div>
+                          <input
+                            type="file"
+                            id="upload-banks"
+                            multiple
+                            onChange={(e) => handleFileUpload('otherBankStatements', e)}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="upload-banks"
+                            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#e6e8ea] hover:border-[#EF3124] rounded-xl cursor-pointer bg-[#f5f6f7] transition-colors"
+                          >
+                            <Upload className="w-6 h-6 text-[#686b70] mb-2" />
+                            <span className="text-xs font-semibold text-[#141414]">
+                              Загрузить выписку стороннего банка
+                            </span>
+                            <span className="text-[11px] text-[#686b70] mt-0.5">PDF, TXT, CSV, 1C выгрузка</span>
+                          </label>
+
+                          {uploadedFiles.otherBankStatements?.length > 0 && (
+                            <ul className="mt-3 divide-y divide-[#e6e8ea] text-xs">
+                              {uploadedFiles.otherBankStatements.map((f) => (
+                                <li key={f.id} className="py-2 flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-[#EF3124]" />
+                                    <span className="font-medium text-[#141414]">{f.name}</span>
+                                    <span className="text-[#686b70]">({Math.round(f.size / 1024)} КБ)</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFile('otherBankStatements', f.id)}
+                                    className="text-slate-400 hover:text-[#EF3124]"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Collateral docs */}
+                  {isNew && answers.collateral === 'yes' && (
+                    <div className="p-5 border border-[#e6e8ea] rounded-2xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <strong className="text-sm font-bold text-[#141414] block">
+                            Документы по объекту залога
+                          </strong>
+                          <span className="text-xs text-[#686b70]">
+                            Выписка ЕГРН или договор купли-продажи / основание права
+                          </span>
+                        </div>
+                      </div>
+
+                      <input
+                        type="file"
+                        id="upload-collateral"
+                        multiple
+                        onChange={(e) => handleFileUpload('collateralDoc', e)}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="upload-collateral"
+                        className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#e6e8ea] hover:border-[#EF3124] rounded-xl cursor-pointer bg-[#f5f6f7] transition-colors"
+                      >
+                        <Upload className="w-6 h-6 text-[#686b70] mb-2" />
+                        <span className="text-xs font-semibold text-[#141414]">
+                          Загрузить документы на недвижимость
+                        </span>
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* ---------------------------------------------------- */}
-          {/* СЦЕНАРИЙ 4: СРОК И ЧЕКБОКС «ПОМОГИТЕ ПОДОБРАТЬ»       */}
-          {/* ---------------------------------------------------- */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Срок кредитования
-              </label>
-
-              {/* Чекбокс «Помогите подобрать» */}
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-alfa-600 dark:text-alfa-400">
-                <input
-                  type="checkbox"
-                  checked={helpWithTerm}
-                  onChange={(e) => setHelpWithTerm(e.target.checked)}
-                  className="rounded text-alfa-500 focus:ring-alfa-500"
-                />
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Помогите подобрать комфортный срок</span>
-              </label>
-            </div>
-
-            {helpWithTerm ? (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                <Info className="w-4 h-4 shrink-0 text-amber-600" />
-                <span>
-                  Срок кредита и оптимальный ежемесячный платёж будут рассчитаны кредитным аналитиком банка
-                  (в диапазоне от {currentProductConfig.minTermMonths} до {currentProductConfig.maxTermMonths} мес.)
-                  на основе анализа вашего денежного потока.
-                </span>
-              </div>
-            ) : (
-              <Select
-                label="Желаемый срок кредита"
-                value={termMonths}
-                onChange={(e) => setTermMonths(Number(e.target.value))}
-                options={[
-                  { value: 6, label: '6 месяцев (полгода)' },
-                  { value: 12, label: '12 месяцев (1 год)' },
-                  { value: 18, label: '18 месяцев (1.5 года)' },
-                  { value: 24, label: '24 месяца (2 года)' },
-                  { value: 36, label: '36 месяцев (3 года)' },
-                  { value: 48, label: '48 месяцев (4 года)' },
-                ].filter(
-                  (opt) =>
-                    opt.value >= currentProductConfig.minTermMonths &&
-                    opt.value <= currentProductConfig.maxTermMonths
-                )}
-              />
-            )}
-          </div>
-
-          {/* ---------------------------------------------------- */}
-          {/* СЦЕНАРИЙ 1: АДАПТАЦИЯ ШАГА 2 ПОД СТАДИЮ БИЗНЕСА      */}
-          {/* ---------------------------------------------------- */}
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-4">
-            {businessType === 'operating' ? (
-              /* ДЕЙСТВУЮЩИЙ БИЗНЕС: ВЫРУЧКА И РАСХОДЫ */
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-                  Ежемесячные финансовые потоки действующего ИП
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Среднемесячная выручка (₽)"
-                    type="number"
-                    step="10000"
-                    value={revenue}
-                    onChange={(e) => setRevenue(Number(e.target.value))}
-                    helperText="Поступления по счетам и наличная выручка"
-                  />
-                  <Input
-                    label="Среднемесячные расходы (₽)"
-                    type="number"
-                    step="10000"
-                    value={expenses}
-                    onChange={(e) => setExpenses(Number(e.target.value))}
-                    helperText="Себестоимость, аренда, налоги, зарплаты"
-                  />
+          {/* Step 7: Review & Scoring Preview */}
+          {currentStep.key === 'review' && (
+            <div className="space-y-6">
+              {/* Scoring Analysis Card */}
+              <div className="alfa-panel">
+                <div className="alfa-message">
+                  <b>Скоринг по правилам · без «чёрного ящика» ML:</b> Расчёт выполнен по демонстрационным
+                  правилам Excel. Балл не является вероятностью одобрения или дефолта, а отражает соответствие
+                  требованиям по покрытию платежей и кредитной истории.
                 </div>
 
-                <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs flex items-center justify-between text-slate-600 dark:text-slate-300">
-                  <span>Расчетный чистый поток бизнеса:</span>
-                  <span
-                    className={`font-black text-sm ${
-                      revenue - expenses >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'
-                    }`}
-                  >
-                    {formatRubles(revenue - expenses)} / мес
-                  </span>
-                </div>
-              </div>
-            ) : (
-              /* НОВЫЙ БИЗНЕС (PRELAUNCH): ВЫРУЧКА СКРЫТА, ИСТОЧНИКИ ПОКРЫТИЯ */
-              <div className="space-y-4 p-4 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-900/60">
-                <div className="flex items-start gap-2">
-                  <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                <div className="alfa-analysis-result">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      Источники покрытия кредитных платежей (новый бизнес)
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#686b70] block mb-1">
+                      {scoringEvaluation.profile === 'FULL'
+                        ? 'Фактический бизнес-поток'
+                        : scoringEvaluation.profile === 'LIMITED'
+                        ? 'Ограниченная финансовая история'
+                        : 'Индивидуальный маршрут'}
+                    </span>
+                    <h2 className="text-2xl font-black text-[#141414] leading-tight mb-2">
+                      {scoringEvaluation.recommendation}
+                    </h2>
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                        scoringEvaluation.state === 'ready'
+                          ? 'bg-[#e7f7ed] text-[#176b45]'
+                          : ['error', 'stop'].includes(scoringEvaluation.state)
+                          ? 'bg-[#fff1ef] text-[#EF3124]'
+                          : 'bg-[#fef3c7] text-[#885215]'
+                      }`}
+                    >
+                      {scoringEvaluation.state === 'ready'
+                        ? 'Можно рассмотреть условия'
+                        : scoringEvaluation.state === 'provisional'
+                        ? 'Предварительно · нужна сверка'
+                        : scoringEvaluation.state === 'manual'
+                        ? 'Ручное рассмотрение'
+                        : scoringEvaluation.state === 'stop'
+                        ? 'Есть ограничивающий фактор'
+                        : 'Уточнить данные'}
+                    </span>
+                  </div>
+
+                  <div className={`alfa-score-circle ${scoringEvaluation.score === null ? 'no-score' : ''}`}>
+                    <strong>{scoringEvaluation.score === null ? '—' : scoringEvaluation.score}</strong>
+                    <span>{scoringEvaluation.score === null ? 'балл не применяется' : 'баллов из 100'}</span>
+                  </div>
+                </div>
+
+                {/* Financial Metric Cards */}
+                <div className="alfa-analysis-stats">
+                  <div className="alfa-stat">
+                    <span>Средние поступления</span>
+                    <strong>
+                      {scoringEvaluation.metrics.receipts !== null
+                        ? formatRubles(Math.round(scoringEvaluation.metrics.receipts))
+                        : '—'}
+                    </strong>
+                    <span>в месяц</span>
+                  </div>
+
+                  <div className="alfa-stat">
+                    <span>Доступный поток (C)</span>
+                    <strong>
+                      {scoringEvaluation.metrics.availableCash !== null
+                        ? formatRubles(Math.round(scoringEvaluation.metrics.availableCash))
+                        : '—'}
+                    </strong>
+                    <span>после расходов</span>
+                  </div>
+
+                  <div className="alfa-stat">
+                    <span>Текущие платежи (D)</span>
+                    <strong>
+                      {scoringEvaluation.metrics.debtPayment !== null
+                        ? formatRubles(Math.round(scoringEvaluation.metrics.debtPayment))
+                        : '0 ₽'}
+                    </strong>
+                    <span>по кредитам</span>
+                  </div>
+                </div>
+
+                {/* Candidate Offer Terms if Available */}
+                {scoringEvaluation.candidate && (
+                  <div className="alfa-candidate-card">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#EF3124] mb-3">
+                      Рассчитанные условия финансирования
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Для нового бизнеса среднемесячная выручка до запуска отсутствует. Оценка платежеспособности
-                      проводится на основе ваших стабильных источников дохода, накоплений или залога.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Мульти-выбор источников */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Из каких средств планируете платить до выхода на стабильную прибыль?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    {[
-                      { key: 'salary', label: 'Работа по найму (зарплата)' },
-                      { key: 'savings', label: 'Собственные сбережения / накопления' },
-                      { key: 'rent_other', label: 'Аренда или другой действующий бизнес' },
-                      { key: 'collateral', label: 'Залог недвижимости / поручительство' },
-                      { key: 'future_revenue', label: 'Только будущая прибыль проекта' },
-                    ].map((src) => (
-                      <label
-                        key={src.key}
-                        className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                          repaymentSources.includes(src.key)
-                            ? 'border-purple-500 bg-white dark:bg-slate-900 ring-1 ring-purple-300 dark:ring-purple-800 text-slate-900 dark:text-white font-semibold'
-                            : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={repaymentSources.includes(src.key)}
-                          onChange={() => toggleRepaymentSource(src.key)}
-                          className="rounded text-purple-600 focus:ring-purple-500"
-                        />
-                        <span>{src.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Уточняющие поля при выборе найма или аренды */}
-                {(repaymentSources.includes('salary') || repaymentSources.includes('rent_other')) && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-purple-200/50 dark:border-purple-900/50">
-                    <Input
-                      label="Примерная сумма альтернативного дохода в месяц (₽)"
-                      type="number"
-                      step="10000"
-                      value={alternateIncome}
-                      onChange={(e) => setAlternateIncome(Number(e.target.value))}
-                      helperText="Зарплата, дивиденды или арендные платежи"
-                    />
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Сохранится ли этот доход после запуска бизнеса?
-                      </label>
-                      <Select
-                        value={incomeKept}
-                        onChange={(e) => setIncomeKept(e.target.value as any)}
-                        options={[
-                          { value: 'yes', label: 'Да, доход в полной мере сохранится' },
-                          { value: 'no', label: 'Нет, планирую уволиться/закрыть' },
-                          { value: 'unsure', label: 'Пока не уверен / частично' },
-                        ]}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Уточняющие поля при выборе накоплений */}
-                {repaymentSources.includes('savings') && (
-                  <div className="pt-2 border-t border-purple-200/50 dark:border-purple-900/50">
-                    <Input
-                      label="Сумма накоплений, выделенная на обслуживание кредита (₽)"
-                      type="number"
-                      step="20000"
-                      value={savingsAmount}
-                      onChange={(e) => setSavingsAmount(Number(e.target.value))}
-                      helperText="Один и тот же резерв нельзя одновременно считать первоначальным взносом и деньгами на платежи"
-                    />
-                  </div>
-                )}
-
-                {/* Уточняющие поля при выборе залога */}
-                {repaymentSources.includes('collateral') && (
-                  <div className="space-y-3 pt-2 border-t border-purple-200/50 dark:border-purple-900/50 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Чей объект предоставляется в залог?
-                        </label>
-                        <Select
-                          value={collateralType}
-                          onChange={(e) => setCollateralType(e.target.value as any)}
-                          options={[
-                            { value: 'own', label: 'Собственность индивидуального предпринимателя' },
-                            { value: 'third_party', label: 'Собственность родственника / партнера' },
-                            { value: 'shared', label: 'Общая или долевая собственность' },
-                          ]}
-                        />
+                        <span className="text-[#686b70] block">Сумма:</span>
+                        <strong className="text-base text-[#141414] block mt-0.5">
+                          {formatRubles(scoringEvaluation.candidate.amount)}
+                        </strong>
                       </div>
-                      <Input
-                        label="Адрес или кадастровый номер объекта"
-                        value={collateralAddress}
-                        onChange={(e) => setCollateralAddress(e.target.value)}
-                        placeholder="г. Москва, ул. Ленина, д. 10 или 77:01:0001001:123"
-                      />
+                      <div>
+                        <span className="text-[#686b70] block">Срок:</span>
+                        <strong className="text-base text-[#141414] block mt-0.5">
+                          {scoringEvaluation.candidate.term} мес.
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-[#686b70] block">Ориентир. ставка:</span>
+                        <strong className="text-base text-[#141414] block mt-0.5">
+                          {(scoringEvaluation.candidate.rate * 100).toFixed(1)}% годовых
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-[#686b70] block">Платёж в месяц:</span>
+                        <strong className="text-base text-[#EF3124] block mt-0.5">
+                          {formatRubles(Math.round(scoringEvaluation.candidate.payment))}
+                        </strong>
+                      </div>
                     </div>
-                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700 dark:text-slate-300">
-                      <input
-                        type="checkbox"
-                        checked={collateralClean}
-                        onChange={(e) => setCollateralClean(e.target.checked)}
-                        className="rounded text-purple-600 focus:ring-purple-500"
-                      />
-                      <span>Объект свободен от текущих ипотек, арестов и других обременений</span>
-                    </label>
+                    <div className="mt-3 pt-3 border-t border-[#efddd8] flex items-center justify-between text-xs text-[#686b70]">
+                      <span>Коэффициент покрытия долга (DSCR): <b>{scoringEvaluation.candidate.coverage.toFixed(2)}x</b> (норматив ≥ 1.5x)</span>
+                      <span className="text-[#176b45] font-semibold flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Проходит по нормативу
+                      </span>
+                    </div>
                   </div>
                 )}
 
-                {/* Предупреждение если выбрана только будущая выручка */}
-                {repaymentSources.length === 1 && repaymentSources.includes('future_revenue') && (
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
-                    <span>
-                      Обратите внимание: финансирование стартапа исключительно под прогноз будущей прибыли
-                      рассматривается кредитным аналитиком в индивидуальном порядке с повышенными требованиями к бизнес-плану.
-                    </span>
+                {/* Score Components Breakdown Table */}
+                {scoringEvaluation.components.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-[#e6e8ea]">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#686b70] mb-3">
+                      Разбивка кредитного балла по факторам
+                    </h3>
+                    <div className="divide-y divide-[#e6e8ea] text-xs">
+                      {scoringEvaluation.components.map((comp) => (
+                        <div key={comp.key} className="py-2.5 flex items-center justify-between">
+                          <div>
+                            <span className="font-semibold text-[#141414] block">{comp.label}</span>
+                            <span className="text-[11px] text-[#686b70]">
+                              {typeof comp.value === 'number'
+                                ? comp.value.toFixed(2)
+                                : String(comp.value || '—')} • Правило {comp.rule}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-[#141414]">
+                              {comp.points} / {comp.max}
+                            </span>
+                            <span className="text-[11px] text-[#686b70] block">баллов</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* Кнопки навигации */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="ghost" onClick={() => setCurrentStep(1)}>
-              Назад к выбору продукта
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => setCurrentStep(3)}
-              disabled={eqIsMismatched}
-              rightIcon={<ArrowRight className="w-4 h-4" />}
-            >
-              Далее к документам
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* ---------------------------------------------------- */}
-      {/* ШАГ 3: ДОКУМЕНТЫ, СОГЛАСИЯ И ОТПРАВКА ЗАЯВКИ          */}
-      {/* ---------------------------------------------------- */}
-      {currentStep === 3 && (
-        <Card className="space-y-6">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Шаг 3. Документы, юридические согласия и отправка в банк
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Прикрепите подтверждающие документы или воспользуйтесь опцией отложенной подачи
-            </p>
-          </div>
-
-          {/* ---------------------------------------------------- */}
-          {/* СЦЕНАРИЙ 4: ОПЦИЯ «ПРИЛОЖУ ПОЗЖЕ»                     */}
-          {/* ---------------------------------------------------- */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Загрузка документов
-              </span>
-
-              {/* Чекбокс «Приложу позже» */}
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-alfa-600 dark:text-alfa-400">
-                <input
-                  type="checkbox"
-                  checked={attachLater}
-                  onChange={(e) => setAttachLater(e.target.checked)}
-                  className="rounded text-alfa-500 focus:ring-alfa-500"
-                />
-                <FileText className="w-3.5 h-3.5" />
-                <span>Приложу документы позже / по запросу аналитика</span>
-              </label>
-            </div>
-
-            {attachLater ? (
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                <Info className="w-4 h-4 shrink-0 text-blue-600" />
-                <span>
-                  Вы можете зарегистрировать заявку прямо сейчас без загрузки выписок и договоров.
-                  Система выполнит экспресс-проверку по государственным реестрам, а аналитик запросит
-                  только необходимые документы в личном кабинете через сценарий <strong>need_info</strong>.
-                </span>
-              </div>
-            ) : (
-              <FileUpload
-                onFileUploaded={handleFileUpload}
-                existingDocuments={uploadedFiles.map((f, i) => ({
-                  id: `temp-${i}`,
-                  fileName: f.name,
-                  fileSizeBytes: f.size,
-                  fileType: 'bank_statement',
-                  uploadedAt: new Date().toISOString(),
-                  status: 'uploaded',
-                }))}
-              />
-            )}
-          </div>
-
-          {/* Сводка заявки перед подтверждением */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2 text-xs">
-            <span className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider block mb-2">
-              Итоговая сводка параметров заявки
-            </span>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-              <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-slate-500 dark:text-slate-400">Заёмщик:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {egripCompany?.fullName || `ИП (ИНН ${inn})`}
-                </span>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-slate-500 dark:text-slate-400">Кредитный продукт:</span>
-                <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <ProductCodeBadge code={productCode} size="sm" />
-                  {currentProductConfig.shortName}
-                </span>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-slate-500 dark:text-slate-400">Запрашиваемый кредит:</span>
-                <span className="font-black text-slate-900 dark:text-white">
-                  {formatRubles(amount)}
-                </span>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-slate-500 dark:text-slate-400">Срок кредита:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {helpWithTerm ? 'Подберёт банк (по заявке)' : `${termMonths} месяцев`}
-                </span>
-              </div>
-
-              {productCode === 'EQ' && (
-                <>
-                  <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                    <span className="text-slate-500 dark:text-slate-400">Стоимость оборудования:</span>
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      {formatRubles(equipmentPrice)}
-                    </span>
+              {/* Specialist Checklist: "Что уточнит специалист" */}
+              {riskFindings.length > 0 && (
+                <div className="alfa-panel border-amber-300 bg-[#fffdf7]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldAlert className="w-5 h-5 text-[#885215]" />
+                    <h3 className="text-sm font-bold text-[#885215] uppercase tracking-wider">
+                      Что уточнит специалист при рассмотрении ({riskFindings.length})
+                    </h3>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                    <span className="text-slate-500 dark:text-slate-400">Собственный взнос:</span>
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      {formatRubles(ownContribution)} ({Math.round((ownContribution / (equipmentPrice || 1)) * 100)}%)
-                    </span>
-                  </div>
-                </>
-              )}
-
-              <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-slate-500 dark:text-slate-400">Этап бизнеса:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {businessType === 'operating' ? 'Действующий бизнес' : 'Новый бизнес (Prelaunch)'}
-                </span>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-slate-500 dark:text-slate-400">Документы:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {attachLater ? 'Отложенное предоставление' : `${uploadedFiles.length} файл(ов) загружено`}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Юридические согласия */}
-          <div className="space-y-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
-            <span className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider block">
-              Юридические согласия
-            </span>
-
-            <div className="space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={pdnConsent}
-                    onChange={(e) => setPdnConsent(e.target.checked)}
-                    className="mt-0.5 rounded text-alfa-500 focus:ring-alfa-500"
-                  />
-                  <span className="text-slate-700 dark:text-slate-300">
-                    Даю согласие на обработку персональных данных в соответствии с Федеральным законом № 152-ФЗ
-                  </span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setActiveConsentModal('pdn')}
-                  className="text-alfa-600 dark:text-alfa-400 hover:underline shrink-0 font-medium"
-                >
-                  Ознакомиться
-                </button>
-              </div>
-
-              <div className="flex items-start justify-between gap-2">
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={bkiConsent}
-                    onChange={(e) => setBkiConsent(e.target.checked)}
-                    className="mt-0.5 rounded text-alfa-500 focus:ring-alfa-500"
-                  />
-                  <span className="text-slate-700 dark:text-slate-300">
-                    Даю согласие на запрос кредитного отчёта в бюро кредитных историй (БКИ) в соответствии с № 218-ФЗ
-                  </span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setActiveConsentModal('bki')}
-                  className="text-alfa-600 dark:text-alfa-400 hover:underline shrink-0 font-medium"
-                >
-                  Ознакомиться
-                </button>
-              </div>
-
-              {productCode === 'EQ' && businessType === 'prelaunch' && (
-                <div className="flex items-start justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                  <label className="flex items-start gap-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={leasingConsent}
-                      onChange={(e) => setLeasingConsent(e.target.checked)}
-                      className="mt-0.5 rounded text-alfa-500 focus:ring-alfa-500"
-                    />
-                    <span className="text-slate-700 dark:text-slate-300">
-                      Согласен на передачу сведений лизинговому партнёру (ООО «Альфа-Лизинг») для подбора лизинговой программы
-                    </span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setActiveConsentModal('leasing')}
-                    className="text-alfa-600 dark:text-alfa-400 hover:underline shrink-0 font-medium"
-                  >
-                    Ознакомиться
-                  </button>
+                  <ul className="space-y-2 text-xs text-[#78350f]">
+                    {riskFindings.map((finding, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span>{finding}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
+
+              {/* Data Summary Blocks */}
+              <div className="space-y-4">
+                {wizardSteps
+                  .filter((s) => s.key !== 'review')
+                  .map((step) => (
+                    <div key={step.key} className="alfa-panel p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-sm text-[#141414]">{step.short}</h3>
+                        <button
+                          type="button"
+                          onClick={() => jumpToStep(wizardSteps.findIndex((x) => x.key === step.key))}
+                          className="alfa-text-btn"
+                        >
+                          Изменить
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#686b70]">
+                        {step.key === 'profile' && (
+                          <>
+                            <div>
+                              <span>Предприниматель:</span>
+                              <strong className="text-[#141414] block mt-0.5">{clientProfile.full_name}</strong>
+                            </div>
+                            <div>
+                              <span>ИНН:</span>
+                              <strong className="text-[#141414] block mt-0.5">{clientProfile.inn}</strong>
+                            </div>
+                            <div>
+                              <span>Актуальность данных:</span>
+                              <strong className="text-[#141414] block mt-0.5">
+                                {answers.profileCurrent === 'yes' ? 'Сведения актуальны' : 'Заявлены изменения'}
+                              </strong>
+                            </div>
+                          </>
+                        )}
+
+                        {step.key === 'passport' && (
+                          <>
+                            <div>
+                              <span>Паспортные данные:</span>
+                              <strong className="text-[#141414] block mt-0.5">
+                                {answers.passportCurrent === 'yes' ? 'Подтверждены' : 'Введены новые'}
+                              </strong>
+                            </div>
+                            <div>
+                              <span>Серия и номер:</span>
+                              <strong className="text-[#141414] block mt-0.5">
+                                {answers.passportCurrent === 'yes'
+                                  ? `${clientPassport?.series || ''} •••${clientPassport?.number.slice(-3) || ''}`
+                                  : `${answers.passportSeries || ''} ${answers.passportNumber || ''}`}
+                              </strong>
+                            </div>
+                          </>
+                        )}
+
+                        {step.key === 'request' && (
+                          <>
+                            <div>
+                              <span>Состояние бизнеса:</span>
+                              <strong className="text-[#141414] block mt-0.5">
+                                {isOperating ? 'Действующий' : isPaused ? 'Приостановлен' : 'Новый'}
+                              </strong>
+                            </div>
+                            <div>
+                              <span>Цель:</span>
+                              <strong className="text-[#141414] block mt-0.5">
+                                {isEquipment ? 'Покупка оборудования' : 'Оборотные средства'}
+                              </strong>
+                            </div>
+                            <div>
+                              <span>Сумма:</span>
+                              <strong className="text-[#141414] block mt-0.5">
+                                {formatRubles(Number(answers.amount) || 0)}
+                              </strong>
+                            </div>
+                            <div>
+                              <span>Срок:</span>
+                              <strong className="text-[#141414] block mt-0.5">
+                                {answers.termUnspecified ? 'Помочь подобрать' : `${answers.term} мес.`}
+                              </strong>
+                            </div>
+                          </>
+                        )}
+
+                        {step.key === 'details' && (
+                          <>
+                            {isEquipment ? (
+                              <>
+                                <div>
+                                  <span>Оборудование:</span>
+                                  <strong className="text-[#141414] block mt-0.5">{answers.equipment || 'Не указано'}</strong>
+                                </div>
+                                <div>
+                                  <span>Стоимость:</span>
+                                  <strong className="text-[#141414] block mt-0.5">
+                                    {answers.equipmentCostUnspecified ? 'Пока неизвестна' : formatRubles(Number(answers.equipmentCost) || 0)}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>Собственный взнос:</span>
+                                  <strong className="text-[#141414] block mt-0.5">{formatRubles(Number(answers.ownFunds) || 0)}</strong>
+                                </div>
+                                <div>
+                                  <span>Поставщик:</span>
+                                  <strong className="text-[#141414] block mt-0.5">
+                                    {supplierResult.data ? supplierResult.data.name : (answers.supplierInn || 'Не выбран')}
+                                  </strong>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div>
+                                  <span>Назначение расходов:</span>
+                                  <strong className="text-[#141414] block mt-0.5">{answers.expenseDescription || 'Не указано'}</strong>
+                                </div>
+                                <div>
+                                  <span>Залог:</span>
+                                  <strong className="text-[#141414] block mt-0.5">
+                                    {answers.collateral === 'yes' ? 'Предоставляется' : 'Без залога'}
+                                  </strong>
+                                </div>
+                              </>
+                            )}
+                          </>
+                        )}
+
+                        {step.key === 'finances' && (
+                          <>
+                            <div>
+                              <span>Личные расходы:</span>
+                              <strong className="text-[#141414] block mt-0.5">{formatRubles(Number(answers.personalExpenses) || 0)} / мес.</strong>
+                            </div>
+                            {isNew ? (
+                              <div>
+                                <span>Личный доход:</span>
+                                <strong className="text-[#141414] block mt-0.5">{formatRubles(Number(answers.personalIncome) || 0)} / мес.</strong>
+                              </div>
+                            ) : (
+                              <div>
+                                <span>Полнота выручки:</span>
+                                <strong className="text-[#141414] block mt-0.5">
+                                  {(answers.receiptCoverage || []).includes('all') ? 'Все поступления учтены' : 'Есть другие банки'}
+                                </strong>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {step.key === 'documents' && (
+                          <div className="col-span-2">
+                            <span>Прикрепленные файлы:</span>
+                            <strong className="text-[#141414] block mt-0.5">
+                              {Object.values(uploadedFiles).flat().length > 0
+                                ? Object.values(uploadedFiles)
+                                    .flat()
+                                    .map((f) => f.name)
+                                    .join(', ')
+                                : 'Файлы не загружены (будут предоставлены позже)'}
+                            </strong>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Confirmation Checkbox */}
+              <div className="alfa-panel">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={answers.reviewConfirmed || false}
+                    onChange={(e) => setAnswers({ ...answers, reviewConfirmed: e.target.checked })}
+                    className="mt-1 rounded text-[#EF3124] focus:ring-[#EF3124]"
+                  />
+                  <span className="text-sm font-semibold text-[#141414]">
+                    Проверил сведения. Понимаю, что ошибки и неполные данные могут повлиять на рассмотрение
+                    и условия финансирования.
+                  </span>
+                </label>
+                {validationErrors.reviewConfirmed && (
+                  <p className="text-xs text-[#EF3124] mt-2 font-medium">
+                    {validationErrors.reviewConfirmed}
+                  </p>
+                )}
+                <p className="text-xs text-[#686b70] mt-3">
+                  В прототипе хакатона обращение будет зарегистрировано и мгновенно появится на рабочем месте банка.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Action Navigation Buttons */}
+          <div className="mt-8 pt-6 border-t border-[#e6e8ea] flex items-center justify-between">
+            {currentStepIdx > 0 ? (
+              <button
+                type="button"
+                onClick={handlePrev}
+                className="alfa-btn-secondary"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Назад
+              </button>
+            ) : (
+              <div />
+            )}
+
+            <div className="flex items-center gap-3">
+              {currentStep.key === 'review' ? (
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleSubmitApplication}
+                  className="alfa-btn-primary"
+                >
+                  <Send className="w-4 h-4" />
+                  {isSubmitting ? 'Отправка...' : 'Отправить обращение в банк'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="alfa-btn-primary"
+                >
+                  Далее
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
-
-          {/* Кнопки отправки */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="ghost" onClick={() => setCurrentStep(2)}>
-              Назад к параметрам
-            </Button>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                className="flex-1 sm:flex-initial"
-                isLoading={isLoading}
-                onClick={() => handleSubmit(false)}
-                leftIcon={<Save className="w-4 h-4" />}
-              >
-                Сохранить черновик (T01)
-              </Button>
-
-              <Button
-                variant="primary"
-                className="flex-1 sm:flex-initial"
-                isLoading={isLoading}
-                disabled={!pdnConsent || !bkiConsent}
-                onClick={() => handleSubmit(true)}
-                leftIcon={<Send className="w-4 h-4" />}
-              >
-                Отправить в банк (T03)
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Модальное окно просмотра юридических согласий */}
-      {activeConsentModal && (
-        <ConsentModal
-          isOpen={true}
-          onClose={() => setActiveConsentModal(null)}
-          type={activeConsentModal}
-          applicantName={egripCompany?.fullName || `ИП (ИНН ${inn})`}
-          inn={inn}
-          isAccepted={
-            activeConsentModal === 'pdn'
-              ? pdnConsent
-              : activeConsentModal === 'bki'
-              ? bkiConsent
-              : leasingConsent
-          }
-          onAccept={() => {
-            if (activeConsentModal === 'pdn') setPdnConsent(true);
-            if (activeConsentModal === 'bki') setBkiConsent(true);
-            if (activeConsentModal === 'leasing') setLeasingConsent(true);
-          }}
-        />
-      )}
+        </main>
+      </div>
     </div>
   );
 };

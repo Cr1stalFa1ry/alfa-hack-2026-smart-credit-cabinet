@@ -39,7 +39,9 @@ public static class BankEmployeeModuleExtensions
 
     public static IEndpointRouteBuilder MapBankEmployeeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/employee").WithTags("Bank Employee Workplace");
+        var group = app.MapGroup("/api/employee")
+            .WithTags("Bank Employee Workplace")
+            .RequireAuthorization(AuthPolicies.EmployeeOnly);
 
         // GET /api/employee/profile
         group.MapGet("/profile", async (
@@ -47,36 +49,56 @@ public static class BankEmployeeModuleExtensions
             BankEmployeeDbContext dbContext) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsBankEmployee) return Results.Forbid();
 
             var profile = await dbContext.Employees.FirstOrDefaultAsync(e => e.UserId == userContext.UserId.Value);
             return profile is not null ? Results.Ok(profile) : Results.NotFound(new { error = "Профиль сотрудника не найден." });
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.EmployeeOnly)
         .WithName("GetBankEmployeeProfile")
         .WithSummary("Получение профиля сотрудника банка");
 
         // GET /api/employee/applications/queue
         group.MapGet("/applications/queue", async (
+            string? status,
+            IUserContext userContext,
             ApplicationDbContext appDb) =>
         {
-            var queue = await appDb.Applications
+            if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsBankEmployee) return Results.Forbid();
+
+            var query = appDb.Applications
                 .Include(a => a.CurrentOffer)
-                .Where(a => a.Status == ApplicationStatus.Review || a.Status == ApplicationStatus.Checking)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(status) && status != "all")
+            {
+                if (Enum.TryParse<ApplicationStatus>(status, true, out var parsedStatus))
+                {
+                    query = query.Where(a => a.Status == parsedStatus);
+                }
+            }
+
+            var queue = await query
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
             return Results.Ok(queue);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.EmployeeOnly)
         .WithName("GetEmployeeQueue")
-        .WithSummary("Рабочая очередь заявок аналитика (статусы review / checking)");
+        .WithSummary("Рабочая очередь заявок аналитика");
 
         // GET /api/employee/applications/{id}
         group.MapGet("/applications/{id:guid}", async Task<IResult> (
             Guid id,
+            IUserContext userContext,
             ApplicationDbContext appDb,
             ICompanyLookupService? lookupService) =>
         {
+            if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsBankEmployee) return Results.Forbid();
+
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
                 .FirstOrDefaultAsync(a => a.Id == id);
@@ -85,7 +107,7 @@ public static class BankEmployeeModuleExtensions
 
             return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.EmployeeOnly)
         .WithName("GetEmployeeApplicationById")
         .WithSummary("Детальное досье заявки для аналитика банка со скорингом и аудитом");
 
@@ -93,9 +115,13 @@ public static class BankEmployeeModuleExtensions
         group.MapPost("/applications/{id:guid}/approve", async Task<IResult> (
             Guid id,
             AnalystDecisionRequest request,
+            IUserContext userContext,
             ApplicationDbContext appDb,
             ICompanyLookupService? lookupService) =>
         {
+            if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsBankEmployee) return Results.Forbid();
+
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
                 .FirstOrDefaultAsync(a => a.Id == id);
@@ -139,7 +165,7 @@ public static class BankEmployeeModuleExtensions
             await appDb.SaveChangesAsync();
             return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.EmployeeOnly)
         .WithName("AnalystApproveApplication")
         .WithSummary("T12: Одобрение заявки аналитиком (переход в offer)");
 
@@ -147,9 +173,13 @@ public static class BankEmployeeModuleExtensions
         group.MapPost("/applications/{id:guid}/decline", async Task<IResult> (
             Guid id,
             AnalystDecisionRequest request,
+            IUserContext userContext,
             ApplicationDbContext appDb,
             ICompanyLookupService? lookupService) =>
         {
+            if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsBankEmployee) return Results.Forbid();
+
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
                 .FirstOrDefaultAsync(a => a.Id == id);
@@ -182,7 +212,7 @@ public static class BankEmployeeModuleExtensions
             await appDb.SaveChangesAsync();
             return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.EmployeeOnly)
         .WithName("AnalystDeclineApplication")
         .WithSummary("T13: Отказ аналитика (переход в declined)");
 
@@ -190,9 +220,13 @@ public static class BankEmployeeModuleExtensions
         group.MapPost("/applications/{id:guid}/request-info", async Task<IResult> (
             Guid id,
             AnalystDecisionRequest request,
+            IUserContext userContext,
             ApplicationDbContext appDb,
             ICompanyLookupService? lookupService) =>
         {
+            if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsBankEmployee) return Results.Forbid();
+
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
                 .FirstOrDefaultAsync(a => a.Id == id);
@@ -220,17 +254,21 @@ public static class BankEmployeeModuleExtensions
             await appDb.SaveChangesAsync();
             return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.EmployeeOnly)
         .WithName("AnalystRequestInfo")
         .WithSummary("T11: Запрос сведений у клиента аналитиком (переход в need_info)");
 
         // POST /api/employee/applications/{id}/recheck (T14)
         group.MapPost("/applications/{id:guid}/recheck", async Task<IResult> (
             Guid id,
+            IUserContext userContext,
             ApplicationDbContext appDb,
             IMessageBus bus,
             ICompanyLookupService? lookupService) =>
         {
+            if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsBankEmployee) return Results.Forbid();
+
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
                 .FirstOrDefaultAsync(a => a.Id == id);
@@ -270,7 +308,7 @@ public static class BankEmployeeModuleExtensions
 
             return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.EmployeeOnly)
         .WithName("AnalystRecheckApplication")
         .WithSummary("T14: Уточнены факты аналитиком, возврат на автопроверку (переход в checking)");
 
@@ -278,9 +316,13 @@ public static class BankEmployeeModuleExtensions
         group.MapPost("/applications/{id:guid}/close", async Task<IResult> (
             Guid id,
             AnalystDecisionRequest request,
+            IUserContext userContext,
             ApplicationDbContext appDb,
             ICompanyLookupService? lookupService) =>
         {
+            if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsBankEmployee) return Results.Forbid();
+
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
                 .FirstOrDefaultAsync(a => a.Id == id);
@@ -312,7 +354,7 @@ public static class BankEmployeeModuleExtensions
             await appDb.SaveChangesAsync();
             return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.EmployeeOnly)
         .WithName("AnalystCloseApplication")
         .WithSummary("T16: Закрытие заявки аналитиком по некредитному препятствию (переход в closed)");
 

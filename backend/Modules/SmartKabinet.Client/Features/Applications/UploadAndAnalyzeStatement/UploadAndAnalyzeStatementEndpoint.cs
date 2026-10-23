@@ -41,6 +41,7 @@ public static class UploadAndAnalyzeStatementEndpoint
             var bytes = Encoding.UTF8.GetBytes(SampleCsvContent);
             return Results.File(bytes, "text/csv; charset=utf-8", "statement_template.csv");
         })
+        .AllowAnonymous()
         .WithName("DownloadStatementTemplate")
         .WithSummary("Скачивание эталонного CSV-шаблона банковской выписки для ML");
 
@@ -56,6 +57,7 @@ public static class UploadAndAnalyzeStatementEndpoint
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var app = await appDb.Applications.FirstOrDefaultAsync(
                 a => a.Id == id && a.ClientId == userContext.UserId.Value, ct);
@@ -95,7 +97,7 @@ public static class UploadAndAnalyzeStatementEndpoint
             });
         })
         .DisableAntiforgery()
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("UploadAndAnalyzeStatement")
         .WithSummary("Загрузка и ML-анализ банковской выписки (CSV/XLSX) для заявки");
 

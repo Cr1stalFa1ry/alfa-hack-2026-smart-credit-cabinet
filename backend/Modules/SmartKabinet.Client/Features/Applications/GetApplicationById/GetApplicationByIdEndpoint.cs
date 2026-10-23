@@ -19,11 +19,12 @@ public static class GetApplicationByIdEndpoint
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var result = await service.GetAsync(id, userContext.UserId.Value, ct);
             return result.ToHttpResult();
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("GetClientApplicationById")
         .WithSummary("Просмотр заявки клиентом (без отображения внутренних баллов/DSCR)");
 

@@ -21,6 +21,7 @@ public static class GetExplanationEndpoint
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
 
             var app = await appDb.Applications.FirstOrDefaultAsync(
                 a => a.Id == id && a.ClientId == userContext.UserId.Value, ct);
@@ -57,7 +58,7 @@ public static class GetExplanationEndpoint
                 source = mlExplanation.Source
             });
         })
-        .RequireAuthorization()
+        .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("GetApplicationExplanation")
         .WithSummary("Получение человекочитаемого объяснения решения (ML Qwen / Fallback)");
 
