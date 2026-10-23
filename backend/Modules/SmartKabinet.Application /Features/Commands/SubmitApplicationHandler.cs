@@ -3,39 +3,45 @@ using SmartKabinet.Application.Commands;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Application.Domain;
 using SmartKabinet.Application.Infrastructure.Persistence;
+using SmartKabinet.Shared;
 using Wolverine;
 
 namespace SmartKabinet.Application.Features.Commands;
 
 public class SubmitApplicationHandler(ApplicationDbContext dbContext, IMessageBus bus) : ISubmitApplication
 {
-    public async Task SubmitAsync(SubmitApplicationCommand cmd, CancellationToken ct = default)
+    public async Task<Result> SubmitAsync(SubmitApplicationCommand cmd, CancellationToken ct = default)
     {
-        await Handle(cmd, ct);
+        return await Handle(cmd, ct);
     }
 
-    public async Task Handle(SubmitApplicationCommand cmd, CancellationToken ct = default)
+    public async Task<Result> Handle(SubmitApplicationCommand cmd, CancellationToken ct = default)
     {
         var app = await dbContext.Applications.FirstOrDefaultAsync(
             a => a.Id == cmd.ApplicationId && a.ClientId == cmd.ClientId, ct);
 
         if (app is null)
         {
-            throw new InvalidOperationException($"Заявка {cmd.ApplicationId} не найдена для данного клиента.");
+            return Error.NotFound("Application.NotFound", $"Заявка {cmd.ApplicationId} не найдена для данного клиента.");
         }
 
         if (app.Status != ApplicationStatus.Draft)
         {
-            throw new InvalidOperationException($"Заявку в статусе {app.Status} нельзя подать повторно.");
+            return Error.Conflict("Application.InvalidStatus", $"Заявку в статусе {app.Status} нельзя подать повторно.");
         }
 
         if (!app.BkiConsent || !app.PersonalDataConsent)
         {
-            throw new InvalidOperationException("Необходимо предоставить согласия на обработку данных и запрос в БКИ.");
+            return Error.Validation("Application.ConsentsRequired", "Необходимо предоставить согласия на обработку данных и запрос в БКИ.");
         }
 
         app.Status = ApplicationStatus.Checking;
         app.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (string.IsNullOrWhiteSpace(app.ProductCode))
+        {
+            app.ProductCode = CreditProductCodes.ResolveProductCode(app.Stage, app.Purpose);
+        }
 
         dbContext.TransitionHistory.Add(new TransitionRecord
         {
@@ -69,7 +75,10 @@ public class SubmitApplicationHandler(ApplicationDbContext dbContext, IMessageBu
             app.RequestedTermMonths ?? 12,
             app.ProjectedMonthlyRevenue,
             app.FinancialReserve,
-            app.PersonalIncome
+            app.PersonalIncome,
+            app.ProductCode
         ));
+
+        return Result.Success();
     }
 }

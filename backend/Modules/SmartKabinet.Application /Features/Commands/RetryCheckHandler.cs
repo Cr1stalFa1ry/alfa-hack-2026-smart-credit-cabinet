@@ -3,30 +3,31 @@ using SmartKabinet.Application.Commands;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Application.Domain;
 using SmartKabinet.Application.Infrastructure.Persistence;
+using SmartKabinet.Shared;
 using Wolverine;
 
 namespace SmartKabinet.Application.Features.Commands;
 
 public class RetryCheckHandler(ApplicationDbContext dbContext, IMessageBus bus) : IRetryCheck
 {
-    public async Task RetryCheckAsync(RetryCheckCommand cmd, CancellationToken ct = default)
+    public async Task<Result> RetryCheckAsync(RetryCheckCommand cmd, CancellationToken ct = default)
     {
-        await Handle(cmd, ct);
+        return await Handle(cmd, ct);
     }
 
-    public async Task Handle(RetryCheckCommand cmd, CancellationToken ct = default)
+    public async Task<Result> Handle(RetryCheckCommand cmd, CancellationToken ct = default)
     {
         var app = await dbContext.Applications.FirstOrDefaultAsync(
             a => a.Id == cmd.ApplicationId && a.ClientId == cmd.ClientId, ct);
 
         if (app is null)
         {
-            throw new InvalidOperationException($"Заявка {cmd.ApplicationId} не найдена для данного клиента.");
+            return Error.NotFound("Application.NotFound", $"Заявка {cmd.ApplicationId} не найдена для данного клиента.");
         }
 
         if (app.Status != ApplicationStatus.WaitingCheck)
         {
-            throw new InvalidOperationException($"Повторить проверку можно только из статуса waiting_check (текущий: {app.Status}).");
+            return Error.Conflict("Application.InvalidStatus", $"Повторить проверку можно только из статуса waiting_check (текущий: {app.Status}).");
         }
 
         app.Status = ApplicationStatus.Checking;
@@ -41,6 +42,11 @@ public class RetryCheckHandler(ApplicationDbContext dbContext, IMessageBus bus) 
             Comment = "Повторный запуск проверки клиентом (T06)"
         });
 
+        if (string.IsNullOrWhiteSpace(app.ProductCode))
+        {
+            app.ProductCode = CreditProductCodes.ResolveProductCode(app.Stage, app.Purpose);
+        }
+
         await dbContext.SaveChangesAsync(ct);
 
         await bus.PublishAsync(new ApplicationSubmittedEvent(
@@ -54,7 +60,10 @@ public class RetryCheckHandler(ApplicationDbContext dbContext, IMessageBus bus) 
             app.RequestedTermMonths ?? 12,
             app.ProjectedMonthlyRevenue,
             app.FinancialReserve,
-            app.PersonalIncome
+            app.PersonalIncome,
+            app.ProductCode
         ));
+
+        return Result.Success();
     }
 }

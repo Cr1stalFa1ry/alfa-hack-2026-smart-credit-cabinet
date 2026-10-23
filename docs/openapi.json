@@ -1,0 +1,1412 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "SmartKabinet API — Кредитный кабинет ИП (Alfa-Hack 2026)",
+    "description": "API кредитного кабинета предпринимателя",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Вход в систему (client1..5, analyst, admin)",
+        "operationId": "Login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginClientCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Регистрация нового ИП заёмщика",
+        "operationId": "Register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterClientRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/employee/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Регистрация сотрудника банка (аналитика)",
+        "operationId": "RegisterBankEmployee",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterBankEmployeeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Обновление токена доступа по Refresh Token",
+        "operationId": "RefreshToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Выход из системы и отзыв токенов",
+        "operationId": "Logout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Получение профиля текущего пользователя",
+        "operationId": "GetCurrentUser",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/employee/profile": {
+      "get": {
+        "tags": [
+          "Bank Employee Workplace"
+        ],
+        "summary": "Получение профиля сотрудника банка",
+        "operationId": "GetBankEmployeeProfile",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/employee/applications/queue": {
+      "get": {
+        "tags": [
+          "Bank Employee Workplace"
+        ],
+        "summary": "Рабочая очередь заявок аналитика (статусы review / checking)",
+        "operationId": "GetEmployeeQueue",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/employee/applications/{id}": {
+      "get": {
+        "tags": [
+          "Bank Employee Workplace"
+        ],
+        "summary": "Детальное досье заявки для аналитика банка со скорингом и аудитом",
+        "operationId": "GetEmployeeApplicationById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/employee/applications/{id}/approve": {
+      "post": {
+        "tags": [
+          "Bank Employee Workplace"
+        ],
+        "summary": "T12: Одобрение заявки аналитиком (переход в offer)",
+        "operationId": "AnalystApproveApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalystDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/employee/applications/{id}/decline": {
+      "post": {
+        "tags": [
+          "Bank Employee Workplace"
+        ],
+        "summary": "T13: Отказ аналитика (переход в declined)",
+        "operationId": "AnalystDeclineApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalystDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/employee/applications/{id}/request-info": {
+      "post": {
+        "tags": [
+          "Bank Employee Workplace"
+        ],
+        "summary": "T11: Запрос сведений у клиента аналитиком (переход в need_info)",
+        "operationId": "AnalystRequestInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalystDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/employee/applications/{id}/recheck": {
+      "post": {
+        "tags": [
+          "Bank Employee Workplace"
+        ],
+        "summary": "T14: Уточнены факты аналитиком, возврат на автопроверку (переход в checking)",
+        "operationId": "AnalystRecheckApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/employee/applications/{id}/close": {
+      "post": {
+        "tags": [
+          "Bank Employee Workplace"
+        ],
+        "summary": "T16: Закрытие заявки аналитиком по некредитному препятствию (переход в closed)",
+        "operationId": "AnalystCloseApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalystDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/draft": {
+      "post": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "T01: Создание черновика заявки на кредит",
+        "operationId": "CreateApplicationDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/draft": {
+      "put": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "T02: Сохранение изменений в черновике заявки",
+        "operationId": "UpdateApplicationDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/submit": {
+      "post": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "T03: Отправка заявки на проверку (переход в checking)",
+        "operationId": "SubmitApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/retry-check": {
+      "post": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "T06: Повторный запуск проверки клиентом (из waiting_check в checking)",
+        "operationId": "RetryApplicationCheck",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/respond-info": {
+      "post": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "T10: Ответ клиента на дозапрос банка (переход в checking)",
+        "operationId": "RespondRequestedInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondInfoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/withdraw": {
+      "post": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "T17: Отзыв заявки клиентом (переход в closed)",
+        "operationId": "WithdrawApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/statement/template": {
+      "get": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "Скачивание эталонного CSV-шаблона банковской выписки для ML",
+        "operationId": "DownloadStatementTemplate",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/statement": {
+      "post": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "Загрузка и ML-анализ банковской выписки (CSV/XLSX) для заявки",
+        "operationId": "UploadAndAnalyzeStatement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "encoding": {
+                "file": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}": {
+      "get": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "Просмотр заявки клиентом (без отображения внутренних баллов/DSCR)",
+        "operationId": "GetClientApplicationById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications": {
+      "get": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "Список всех заявок текущего клиента ИП",
+        "operationId": "GetClientApplications",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/explanation": {
+      "get": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "Получение человекочитаемого объяснения решения (ML Qwen / Fallback)",
+        "operationId": "GetApplicationExplanation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/accept": {
+      "post": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "T21: Принятие кредитной оферты клиентом",
+        "operationId": "AcceptCreditOffer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/sign": {
+      "post": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "T22: Симуляция подписания кредитного договора клиентом",
+        "operationId": "SignCreditAgreement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignAgreementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/applications/{id}/disburse": {
+      "post": {
+        "tags": [
+          "Client Applications"
+        ],
+        "summary": "T23: Моделируемая выдача кредитных средств на расчётный счёт предпринимателя",
+        "operationId": "DisburseCreditFunds",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/profile": {
+      "get": {
+        "tags": [
+          "Client Cabinet"
+        ],
+        "summary": "Получение профиля текущего клиента ИП",
+        "operationId": "GetClientProfile",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/companies/lookup": {
+      "get": {
+        "tags": [
+          "Company Lookup"
+        ],
+        "summary": "Автозаполнение реквизитов ИП по ИНН из ЕГРИП и базы банка",
+        "operationId": "LookupCompanyByInn",
+        "parameters": [
+          {
+            "name": "inn",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/products": {
+      "get": {
+        "tags": [
+          "Credit Products"
+        ],
+        "summary": "Каталог доступных кредитных продуктов банка (WC, EQ, START)",
+        "operationId": "ClientGetCreditProducts",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/products/{code}": {
+      "get": {
+        "tags": [
+          "Credit Products"
+        ],
+        "summary": "Получить параметры кредитного продукта по коду (WC, EQ, START)",
+        "operationId": "ClientGetCreditProductByCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "tags": [
+          "Credit Products"
+        ],
+        "summary": "Каталог доступных кредитных продуктов банка (WC, EQ, START)",
+        "operationId": "PublicGetCreditProducts",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/products/{code}": {
+      "get": {
+        "tags": [
+          "Credit Products"
+        ],
+        "summary": "Получить параметры кредитного продукта по коду (WC, EQ, START)",
+        "operationId": "PublicGetCreditProductByCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/equipment": {
+      "get": {
+        "tags": [
+          "Equipment Catalog"
+        ],
+        "summary": "Каталог оборудования для кредитования (EQ)",
+        "operationId": "GetEquipmentCatalog",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/equipment/{category}": {
+      "get": {
+        "tags": [
+          "Equipment Catalog"
+        ],
+        "summary": "Получить оборудование по коду категории (EQ-001...)",
+        "operationId": "GetEquipmentItemByCategory",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/integrations/alfa-customer/{inn}": {
+      "get": {
+        "tags": [
+          "Integrations & PostgreSQL Simulators"
+        ],
+        "summary": "Получение данных клиента Альфа-Банка из PostgreSQL по ИНН",
+        "operationId": "GetAlfaCustomerByInn",
+        "parameters": [
+          {
+            "name": "inn",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/integrations/egrip/{inn}": {
+      "get": {
+        "tags": [
+          "Integrations & PostgreSQL Simulators"
+        ],
+        "summary": "Получение данных ИП из синтетического ЕГРИП и базы Альфа-Банка по ИНН",
+        "operationId": "GetEgripByInn",
+        "parameters": [
+          {
+            "name": "inn",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/integrations/synthesize-customer": {
+      "post": {
+        "tags": [
+          "Integrations & PostgreSQL Simulators"
+        ],
+        "summary": "Синтез / добавление нового клиента Альфа-Банка в PostgreSQL",
+        "operationId": "SynthesizeCustomer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SynthesizeCustomerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/.well-known/jwks.json": {
+      "get": {
+        "tags": [
+          "JWKS"
+        ],
+        "summary": "Публичные ключи RSA для проверки подписи JWT",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/integrations/ml/health": {
+      "get": {
+        "tags": [
+          "ML Service Integrations (FastAPI)"
+        ],
+        "summary": "Проверка доступности ML микросервиса (GET /health)",
+        "operationId": "CheckMlHealth",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/integrations/ml/statement/analyze": {
+      "post": {
+        "tags": [
+          "ML Service Integrations (FastAPI)"
+        ],
+        "summary": "Прямой анализ выписки (CSV/XLSX) через ML микросервис",
+        "operationId": "AnalyzeStatementDirect",
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "encoding": {
+                "file": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/integrations/ml/explain": {
+      "post": {
+        "tags": [
+          "ML Service Integrations (FastAPI)"
+        ],
+        "summary": "Генерация клиентского объяснения решения кредитного кабинета через ML (Qwen LLM / Fallback)",
+        "operationId": "ExplainDecisionDirect",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalystDecisionRequest": {
+        "type": "object",
+        "properties": {
+          "approvedAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "termMonths": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "annualRatePercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "reasonCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateDraftRequest": {
+        "type": "object",
+        "properties": {
+          "inn": {
+            "type": "string",
+            "nullable": true
+          },
+          "stage": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "purpose": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requestedAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "ownContribution": {
+            "type": "number",
+            "format": "double"
+          },
+          "requestedTermMonths": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bkiConsent": {
+            "type": "boolean"
+          },
+          "personalDataConsent": {
+            "type": "boolean"
+          },
+          "equipmentSupplier": {
+            "type": "string",
+            "nullable": true
+          },
+          "equipmentPrice": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "productCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExplainDecisionRequest": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          },
+          "actor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginClientCommand": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegisterBankEmployeeRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "middleName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegisterClientRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "middleName": {
+            "type": "string",
+            "nullable": true
+          },
+          "inn": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RespondInfoRequest": {
+        "type": "object",
+        "properties": {
+          "statementFilePath": {
+            "type": "string",
+            "nullable": true
+          },
+          "financialReserve": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SignAgreementRequest": {
+        "type": "object",
+        "properties": {
+          "smsCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SynthesizeCustomerRequest": {
+        "type": "object",
+        "properties": {
+          "inn": {
+            "type": "string",
+            "nullable": true
+          },
+          "organizationName": {
+            "type": "string",
+            "nullable": true
+          },
+          "isAlfaClient": {
+            "type": "boolean"
+          },
+          "averageMonthlyTurnover": {
+            "type": "number",
+            "format": "double"
+          },
+          "netCashFlow": {
+            "type": "number",
+            "format": "double"
+          },
+          "existingLoans": {
+            "type": "number",
+            "format": "double"
+          },
+          "monthlyLoanPayments": {
+            "type": "number",
+            "format": "double"
+          },
+          "coefficientOfVariation": {
+            "type": "number",
+            "format": "double"
+          },
+          "activeMonths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "generateSampleTransactions": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateDraftRequest": {
+        "type": "object",
+        "properties": {
+          "requestedAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "ownContribution": {
+            "type": "number",
+            "format": "double"
+          },
+          "requestedTermMonths": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bkiConsent": {
+            "type": "boolean"
+          },
+          "personalDataConsent": {
+            "type": "boolean"
+          },
+          "statementFilePath": {
+            "type": "string",
+            "nullable": true
+          },
+          "financialReserve": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "productCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "apiKey",
+        "description": "Введите JWT токен доступа в формате: Bearer {токен}",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication"
+    },
+    {
+      "name": "Bank Employee Workplace"
+    },
+    {
+      "name": "Client Applications"
+    },
+    {
+      "name": "Client Cabinet"
+    },
+    {
+      "name": "Company Lookup"
+    },
+    {
+      "name": "Credit Products"
+    },
+    {
+      "name": "Equipment Catalog"
+    },
+    {
+      "name": "Integrations & PostgreSQL Simulators"
+    },
+    {
+      "name": "JWKS"
+    },
+    {
+      "name": "ML Service Integrations (FastAPI)"
+    }
+  ]
+}

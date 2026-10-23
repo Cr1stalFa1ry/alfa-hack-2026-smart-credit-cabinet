@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 
 namespace SmartKabinet.Client.Features.Applications.GetApplicationById;
 
@@ -19,10 +20,8 @@ public static class GetApplicationByIdEndpoint
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
 
-            var appDto = await service.GetAsync(id, userContext.UserId.Value, ct);
-            return appDto is not null
-                ? Results.Ok(appDto)
-                : Results.NotFound(new { error = "Заявка не найдена." });
+            var result = await service.GetAsync(id, userContext.UserId.Value, ct);
+            return result.ToHttpResult();
         })
         .RequireAuthorization()
         .WithName("GetClientApplicationById")

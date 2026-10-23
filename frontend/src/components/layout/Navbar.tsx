@@ -20,8 +20,9 @@ export const Navbar: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    const isEmployee = role === 'BankEmployee';
     await logout();
-    navigate('/login');
+    navigate(isEmployee ? '/employee/login' : '/login');
   };
 
   const handleExitDemo = () => {

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using SmartKabinet.Application.Commands;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 
 namespace SmartKabinet.Client.Features.Applications.CreateDraft;
 
@@ -17,7 +18,8 @@ public record CreateDraftRequest(
     bool BkiConsent = true,
     bool PersonalDataConsent = true,
     string? EquipmentSupplier = null,
-    decimal? EquipmentPrice = null
+    decimal? EquipmentPrice = null,
+    string? ProductCode = null
 );
 
 public static class CreateDraftEndpoint
@@ -44,11 +46,12 @@ public static class CreateDraftEndpoint
                 request.BkiConsent,
                 request.PersonalDataConsent,
                 request.EquipmentSupplier,
-                request.EquipmentPrice);
+                request.EquipmentPrice,
+                request.ProductCode);
 
-            var appId = await service.CreateDraftAsync(cmd, ct);
-            
-            return Results.Created($"/api/client/applications/{appId.Value}", new { applicationId = appId.Value, status = "draft" });
+            var result = await service.CreateDraftAsync(cmd, ct);
+            return result.ToHttpResult(appId => 
+                Results.Created($"/api/client/applications/{appId.Value}", new { applicationId = appId.Value, status = "draft" }));
         })
         .RequireAuthorization()
         .WithName("CreateApplicationDraft")

@@ -88,10 +88,10 @@ public class ApplicationSubmittedHandler
         }
 
         // 3. Сценарий prelaunch (Новый бизнес: Stage == 2)
-        if (@event.Stage == 2)
+        if (@event.Stage == 2 || @event.ProductCode == "START")
         {
             // Проверка лимита продукта START (макс 500 000 руб)
-            if (@event.Purpose == 2 && @event.RequestedAmount > 500000m)
+            if ((@event.ProductCode == "START" || @event.Purpose == 2) && @event.RequestedAmount > 500000m)
             {
                 _logger.LogInformation("Prelaunch: сумма превышает лимит продукта START (500 000 руб).");
                 await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
@@ -105,7 +105,7 @@ public class ApplicationSubmittedHandler
 
             // Проверка взноса для Equipment (минимум 20%)
             var totalEqCost = @event.RequestedAmount + @event.OwnContribution;
-            if (@event.Purpose == 1 && totalEqCost > 0 && (@event.OwnContribution / totalEqCost < 0.20m))
+            if ((@event.ProductCode == "EQ" || @event.Purpose == 1) && totalEqCost > 0 && (@event.OwnContribution / totalEqCost < 0.20m))
             {
                 _logger.LogInformation("Prelaunch: взнос на оборудование ниже 20%.");
                 await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
@@ -129,6 +129,20 @@ public class ApplicationSubmittedHandler
         }
 
         // 4. Сценарий operating (Действующий бизнес: Stage == 1)
+        // Проверка взноса для Equipment (минимум 10% для operating)
+        var operatingTotalEqCost = @event.RequestedAmount + @event.OwnContribution;
+        if ((@event.ProductCode == "EQ" || @event.Purpose == 1) && operatingTotalEqCost > 0 && (@event.OwnContribution / operatingTotalEqCost < 0.10m))
+        {
+            _logger.LogInformation("Operating EQ: взнос на оборудование ниже 10%.");
+            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+                @event.ApplicationId,
+                TargetStatus: 13, // Closed (T16 - некредитное препятствие)
+                Decision: 3,
+                ReasonCodes: new List<string> { "CONTRIBUTION_LOW" }
+            ));
+            return;
+        }
+
         // 4.1. Проверка необходимости сведений (тестовый кейс S2 Сидорова: 500100000022)
         if (@event.Inn == "500100000022" && @event.FinancialReserve == null)
         {
@@ -150,7 +164,7 @@ public class ApplicationSubmittedHandler
         var operatingMonths = customer.FinancialAggregates?.ActiveOperatingMonths ?? 60;
         var existingObligations = customer.FinancialAggregates?.MonthlyLoanPaymentsInAlfa ?? 30000m;
         var overdueDays = @event.Inn == "500100000022" ? 10 : 0;
-        var maxTerm = @event.Purpose == 1 ? 48 : 24;
+        var maxTerm = (@event.ProductCode == "EQ" || @event.Purpose == 1) ? 48 : 24;
         var requestedTerm = @event.RequestedTermMonths > 0 ? @event.RequestedTermMonths : 12;
 
         var scoring = ScoringEngine.EvaluateOperating(

@@ -108,12 +108,20 @@ export const authApi = {
 
   registerEmployee: async (data: RegisterEmployeeRequest): Promise<AuthResponse> => {
     try {
+      const parts = data.fullName.trim().split(/\s+/);
+      const lastName = parts[0] || 'Сотрудник';
+      const firstName = parts[1] || parts[0] || 'Банка';
+      const middleName = parts.slice(2).join(' ') || null;
+
       const res = await apiClient.post<any>('/auth/employee/register', {
         username: data.username,
         password: data.password,
+        firstName,
+        lastName,
+        middleName,
         fullName: data.fullName,
         department: data.department || 'Андеррайтинг',
-      }, { timeout: 2000 });
+      }, { timeout: 2500 });
 
       const resData = res.data;
       const accessToken = resData.accessToken || resData.tokens?.accessToken || `jwt-${Date.now()}`;

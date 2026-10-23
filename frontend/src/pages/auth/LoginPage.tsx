@@ -24,9 +24,8 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await login({ username: username.trim(), password });
-      const lower = username.trim().toLowerCase();
-      if (lower.includes('analyst') || lower.includes('admin')) {
+      const loggedUser = await login({ username: username.trim(), password });
+      if (loggedUser.role === 'BankEmployee') {
         navigate('/analyst/queue');
       } else {
         navigate('/client/dashboard');
@@ -74,7 +73,6 @@ export const LoginPage: React.FC = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
         <Card className="shadow-xl p-6 sm:p-8 space-y-6">
-          {/* Main User Login Form */}
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
               Вход в личный кабинет
@@ -91,7 +89,7 @@ export const LoginPage: React.FC = () => {
               leftIcon={<User className="w-4 h-4" />}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="client1 или analyst"
+              placeholder="client1"
               required
             />
 
@@ -102,7 +100,7 @@ export const LoginPage: React.FC = () => {
                 leftIcon={<Lock className="w-4 h-4" />}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="password123 или analyst123"
+                placeholder="password123"
                 required
                 rightIcon={
                   <button
@@ -148,7 +146,7 @@ export const LoginPage: React.FC = () => {
               <div className="flex items-center justify-center gap-1.5 text-amber-900 dark:text-amber-200">
                 <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span className="text-xs font-bold uppercase tracking-wider">
-                  Демонстрационный режим
+                  Демонстрационный режим (Для жюри)
                 </span>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -173,6 +171,17 @@ export const LoginPage: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Subdued link to employee portal */}
+          <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800/60">
+            <Link
+              to="/employee/login"
+              className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors inline-flex items-center gap-1.5"
+            >
+              <ShieldCheck className="w-3 h-3 text-slate-400" />
+              Служебный вход для сотрудников банка
+            </Link>
           </div>
         </Card>
       </div>

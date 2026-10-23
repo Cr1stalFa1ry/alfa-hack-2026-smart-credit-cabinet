@@ -1,5 +1,7 @@
 import { apiClient } from './apiClient';
 import { CreditApplication, CreateDraftRequest, UploadedDocument, ApplicationStatus } from '../types/application';
+import { CreditProductConfig, ProductCode } from '../types/products';
+import { CREDIT_PRODUCTS, ALL_PRODUCTS } from '../config/products';
 import { mockStore } from './mockStore';
 import { userStore } from './userStore';
 import { egripApi } from './egripApi';
@@ -22,16 +24,44 @@ function getCurrentUserId(): string {
 }
 
 export function mapBackendApplication(item: any): CreditApplication {
+  const stage = item.stage === 2 || item.businessType === 'prelaunch' ? 'prelaunch' : 'operating';
+  const purposeCode = item.purpose === 1 || item.purposeCode === 'equipment' || String(item.purpose).toLowerCase().includes('оборудован')
+    ? 'equipment'
+    : 'working_capital';
+
+  const productCode = item.productCode
+    ? String(item.productCode).toUpperCase()
+    : purposeCode === 'equipment'
+    ? 'EQ'
+    : stage === 'prelaunch'
+    ? 'START'
+    : 'WC';
+
   return {
     id: String(item.id || item.applicationId),
     inn: item.inn || '',
     companyName: item.companyName || `ИП (ИНН ${item.inn || ''})`,
-    businessType: item.stage === 2 || item.businessType === 'prelaunch' ? 'prelaunch' : 'operating',
+    productCode: productCode as any,
+    stage,
+    businessType: stage,
+    purposeCode,
     requestedAmount: Number(item.requestedAmount || 0),
+    ownContribution: Number(item.ownContribution || 0),
+    equipmentPrice: item.equipmentPrice ? Number(item.equipmentPrice) : undefined,
+    equipmentSupplier: item.equipmentSupplier,
+    equipmentList: item.equipmentList,
     requestedTermMonths: Number(item.requestedTermMonths || 12),
+    neededByDate: item.neededByDate,
+    asSoonAsPossible: item.asSoonAsPossible ?? true,
+    bkiConsent: item.bkiConsent ?? true,
+    personalDataConsent: item.personalDataConsent ?? true,
     purpose: item.purpose || 'Кредит на развитие бизнеса',
     monthlyRevenue: Number(item.monthlyRevenue || 0),
     monthlyExpenses: Number(item.monthlyExpenses || 0),
+    clientAnswers: item.clientAnswers,
+    specialistNotes: item.specialistNotes,
+    scenario: item.scenario,
+    submissionPayload: item.submissionPayload,
     status: (item.status ? String(item.status).toLowerCase() : 'draft') as ApplicationStatus,
     createdAt: item.createdAt || new Date().toISOString(),
     updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
@@ -105,16 +135,40 @@ export const clientApi = {
     const egrip = await egripApi.getCompanyByInn(data.inn);
     const companyTitle = egrip?.fullName || data.companyName || `ИП (ИНН ${data.inn})`;
 
+    const stage = data.stage || (data.businessType === 'prelaunch' ? 'prelaunch' : 'operating');
+    const purposeCode = data.purposeCode || (data.purpose?.toLowerCase().includes('оборудован') ? 'equipment' : 'working_capital');
+    const productCode = data.productCode || (purposeCode === 'equipment' ? 'EQ' : (stage === 'prelaunch' ? 'START' : 'WC'));
+
     let createdApp: CreditApplication = {
       id: `app-${Date.now().toString().slice(-6)}`,
       inn: data.inn,
       companyName: companyTitle,
-      businessType: data.businessType,
+      productCode,
+      stage,
+      businessType: stage,
+      purposeCode,
       requestedAmount: data.requestedAmount,
+      ownContribution: data.ownContribution || 0,
+      equipmentPrice: data.equipmentPrice,
+      equipmentSupplier: data.equipmentSupplier,
       requestedTermMonths: data.requestedTermMonths,
+      neededByDate: data.neededByDate,
+      asSoonAsPossible: data.asSoonAsPossible ?? true,
+      bkiConsent: data.bkiConsent ?? false,
+      bkiConsentDate: data.bkiConsent ? (data.bkiConsentDate || new Date().toISOString()) : undefined,
+      bkiConsentValidUntil: data.bkiConsent ? new Date(Date.now() + 180 * 24 * 3600 * 1000).toISOString() : undefined,
+      personalDataConsent: data.personalDataConsent ?? false,
+      personalDataConsentDate: data.personalDataConsent ? (data.personalDataConsentDate || new Date().toISOString()) : undefined,
+      leasingPartnerConsent: data.leasingPartnerConsent ?? false,
+      leasingPartnerName: data.leasingPartnerName,
+      leasingPartnerConsentDate: data.leasingPartnerConsent ? (data.leasingPartnerConsentDate || new Date().toISOString()) : undefined,
       purpose: data.purpose,
       monthlyRevenue: data.monthlyRevenue,
       monthlyExpenses: data.monthlyExpenses,
+      clientAnswers: data.clientAnswers,
+      specialistNotes: data.specialistNotes,
+      scenario: data.scenario,
+      submissionPayload: data.submissionPayload,
       status: 'draft',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -127,7 +181,7 @@ export const clientApi = {
           toStatus: 'draft',
           actor: 'client',
           actorName: 'Клиент ИП',
-          comment: 'Создание черновика заявки',
+          comment: `Создание черновика заявки на продукт ${productCode}`,
           timestamp: new Date().toISOString(),
         },
       ],
@@ -136,16 +190,22 @@ export const clientApi = {
     // Try posting to backend
     if (!isDemoActive()) {
       try {
-        const res = await apiClient.post<any>('/client/applications', {
+        const res = await apiClient.post<any>('/client/applications/draft', {
           inn: data.inn,
+          stage: stage === 'prelaunch' ? 2 : 1,
+          purpose: purposeCode === 'equipment' ? 1 : 2,
+          productCode,
           requestedAmount: data.requestedAmount,
+          ownContribution: data.ownContribution || 0,
           requestedTermMonths: data.requestedTermMonths,
-          purpose: data.purpose,
-          businessType: data.businessType,
+          purposeComment: data.purpose,
+          businessType: stage,
           monthlyRevenue: data.monthlyRevenue,
           monthlyExpenses: data.monthlyExpenses,
-          bkiConsent: true,
-          personalDataConsent: true,
+          equipmentSupplier: data.equipmentSupplier,
+          equipmentPrice: data.equipmentPrice,
+          bkiConsent: data.bkiConsent ?? true,
+          personalDataConsent: data.personalDataConsent ?? true,
         }, { timeout: 2500 });
 
         if (res.data?.id || res.data?.applicationId) {
@@ -376,11 +436,16 @@ export const clientApi = {
     };
 
     if (!isDemoActive()) {
+      try {
+        await apiClient.post(`/client/applications/${id}/accept`, {});
+      } catch {
+        // fallback
+      }
       return userStore.transition(
         userId,
         id,
-        'T12',
-        'offer',
+        'T21' as any,
+        'accepted' as any,
         'client',
         'Клиент ИП',
         `Клиент подтвердил согласие с условиями оферты (${updatedOffer.approvedTermMonths} мес, ${updatedOffer.monthlyPayment} ₽/мес)`,
@@ -391,13 +456,69 @@ export const clientApi = {
 
     return mockStore.transition(
       id,
-      'T12',
-      'offer',
+      'T21' as any,
+      'accepted' as any,
       'client',
       'Клиент ИП',
       `Клиент подтвердил согласие с условиями оферты (${updatedOffer.approvedTermMonths} мес, ${updatedOffer.monthlyPayment} ₽/мес)`,
       undefined,
       { offer: updatedOffer }
+    );
+  },
+
+  signAgreement: async (id: string, smsCode: string = '1234'): Promise<CreditApplication> => {
+    const userId = getCurrentUserId();
+    if (!isDemoActive()) {
+      try {
+        await apiClient.post(`/client/applications/${id}/sign`, { smsCode });
+      } catch {
+        // fallback
+      }
+      return userStore.transition(
+        userId,
+        id,
+        'T22' as any,
+        'signed_sim' as any,
+        'client',
+        'Клиент ИП',
+        'Кредитный договор подписан электронной подписью (симуляция ЭЦП/SMS)'
+      );
+    }
+    return mockStore.transition(
+      id,
+      'T22' as any,
+      'signed_sim' as any,
+      'client',
+      'Клиент ИП',
+      'Кредитный договор подписан электронной подписью (симуляция ЭЦП/SMS)'
+    );
+  },
+
+  disburseFunds: async (id: string): Promise<CreditApplication> => {
+    const userId = getCurrentUserId();
+    if (!isDemoActive()) {
+      try {
+        await apiClient.post(`/client/applications/${id}/disburse`, {});
+      } catch {
+        // fallback
+      }
+      return userStore.transition(
+        userId,
+        id,
+        'T23' as any,
+        'disbursed_sim' as any,
+        'system',
+        'SmartKabinet Engine',
+        'Кредитные средства успешно зачислены на расчётный счёт ИП'
+      );
+    }
+    return mockStore.transition(
+      id,
+      'T23' as any,
+      'disbursed_sim' as any,
+      'system',
+      'SmartKabinet Engine',
+      'Кредитные средства успешно зачислены на расчётный счёт ИП'
     );
   },
 
@@ -427,5 +548,40 @@ export const clientApi = {
     }
 
     return doc;
+  },
+
+  getCreditProducts: async (): Promise<CreditProductConfig[]> => {
+    if (!isDemoActive()) {
+      try {
+        const res = await apiClient.get<any[]>('/products');
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          return res.data.map((p) => {
+            const code = (p.code || 'WC').toUpperCase() as ProductCode;
+            const base = CREDIT_PRODUCTS[code] || CREDIT_PRODUCTS.WC;
+            return {
+              ...base,
+              name: p.name || base.name,
+              description: p.description || base.description,
+              minAmount: Number(p.minAmount ?? base.minAmount),
+              maxAmount: Number(p.maxAmount ?? base.maxAmount),
+              minTermMonths: Number(p.minTermMonths ?? base.minTermMonths),
+              maxTermMonths: Number(p.maxTermMonths ?? base.maxTermMonths),
+              minInterestRate: Number(p.minInterestRate ?? base.minInterestRate),
+              maxInterestRate: Number(p.maxInterestRate ?? base.maxInterestRate),
+              decisionRule: p.conditions || base.decisionRule,
+            };
+          });
+        }
+      } catch {
+        // use local config fallback
+      }
+    }
+    return ALL_PRODUCTS;
+  },
+
+  getCreditProductByCode: async (code: ProductCode): Promise<CreditProductConfig> => {
+    const products = await clientApi.getCreditProducts();
+    const found = products.find((p) => p.code === code);
+    return found || CREDIT_PRODUCTS[code] || CREDIT_PRODUCTS.WC;
   },
 };

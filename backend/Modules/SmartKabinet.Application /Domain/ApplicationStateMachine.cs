@@ -39,12 +39,26 @@ public static class ApplicationStateMachine
         (ApplicationStatus.NeedInfo, ApplicationStatus.Closed),
         (ApplicationStatus.WaitingCheck, ApplicationStatus.Closed),
         (ApplicationStatus.Review, ApplicationStatus.Closed),
-        (ApplicationStatus.Offer, ApplicationStatus.Closed)
+        (ApplicationStatus.Offer, ApplicationStatus.Closed),
+        (ApplicationStatus.Accepted, ApplicationStatus.Closed),
+
+        // Посткредитная цепочка: принятие, подписание, выдача (T21–T28)
+        // T21: Принятие оферты клиентом
+        (ApplicationStatus.Offer, ApplicationStatus.Accepted),
+        (ApplicationStatus.Offer, ApplicationStatus.OfferRejected),
+        // T22: Проверка условий и подписание договора (симуляция ЭЦП / SMS-кода)
+        (ApplicationStatus.Accepted, ApplicationStatus.PreConditions),
+        (ApplicationStatus.Accepted, ApplicationStatus.SignedSim),
+        (ApplicationStatus.PreConditions, ApplicationStatus.SignedSim),
+        // T23: Подготовка и зачисление кредитных средств на расчётный счёт ИП
+        (ApplicationStatus.SignedSim, ApplicationStatus.ReadyTodisburse),
+        (ApplicationStatus.SignedSim, ApplicationStatus.DisbursedSim),
+        (ApplicationStatus.ReadyTodisburse, ApplicationStatus.DisbursedSim)
     };
 
     public static bool CanTransition(ApplicationStatus from, ApplicationStatus to)
     {
-        if (from == ApplicationStatus.Declined || from == ApplicationStatus.Closed)
+        if (from == ApplicationStatus.Declined || from == ApplicationStatus.Closed || from == ApplicationStatus.DisbursedSim)
         {
             return false; // Из финальных статусов выходов нет
         }

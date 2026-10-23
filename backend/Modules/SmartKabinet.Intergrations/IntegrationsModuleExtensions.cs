@@ -10,6 +10,7 @@ using SmartKabinet.Intergrations.AlfaBank.Services;
 using SmartKabinet.Intergrations.AlfaBank.Simulators;
 using SmartKabinet.Intergrations.Ml.Models;
 using SmartKabinet.Intergrations.Ml.Services;
+using SmartKabinet.Intergrations.Synthetic.Services;
 
 namespace SmartKabinet.Intergrations;
 
@@ -31,6 +32,8 @@ public static class IntegrationsModuleExtensions
         services.AddScoped<GetCustomerByInnHandler>();
         services.AddScoped<SynthesizeCustomerHandler>();
         services.AddScoped<IAlfaBankCustomerDataClient, AlfaBankSyntheticSimulator>();
+        services.AddScoped<ICompanyLookupService, CompanyLookupService>();
+        services.AddScoped<IEquipmentCatalogService, EquipmentCatalogService>();
 
         // 3. ML Service HTTP Client (Python / FastAPI)
         services.AddHttpClient<IMlServiceClient, MlServiceClient>();
@@ -83,6 +86,61 @@ public static class IntegrationsModuleExtensions
         })
         .WithName("GetAlfaCustomerByInn")
         .WithSummary("Получение данных клиента Альфа-Банка из PostgreSQL по ИНН");
+
+        // GET /api/integrations/egrip/{inn} (Синтетический реестр ЕГРИП и Альфа-Банка)
+        async Task<IResult> GetEgripHandler(string inn, ICompanyLookupService lookupService, CancellationToken ct)
+        {
+            var result = await lookupService.LookupByInnAsync(inn, ct);
+            if (!result.IsSuccess)
+            {
+                return result.Error.Code == "Lookup.NotFound"
+                    ? Results.NotFound(new { error = result.Error.Code, message = result.Error.Message })
+                    : Results.BadRequest(new { error = result.Error.Code, message = result.Error.Message });
+            }
+
+            var c = result.Value;
+            var status = c.IsBankrupt ? "BANKRUPT" : (c.EgripStatus ?? "ACTIVE");
+            var registrationDate = c.RegistrationDate?.ToString("yyyy-MM-dd") ?? string.Empty;
+            var okved = c.OkvedMain ?? "47.19";
+            var okvedName = c.OkvedMainName ?? "Торговля розничная";
+            var region = c.RegionName ?? c.RegionCode ?? "г. Москва";
+            var ogrnip = !string.IsNullOrWhiteSpace(c.Ogrnip) ? c.Ogrnip : $"320{c.Inn}01";
+
+            return Results.Ok(new
+            {
+                inn = c.Inn,
+                ogrnip,
+                fullName = c.FullName ?? $"ИП {c.Inn}",
+                status,
+                registrationDate,
+                okved,
+                okvedName,
+                region,
+                firstName = c.FirstName,
+                lastName = c.LastName,
+                patronymic = c.Patronymic,
+                taxRegime = c.TaxRegime,
+                mspCategory = c.MspCategory,
+                suggestedStage = c.SuggestedStage,
+                isAlfaClient = c.IsAlfaClient,
+                annualRevenue = c.AnnualRevenue,
+                netCashFlow = c.NetCashFlow,
+                averageMonthlyExpenses = c.AverageMonthlyExpenses,
+                operatingMonths = c.OperatingMonths,
+                hasFnsBlock = c.HasFnsBlock,
+                zskRiskLevel = c.ZskRiskLevel,
+                isBankrupt = c.IsBankrupt
+            });
+        }
+
+        group.MapGet("/egrip/{inn}", GetEgripHandler)
+            .AllowAnonymous()
+            .WithName("GetEgripByInn")
+            .WithSummary("Получение данных ИП из синтетического ЕГРИП и базы Альфа-Банка по ИНН");
+
+        app.MapGet("/integrations/egrip/{inn}", GetEgripHandler)
+            .AllowAnonymous()
+            .ExcludeFromDescription();
 
         // POST /api/integrations/synthesize-customer
         group.MapPost("/synthesize-customer", async (

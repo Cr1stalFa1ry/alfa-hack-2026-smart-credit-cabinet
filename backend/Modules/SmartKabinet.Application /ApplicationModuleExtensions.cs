@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Application.Features.Commands;
+using SmartKabinet.Application.Features.Products;
 using SmartKabinet.Application.Infrastructure.Persistence;
 
 namespace SmartKabinet.Application;
@@ -43,6 +44,9 @@ public static class ApplicationModuleExtensions
         services.AddScoped<ApplicationQueriesHandler>();
         services.AddScoped<IGetApplication>(sp => sp.GetRequiredService<ApplicationQueriesHandler>());
         services.AddScoped<IApplicationModule>(sp => sp.GetRequiredService<ApplicationQueriesHandler>());
+
+        services.AddSingleton<CreditProductCatalog>();
+        services.AddSingleton<IGetCreditProducts>(sp => sp.GetRequiredService<CreditProductCatalog>());
 
         return services;
     }

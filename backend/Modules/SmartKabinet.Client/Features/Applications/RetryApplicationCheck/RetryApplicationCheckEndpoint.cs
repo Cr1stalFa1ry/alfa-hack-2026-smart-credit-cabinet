@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using SmartKabinet.Application.Commands;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 
 namespace SmartKabinet.Client.Features.Applications.RetryApplicationCheck;
 
@@ -20,17 +21,11 @@ public static class RetryApplicationCheckEndpoint
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
 
-            try
-            {
-                var cmd = new RetryCheckCommand(id, userContext.UserId.Value);
-                await service.RetryCheckAsync(cmd, ct);
+            var cmd = new RetryCheckCommand(id, userContext.UserId.Value);
+            var result = await service.RetryCheckAsync(cmd, ct);
 
-                return Results.Ok(new { message = "Повторная проверка запущена", applicationId = id, status = "checking" });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            return result.ToHttpResult(() =>
+                Results.Ok(new { message = "Повторная проверка запущена", applicationId = id, status = "checking" }));
         })
         .RequireAuthorization()
         .WithName("RetryApplicationCheck")

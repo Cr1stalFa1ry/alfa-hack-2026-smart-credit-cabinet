@@ -30,6 +30,7 @@ public static class ApplicationsEndpoints
         group.MapGetApplicationByIdEndpoint();
         group.MapGetApplicationsEndpoint();
         group.MapGetExplanationEndpoint();
+        group.MapSignAndDisburseEndpoints();
 
         return app;
     }

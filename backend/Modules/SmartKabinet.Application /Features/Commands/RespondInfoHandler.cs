@@ -3,30 +3,31 @@ using SmartKabinet.Application.Commands;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Application.Domain;
 using SmartKabinet.Application.Infrastructure.Persistence;
+using SmartKabinet.Shared;
 using Wolverine;
 
 namespace SmartKabinet.Application.Features.Commands;
 
 public class RespondInfoHandler(ApplicationDbContext dbContext, IMessageBus bus) : IRespondToInfoRequest
 {
-    public async Task RespondToInfoRequestAsync(RespondInfoCommand cmd, CancellationToken ct = default)
+    public async Task<Result> RespondToInfoRequestAsync(RespondInfoCommand cmd, CancellationToken ct = default)
     {
-        await Handle(cmd, ct);
+        return await Handle(cmd, ct);
     }
 
-    public async Task Handle(RespondInfoCommand cmd, CancellationToken ct = default)
+    public async Task<Result> Handle(RespondInfoCommand cmd, CancellationToken ct = default)
     {
         var app = await dbContext.Applications.FirstOrDefaultAsync(
             a => a.Id == cmd.ApplicationId && a.ClientId == cmd.ClientId, ct);
 
         if (app is null)
         {
-            throw new InvalidOperationException($"Заявка {cmd.ApplicationId} не найдена для данного клиента.");
+            return Error.NotFound("Application.NotFound", $"Заявка {cmd.ApplicationId} не найдена для данного клиента.");
         }
 
         if (app.Status != ApplicationStatus.NeedInfo)
         {
-            throw new InvalidOperationException($"Предоставить сведения можно только в статусе need_info (текущий: {app.Status}).");
+            return Error.Conflict("Application.InvalidStatus", $"Предоставить сведения можно только в статусе need_info (текущий: {app.Status}).");
         }
 
         if (cmd.StatementFilePath is not null) app.StatementFilePath = cmd.StatementFilePath;
@@ -53,6 +54,11 @@ public class RespondInfoHandler(ApplicationDbContext dbContext, IMessageBus bus)
             Comment = "Заявка возвращена на повторную автопроверку"
         });
 
+        if (string.IsNullOrWhiteSpace(app.ProductCode))
+        {
+            app.ProductCode = CreditProductCodes.ResolveProductCode(app.Stage, app.Purpose);
+        }
+
         await dbContext.SaveChangesAsync(ct);
 
         await bus.PublishAsync(new ApplicationSubmittedEvent(
@@ -66,7 +72,10 @@ public class RespondInfoHandler(ApplicationDbContext dbContext, IMessageBus bus)
             app.RequestedTermMonths ?? 12,
             app.ProjectedMonthlyRevenue,
             app.FinancialReserve,
-            app.PersonalIncome
+            app.PersonalIncome,
+            app.ProductCode
         ));
+
+        return Result.Success();
     }
 }

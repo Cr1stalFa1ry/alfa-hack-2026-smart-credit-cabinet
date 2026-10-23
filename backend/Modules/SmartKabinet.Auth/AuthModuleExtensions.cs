@@ -15,6 +15,7 @@ using SmartKabinet.Auth.Features.Commands.RevokeRefreshToken;
 using SmartKabinet.Auth.Features.Queries;
 using SmartKabinet.Auth.Infrastructure.Persistence;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 
 namespace SmartKabinet.Auth;
 
@@ -118,12 +119,13 @@ public static class AuthModuleExtensions
             LoginHandler handler,
             HttpResponse response) =>
         {
-            var authResponse = await handler.HandleAsync(command);
-            if (authResponse is null)
+            var result = await handler.HandleAsync(command);
+            if (result.IsFailure)
             {
-                return Results.Unauthorized();
+                return result.ToHttpResult();
             }
 
+            var authResponse = result.Value;
             // Устанавливаем HttpOnly cookies для браузера
             AuthCookieHelper.SetAuthCookie(response, authResponse.AccessToken, 60);
             AuthCookieHelper.SetRefreshCookie(response, authResponse.RefreshToken, 7);
@@ -139,17 +141,13 @@ public static class AuthModuleExtensions
             RegisterHandler handler,
             HttpResponse response) =>
         {
-            var (authResponse, error) = await handler.HandleAsync(request);
-            if (!string.IsNullOrEmpty(error))
+            var result = await handler.HandleAsync(request);
+            if (result.IsFailure)
             {
-                return Results.BadRequest(new { error });
+                return result.ToHttpResult();
             }
 
-            if (authResponse is null)
-            {
-                return Results.BadRequest(new { error = "Не удалось зарегистрировать пользователя." });
-            }
-
+            var authResponse = result.Value;
             AuthCookieHelper.SetAuthCookie(response, authResponse.AccessToken, 60);
             AuthCookieHelper.SetRefreshCookie(response, authResponse.RefreshToken, 7);
 
@@ -164,17 +162,13 @@ public static class AuthModuleExtensions
             RegisterBankEmployeeHandler handler,
             HttpResponse response) =>
         {
-            var (authResponse, error) = await handler.HandleAsync(request);
-            if (!string.IsNullOrEmpty(error))
+            var result = await handler.HandleAsync(request);
+            if (result.IsFailure)
             {
-                return Results.BadRequest(new { error });
+                return result.ToHttpResult();
             }
 
-            if (authResponse is null)
-            {
-                return Results.BadRequest(new { error = "Не удалось зарегистрировать сотрудника банка." });
-            }
-
+            var authResponse = result.Value;
             AuthCookieHelper.SetAuthCookie(response, authResponse.AccessToken, 60);
             AuthCookieHelper.SetRefreshCookie(response, authResponse.RefreshToken, 7);
 

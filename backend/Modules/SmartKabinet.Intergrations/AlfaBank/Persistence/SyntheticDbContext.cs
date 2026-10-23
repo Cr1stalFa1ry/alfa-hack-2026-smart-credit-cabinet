@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartKabinet.Intergrations.AlfaBank.Persistence.Entities;
+using SmartKabinet.Intergrations.Synthetic.Entities;
 
 namespace SmartKabinet.Intergrations.AlfaBank.Persistence;
 
@@ -12,6 +13,13 @@ public class SyntheticDbContext : DbContext
     public DbSet<SyntheticAlfaCustomerEntity> Customers => Set<SyntheticAlfaCustomerEntity>();
     public DbSet<SyntheticAlfaAccountEntity> Accounts => Set<SyntheticAlfaAccountEntity>();
     public DbSet<SyntheticAlfaTransactionEntity> Transactions => Set<SyntheticAlfaTransactionEntity>();
+
+    public DbSet<SyntheticEgripEntity> EgripRecords => Set<SyntheticEgripEntity>();
+    public DbSet<SyntheticFnsBlockEntity> FnsBlocks => Set<SyntheticFnsBlockEntity>();
+    public DbSet<SyntheticZskRiskEntity> ZskRisks => Set<SyntheticZskRiskEntity>();
+    public DbSet<SyntheticEfrsbBankruptcyEntity> Bankruptcies => Set<SyntheticEfrsbBankruptcyEntity>();
+    public DbSet<SyntheticEquipmentEntity> EquipmentCatalog => Set<SyntheticEquipmentEntity>();
+    public DbSet<SyntheticSupplierEntity> Suppliers => Set<SyntheticSupplierEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -64,6 +72,90 @@ public class SyntheticDbContext : DbContext
             entity.Property(t => t.Category).HasMaxLength(50);
             entity.HasIndex(t => t.Date);
         });
+
+        // Таблицы схемы synthetic (ЕГРИП, ФНС, ЗСК, Банкротства, Оборудование, Поставщики)
+        modelBuilder.Entity<SyntheticEgripEntity>(entity =>
+        {
+            entity.ToTable("egrip", "synthetic");
+            entity.HasKey(e => e.Inn);
+            entity.Property(e => e.Inn).HasMaxLength(12);
+            entity.Property(e => e.Ogrnip).HasMaxLength(15);
+            entity.Property(e => e.LastName).HasMaxLength(100);
+            entity.Property(e => e.FirstName).HasMaxLength(100);
+            entity.Property(e => e.Patronymic).HasMaxLength(100);
+            entity.Property(e => e.FullName).HasMaxLength(255);
+            entity.Property(e => e.EgripStatus).HasMaxLength(50);
+            entity.Property(e => e.RegionCode).HasMaxLength(10);
+            entity.Property(e => e.RegionName).HasMaxLength(150);
+            entity.Property(e => e.OkvedMain).HasMaxLength(20);
+            entity.Property(e => e.OkvedMainName).HasMaxLength(255);
+            entity.Property(e => e.TaxRegime).HasMaxLength(100);
+            entity.Property(e => e.MspCategory).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<SyntheticFnsBlockEntity>(entity =>
+        {
+            entity.ToTable("fns_account_blocks", "synthetic");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Inn).HasMaxLength(12);
+            entity.Property(e => e.DecisionNumber).HasMaxLength(50);
+            entity.Property(e => e.TaxOfficeCode).HasMaxLength(20);
+            entity.Property(e => e.BankBik).HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<SyntheticZskRiskEntity>(entity =>
+        {
+            entity.ToTable("zsk_risk", "synthetic");
+            entity.HasKey(e => e.Inn);
+            entity.Property(e => e.Inn).HasMaxLength(12);
+            entity.Property(e => e.RiskLevel).HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<SyntheticEfrsbBankruptcyEntity>(entity =>
+        {
+            entity.ToTable("efrsb_bankruptcies", "synthetic");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Inn).HasMaxLength(12);
+            entity.Property(e => e.MessageType).HasMaxLength(100);
+            entity.Property(e => e.Procedure).HasMaxLength(100);
+            entity.Property(e => e.CaseNumber).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<SyntheticEquipmentEntity>(entity =>
+        {
+            entity.ToTable("equipment_catalog", "synthetic");
+            entity.HasKey(e => e.Category);
+            entity.Property(e => e.Category).HasMaxLength(50);
+            entity.Property(e => e.Name).HasMaxLength(255);
+            entity.Property(e => e.ReferencePriceRub).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<SyntheticSupplierEntity>(entity =>
+        {
+            entity.ToTable("suppliers", "synthetic");
+            entity.HasKey(e => e.Inn);
+            entity.Property(e => e.Inn).HasMaxLength(12);
+            entity.Property(e => e.Ogrn).HasMaxLength(20);
+            entity.Property(e => e.Name).HasMaxLength(255);
+            entity.Property(e => e.Status).HasMaxLength(50);
+            entity.Property(e => e.Phone).HasMaxLength(50);
+            entity.Property(e => e.Email).HasMaxLength(100);
+            entity.Property(e => e.DirectorInn).HasMaxLength(12);
+        });
+
+        // Автоматический snake_case маппинг колонок для схемы synthetic
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            if (entity.GetSchema() == "synthetic")
+            {
+                foreach (var property in entity.GetProperties())
+                {
+                    var name = property.Name;
+                    var snakeCase = System.Text.RegularExpressions.Regex.Replace(name, "([a-z0-9])([A-Z])", "$1_$2").ToLower();
+                    property.SetColumnName(snakeCase);
+                }
+            }
+        }
     }
 
     /// <summary>

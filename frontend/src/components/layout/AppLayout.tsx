@@ -6,7 +6,6 @@ import {
   FileText,
   PlusCircle,
   ShieldCheck,
-  Cpu,
 } from 'lucide-react';
 
 export const AppLayout: React.FC = () => {
@@ -67,29 +66,7 @@ export const AppLayout: React.FC = () => {
                 </NavLink>
               </>
             )}
-
-            {/* Dev helper link to view State Machine Map */}
-            <NavLink
-              to="/dev/state-machine"
-              className={({ isActive }) =>
-                `px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all ${
-                  isActive
-                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`
-              }
-            >
-              <Cpu className="w-4 h-4" />
-              State Machine (T01–T17)
-            </NavLink>
           </nav>
-
-          <div className="hidden md:flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              Backend: .NET 10 Modular Monolith (Wolverine)
-            </span>
-          </div>
         </div>
       </div>
 
@@ -102,11 +79,6 @@ export const AppLayout: React.FC = () => {
       <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 mt-12 text-center text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© 2026 АО «АЛЬФА-БАНК». Хакатон «Альфа-Будущее 2026». Проект «Умный кредитный кабинет предпринимателя».</p>
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-slate-400 dark:text-slate-500">State Machine T01–T17</span>
-            <span>•</span>
-            <span className="font-mono text-slate-400 dark:text-slate-500">RS256 JWT & WolverineFx</span>
-          </div>
         </div>
       </footer>
     </div>

@@ -7,12 +7,12 @@ export const egripApi = {
     const cleanInn = inn.trim();
     if (!cleanInn) return null;
 
-    // Try live API first if available
+    // Try live API first if available (SmartKabinet.Intergrations)
     try {
-      const res = await apiClient.get<EgripCompany>(`/integrations/egrip/${cleanInn}`, { timeout: 1500 });
-      if (res.data) return res.data;
+      const res = await apiClient.get<EgripCompany>(`/integrations/egrip/${cleanInn}`, { timeout: 3500 });
+      if (res.data && res.data.fullName) return res.data;
     } catch {
-      // Fallback
+      // Fallback to static mock only if backend is unreachable or returns 404
     }
 
     // Check predefined mock companies with real names

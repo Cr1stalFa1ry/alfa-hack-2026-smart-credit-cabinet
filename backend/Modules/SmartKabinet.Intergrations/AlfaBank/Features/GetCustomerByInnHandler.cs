@@ -45,7 +45,60 @@ public class GetCustomerByInnHandler
 
         if (customer is null)
         {
-            return AlfaCustomerProfileResult.NotFound(inn);
+            var egrip = await _dbContext.EgripRecords
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Inn == inn, cancellationToken);
+
+            if (egrip is null)
+            {
+                return AlfaCustomerProfileResult.NotFound(inn);
+            }
+
+            var hasFnsBlock = await _dbContext.FnsBlocks
+                .AsNoTracking()
+                .AnyAsync(b => b.Inn == inn, cancellationToken);
+
+            var hasBankruptcy = await _dbContext.Bankruptcies
+                .AsNoTracking()
+                .AnyAsync(b => b.Inn == inn, cancellationToken);
+
+            var zsk = await _dbContext.ZskRisks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(z => z.Inn == inn, cancellationToken);
+
+            var regDate = egrip.RegistrationDate ?? DateTime.UtcNow.AddMonths(-12);
+            var operatingMonths = (int)Math.Max(1, (DateTime.UtcNow - regDate).TotalDays / 30.4);
+
+            return AlfaCustomerProfileResult.Found(new AlfaCustomerProfile
+            {
+                Inn = egrip.Inn,
+                OrganizationName = egrip.FullName ?? "ИП",
+                IsAlfaClient = false,
+                ClientSince = regDate,
+                RelationshipMonths = operatingMonths,
+                Segment = "SmallBusiness",
+                BranchOffice = egrip.RegionName ?? "Москва",
+                Accounts = new List<AlfaAccountInfo>(),
+                FinancialAggregates = new AlfaFinancialAggregates
+                {
+                    AverageMonthlyTurnover = 500000m,
+                    AverageMonthlyExpenses = 300000m,
+                    NetCashFlow = 200000m,
+                    AnnualRevenue = 6000000m,
+                    CoefficientOfVariation = 0.15m,
+                    MonthlyLoanPaymentsInAlfa = 0m,
+                    ExistingLoansTotalBalance = 0m,
+                    ActiveOperatingMonths = operatingMonths
+                },
+                RiskFlags = new AlfaCustomerRiskFlags
+                {
+                    Has115FzBlocks = hasFnsBlock || (zsk?.RiskLevel == "HIGH"),
+                    HasBankruptcySigns = hasBankruptcy,
+                    HasSuspensionByFns = hasFnsBlock,
+                    HasCourtBailiffEnforcements = false,
+                    DaysWithoutOperations = 0
+                }
+            });
         }
 
         var profile = new AlfaCustomerProfile

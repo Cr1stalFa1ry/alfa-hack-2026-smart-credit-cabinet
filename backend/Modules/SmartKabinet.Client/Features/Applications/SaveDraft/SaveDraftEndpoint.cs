@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using SmartKabinet.Application.Commands;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 
 namespace SmartKabinet.Client.Features.Applications.SaveDraft;
 
@@ -14,7 +15,8 @@ public record UpdateDraftRequest(
     bool BkiConsent,
     bool PersonalDataConsent,
     string? StatementFilePath = null,
-    decimal? FinancialReserve = null
+    decimal? FinancialReserve = null,
+    string? ProductCode = null
 );
 
 public static class SaveDraftEndpoint
@@ -31,27 +33,20 @@ public static class SaveDraftEndpoint
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
 
-            try
-            {
-                var cmd = new SaveDraftCommand(
-                    id,
-                    userContext.UserId.Value,
-                    request.RequestedAmount,
-                    request.OwnContribution,
-                    request.RequestedTermMonths,
-                    request.BkiConsent,
-                    request.PersonalDataConsent,
-                    request.StatementFilePath,
-                    request.FinancialReserve);
+            var cmd = new SaveDraftCommand(
+                id,
+                userContext.UserId.Value,
+                request.RequestedAmount,
+                request.OwnContribution,
+                request.RequestedTermMonths,
+                request.BkiConsent,
+                request.PersonalDataConsent,
+                request.StatementFilePath,
+                request.FinancialReserve,
+                request.ProductCode);
 
-                await service.SaveDraftAsync(cmd, ct);
-
-                return Results.Ok(new { message = "Черновик успешно сохранён", applicationId = id, status = "draft" });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var result = await service.SaveDraftAsync(cmd, ct);
+            return result.ToHttpResult(() => Results.Ok(new { message = "Черновик успешно сохранён", applicationId = id, status = "draft" }));
         })
         .RequireAuthorization()
         .WithName("UpdateApplicationDraft")

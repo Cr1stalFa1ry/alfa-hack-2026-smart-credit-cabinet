@@ -18,6 +18,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\Shared\SmartKabinet.Shared\SmartKabinet.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Folder Include="Features\Queries\" />
     </ItemGroup>
 

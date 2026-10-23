@@ -11,7 +11,8 @@ public record CreateDraftCommand(
     bool BkiConsent = true,
     bool PersonalDataConsent = true,
     string? EquipmentSupplier = null,
-    decimal? EquipmentPrice = null
+    decimal? EquipmentPrice = null,
+    string? ProductCode = null
 )
 {
     public CreateDraftCommand(
@@ -24,8 +25,9 @@ public record CreateDraftCommand(
         bool bkiConsent = true,
         bool personalDataConsent = true,
         string? equipmentSupplier = null,
-        decimal? equipmentPrice = null)
-        : this(Guid.Empty, inn, stage, purpose, requestedAmount, ownContribution, requestedTermMonths, bkiConsent, personalDataConsent, equipmentSupplier, equipmentPrice)
+        decimal? equipmentPrice = null,
+        string? productCode = null)
+        : this(Guid.Empty, inn, stage, purpose, requestedAmount, ownContribution, requestedTermMonths, bkiConsent, personalDataConsent, equipmentSupplier, equipmentPrice, productCode)
     {
     }
 }

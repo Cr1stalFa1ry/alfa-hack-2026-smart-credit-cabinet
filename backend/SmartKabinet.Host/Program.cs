@@ -12,6 +12,7 @@ using SmartKabinet.BankEmployee.Infrastructure.Persistence;
 using SmartKabinet.Checking;
 using SmartKabinet.Client;
 using SmartKabinet.Client.Infrastructure.Persistence;
+using SmartKabinet.Infrastructure;
 using SmartKabinet.Intergrations;
 using SmartKabinet.Intergrations.AlfaBank.Persistence;
 using Wolverine;
@@ -65,6 +66,7 @@ builder.Services.AddBankEmployeeModule(builder.Configuration);
 builder.Services.AddApplicationModule(builder.Configuration);
 builder.Services.AddCheckingModule(builder.Configuration);
 builder.Services.AddIntegrationsModule(builder.Configuration);
+builder.Services.AddInfrastructureModule(builder.Configuration);
 
 var app = builder.Build();
 
@@ -91,9 +93,14 @@ app.MapBankEmployeeEndpoints();
 app.MapApplicationEndpoints();
 app.MapCheckingEndpoints();
 app.MapIntegrationsEndpoints();
+app.MapInfrastructureEndpoints();
 
 app.Run();
 
+
+///
+/// 
+/// 
 static async Task InitializeDatabasesAsync(WebApplication app)
 {
     using var scope = app.Services.CreateScope();

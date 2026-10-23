@@ -11,5 +11,6 @@ public record ApplicationSubmittedEvent(
     int RequestedTermMonths,
     decimal? ProjectedMonthlyRevenue = null,
     decimal? FinancialReserve = null,
-    decimal? PersonalIncome = null
+    decimal? PersonalIncome = null,
+    string ProductCode = ""
 );

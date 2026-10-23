@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using SmartKabinet.Application.Commands;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 
 namespace SmartKabinet.Client.Features.Applications.SubmitApplication;
 
@@ -20,17 +21,11 @@ public static class SubmitApplicationEndpoint
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
 
-            try
-            {
-                var cmd = new SubmitApplicationCommand(id, userContext.UserId.Value);
-                await service.SubmitAsync(cmd, ct);
+            var cmd = new SubmitApplicationCommand(id, userContext.UserId.Value);
+            var result = await service.SubmitAsync(cmd, ct);
 
-                return Results.Ok(new { message = "Заявка успешно отправлена на проверку", applicationId = id, status = "checking" });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            return result.ToHttpResult(() => 
+                Results.Ok(new { message = "Заявка успешно отправлена на проверку", applicationId = id, status = "checking" }));
         })
         .RequireAuthorization()
         .WithName("SubmitApplication")

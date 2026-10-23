@@ -26,13 +26,14 @@ public static class ResultExtensions
 
     private static IResult ToErrorHttpResult(Error error)
     {
+        var payload = new { code = error.Code, message = error.Message, error = error.Message };
         return error.Type switch
         {
-            ErrorType.NotFound => Results.NotFound(new { code = error.Code, message = error.Message }),
-            ErrorType.Validation => Results.BadRequest(new { code = error.Code, message = error.Message }),
-            ErrorType.Conflict => Results.Conflict(new { code = error.Code, message = error.Message }),
-            ErrorType.Unauthorized => Results.Json(new { code = error.Code, message = error.Message }, statusCode: StatusCodes.Status401Unauthorized),
-            ErrorType.Forbidden => Results.Json(new { code = error.Code, message = error.Message }, statusCode: StatusCodes.Status403Forbidden),
+            ErrorType.NotFound => Results.NotFound(payload),
+            ErrorType.Validation => Results.BadRequest(payload),
+            ErrorType.Conflict => Results.Conflict(payload),
+            ErrorType.Unauthorized => Results.Json(payload, statusCode: StatusCodes.Status401Unauthorized),
+            ErrorType.Forbidden => Results.Json(payload, statusCode: StatusCodes.Status403Forbidden),
             _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError, title: error.Code, detail: error.Message)
         };
     }

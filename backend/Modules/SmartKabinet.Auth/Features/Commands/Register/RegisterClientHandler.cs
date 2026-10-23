@@ -4,6 +4,7 @@ using SmartKabinet.Auth.Domain;
 using SmartKabinet.Auth.Features.DTOs;
 using SmartKabinet.Auth.Infrastructure.Persistence;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 using Wolverine;
 
 namespace SmartKabinet.Auth.Features.Commands.Register;
@@ -30,13 +31,13 @@ public class RegisterHandler
         _messageBus = messageBus;
     }
 
-    public async Task<(AuthResponse? Response, string? Error)> HandleAsync(
+    public async Task<Result<AuthResponse>> HandleAsync(
         RegisterClientRequest request, 
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
         {
-            return (null, "Username and password are required.");
+            return Error.Validation("Auth.MissingFields", "Username and password are required.");
         }
 
         var exists = await _dbContext.Users.AnyAsync(
@@ -45,7 +46,7 @@ public class RegisterHandler
 
         if (exists)
         {
-            return (null, "Пользователь с таким именем уже зарегистрирован.");
+            return Error.Conflict("Auth.UserExists", "Пользователь с таким именем уже зарегистрирован.");
         }
 
         var user = new User
@@ -88,6 +89,6 @@ public class RegisterHandler
             user.Role.ToString().ToLowerInvariant()
         );
 
-        return (new AuthResponse(accessToken, refreshToken.Token, 3600, profile), null);
+        return Result.Success(new AuthResponse(accessToken, refreshToken.Token, 3600, profile));
     }
 }

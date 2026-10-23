@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using SmartKabinet.Application.Commands;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 
 namespace SmartKabinet.Client.Features.Applications.WithdrawApplication;
 
@@ -20,17 +21,11 @@ public static class WithdrawApplicationEndpoint
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
 
-            try
-            {
-                var cmd = new WithdrawCommand(id, userContext.UserId.Value);
-                await service.WithdrawAsync(cmd, ct);
+            var cmd = new WithdrawCommand(id, userContext.UserId.Value);
+            var result = await service.WithdrawAsync(cmd, ct);
 
-                return Results.Ok(new { message = "Заявка успешно отозвана и закрыта", applicationId = id, status = "closed" });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            return result.ToHttpResult(() =>
+                Results.Ok(new { message = "Заявка успешно отозвана и закрыта", applicationId = id, status = "closed" }));
         })
         .RequireAuthorization()
         .WithName("WithdrawApplication")

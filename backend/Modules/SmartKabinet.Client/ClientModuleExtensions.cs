@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartKabinet.Client.Features.Applications;
+using SmartKabinet.Client.Features.Companies;
+using SmartKabinet.Client.Features.Equipment;
+using SmartKabinet.Client.Features.Products;
 using SmartKabinet.Client.Features.Profile.GetProfile;
 using SmartKabinet.Client.Infrastructure.Persistence;
 
@@ -29,6 +32,19 @@ public static class ClientModuleExtensions
     {
         var clientGroup = app.MapGroup("/api/client").WithTags("Client Cabinet");
         clientGroup.MapGetProfileEndpoint();
+
+        var companiesGroup = clientGroup.MapGroup("/companies").WithTags("Company Lookup");
+        companiesGroup.MapCompanyLookupEndpoints();
+
+        var equipmentGroup = clientGroup.MapGroup("/equipment").WithTags("Equipment Catalog");
+        equipmentGroup.MapEquipmentEndpoints();
+
+        var productsGroup = clientGroup.MapGroup("/products").WithTags("Credit Products");
+        productsGroup.MapProductsEndpoints("Client");
+
+        // Также регистрируем общий alias /api/products
+        var publicProductsGroup = app.MapGroup("/api/products").WithTags("Credit Products");
+        publicProductsGroup.MapProductsEndpoints("Public");
 
         app.MapApplicationsEndpoints();
 

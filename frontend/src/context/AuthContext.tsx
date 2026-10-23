@@ -11,7 +11,7 @@ interface AuthContextType {
   isDemoMode: boolean;
   enableDemoMode: (initialRole?: UserRole) => void;
   disableDemoMode: () => void;
-  login: (credentials: LoginRequest) => Promise<void>;
+  login: (credentials: LoginRequest) => Promise<AuthUser>;
   logout: () => Promise<void>;
   switchRole: (role: UserRole) => void;
   setUser: (user: AuthUser | null) => void;
@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = async (credentials: LoginRequest) => {
+  const login = async (credentials: LoginRequest): Promise<AuthUser> => {
     setIsLoading(true);
     try {
       const response = await authApi.login(credentials);
@@ -74,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.tokens?.refreshToken) {
         localStorage.setItem('smart_kabinet_refresh_token', response.tokens.refreshToken);
       }
+      return normalizedUser;
     } finally {
       setIsLoading(false);
     }

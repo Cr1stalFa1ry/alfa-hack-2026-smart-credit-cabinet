@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using SmartKabinet.Application.Commands;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 
 namespace SmartKabinet.Client.Features.Applications.RespondRequestedInfoApplication;
 
@@ -27,23 +28,17 @@ public static class RespondRequestedInfoApplicationEndpoint
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
 
-            try
-            {
-                var cmd = new RespondInfoCommand(
-                    id,
-                    userContext.UserId.Value,
-                    request.StatementFilePath,
-                    request.FinancialReserve,
-                    request.Comment);
+            var cmd = new RespondInfoCommand(
+                id,
+                userContext.UserId.Value,
+                request.StatementFilePath,
+                request.FinancialReserve,
+                request.Comment);
 
-                await service.RespondToInfoRequestAsync(cmd, ct);
+            var result = await service.RespondToInfoRequestAsync(cmd, ct);
 
-                return Results.Ok(new { message = "Сведения переданы, заявка возвращена на проверку", applicationId = id, status = "checking" });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            return result.ToHttpResult(() =>
+                Results.Ok(new { message = "Сведения переданы, заявка возвращена на проверку", applicationId = id, status = "checking" }));
         })
         .RequireAuthorization()
         .WithName("RespondRequestedInfo")

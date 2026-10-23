@@ -9,5 +9,6 @@ public record SaveDraftCommand(
     bool BkiConsent,
     bool PersonalDataConsent,
     string? StatementFilePath = null,
-    decimal? FinancialReserve = null
+    decimal? FinancialReserve = null,
+    string? ProductCode = null
 );

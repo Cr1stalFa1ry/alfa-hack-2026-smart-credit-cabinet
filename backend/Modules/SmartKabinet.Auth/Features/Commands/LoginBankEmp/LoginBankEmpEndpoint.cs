@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using SmartKabinet.Auth.Features.DTOs;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 using Wolverine;
 
 namespace SmartKabinet.Auth.Features.Commands.LoginBankEmp;
@@ -19,12 +20,13 @@ public static class LoginBankEmpEndpoint
             HttpContext httpContext,
             CancellationToken ct) =>
         {
-            var response = await bus.InvokeAsync<AuthResponse?>(command, ct);
-            if (response is null)
+            var result = await bus.InvokeAsync<Result<AuthResponse>>(command, ct);
+            if (result.IsFailure)
             {
-                return Results.Unauthorized();
+                return result.ToHttpResult();
             }
 
+            var response = result.Value;
             AuthCookieHelper.SetAuthCookie(httpContext.Response, response.AccessToken, jwtOptions.Value.ExpireMinutes);
             AuthCookieHelper.SetRefreshCookie(httpContext.Response, response.RefreshToken, 7);
             return Results.Ok(response);

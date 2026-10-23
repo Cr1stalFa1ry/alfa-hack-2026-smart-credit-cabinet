@@ -43,8 +43,8 @@ export const TransitionHistoryModal: React.FC<TransitionHistoryModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Журнал переходов State Machine"
-      description="Полный аудит всех состояний заявки согласно регламенту переходов T01–T17"
+      title="История переходов заявки"
+      description="Полный аудит всех этапов и изменений статуса заявки"
       maxWidth="lg"
     >
       <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">

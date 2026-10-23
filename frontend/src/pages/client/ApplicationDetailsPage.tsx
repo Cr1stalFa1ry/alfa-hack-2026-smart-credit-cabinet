@@ -8,6 +8,7 @@ import { Select } from '../../components/common/Select';
 import { Button } from '../../components/common/Button';
 import { Alert } from '../../components/common/Alert';
 import { ApplicationStatusBadge } from '../../components/badges/ApplicationStatusBadge';
+import { ProductCodeBadge } from '../../components/badges/ProductCodeBadge';
 import { StateMachineStepper } from '../../components/application/StateMachineStepper';
 import { ScoringCard } from '../../components/application/ScoringCard';
 import { OfferCard } from '../../components/application/OfferCard';
@@ -242,6 +243,7 @@ export const ApplicationDetailsPage: React.FC = () => {
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 Заявка № {application.id}
               </h1>
+              {application.productCode && <ProductCodeBadge code={application.productCode} size="sm" />}
               <ApplicationStatusBadge status={application.status} />
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -277,7 +279,7 @@ export const ApplicationDetailsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* State Machine Stepper */}
+      {/* Application Stepper */}
       <StateMachineStepper status={application.status} />
 
       {/* Saved Notification */}
@@ -504,37 +506,72 @@ export const ApplicationDetailsPage: React.FC = () => {
                   <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
                     <span className="text-slate-400 dark:text-slate-500 block mb-1">Срок</span>
                     <span className="text-base font-extrabold text-slate-900 dark:text-white">
-                      {application.requestedTermMonths} месяцев
+                      {application.clientAnswers?.helpWithTerm
+                        ? 'Подберёт банк'
+                        : `${application.requestedTermMonths} месяцев`}
                     </span>
                   </div>
 
                   <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
                     <span className="text-slate-400 dark:text-slate-500 block mb-1">Стадия</span>
                     <span className="text-base font-extrabold text-slate-900 dark:text-white">
-                      {application.businessType === 'operating' ? 'Действующий' : 'Prelaunch'}
+                      {application.businessType === 'operating' ? 'Действующий' : 'Prelaunch (новый)'}
                     </span>
                   </div>
 
-                  <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
-                    <span className="text-slate-400 dark:text-slate-500 block mb-1">Среднемесячная выручка</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                      {formatRubles(application.monthlyRevenue)}
-                    </span>
-                  </div>
+                  {application.equipmentPrice ? (
+                    <>
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
+                        <span className="text-slate-400 dark:text-slate-500 block mb-1">Стоимость оборудования</span>
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                          {formatRubles(application.equipmentPrice)}
+                        </span>
+                      </div>
 
-                  <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
-                    <span className="text-slate-400 dark:text-slate-500 block mb-1">Ежемесячные расходы</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                      {formatRubles(application.monthlyExpenses)}
-                    </span>
-                  </div>
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
+                        <span className="text-slate-400 dark:text-slate-500 block mb-1">Собственный взнос</span>
+                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatRubles(application.ownContribution || 0)}
+                        </span>
+                      </div>
+                    </>
+                  ) : null}
 
-                  <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
-                    <span className="text-slate-400 dark:text-slate-500 block mb-1">Чистый денежный поток</span>
-                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      {formatRubles((application.monthlyRevenue || 0) - (application.monthlyExpenses || 0))}
-                    </span>
-                  </div>
+                  {application.businessType === 'operating' ? (
+                    <>
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
+                        <span className="text-slate-400 dark:text-slate-500 block mb-1">Среднемесячная выручка</span>
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                          {formatRubles(application.monthlyRevenue)}
+                        </span>
+                      </div>
+
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
+                        <span className="text-slate-400 dark:text-slate-500 block mb-1">Ежемесячные расходы</span>
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                          {formatRubles(application.monthlyExpenses)}
+                        </span>
+                      </div>
+
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
+                        <span className="text-slate-400 dark:text-slate-500 block mb-1">Чистый денежный поток</span>
+                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatRubles((application.monthlyRevenue || 0) - (application.monthlyExpenses || 0))}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-xl col-span-2">
+                      <span className="text-purple-600 dark:text-purple-400 font-semibold block mb-1">
+                        Источники покрытия долга (Prelaunch)
+                      </span>
+                      <span className="text-xs text-slate-700 dark:text-slate-300">
+                        {application.clientAnswers?.repaymentSources?.length
+                          ? `Заявлены: ${application.clientAnswers.repaymentSources.join(', ')}`
+                          : 'Оценка по альтернативным доходам, поручительству или залогу'}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">

@@ -9,6 +9,7 @@ using SmartKabinet.Application.Domain;
 using SmartKabinet.Application.Infrastructure.Persistence;
 using SmartKabinet.Auth.Infrastructure.Security;
 using SmartKabinet.BankEmployee.Infrastructure.Persistence;
+using SmartKabinet.Intergrations.Synthetic.Services;
 using Wolverine;
 
 namespace SmartKabinet.BankEmployee;
@@ -70,11 +71,30 @@ public static class BankEmployeeModuleExtensions
         .WithName("GetEmployeeQueue")
         .WithSummary("Рабочая очередь заявок аналитика (статусы review / checking)");
 
+        // GET /api/employee/applications/{id}
+        group.MapGet("/applications/{id:guid}", async Task<IResult> (
+            Guid id,
+            ApplicationDbContext appDb,
+            ICompanyLookupService? lookupService) =>
+        {
+            var app = await appDb.Applications
+                .Include(a => a.CurrentOffer)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (app is null) return Results.NotFound(new { error = "Заявка не найдена." });
+
+            return await BuildApplicationResponseAsync(app, appDb, lookupService);
+        })
+        .RequireAuthorization()
+        .WithName("GetEmployeeApplicationById")
+        .WithSummary("Детальное досье заявки для аналитика банка со скорингом и аудитом");
+
         // POST /api/employee/applications/{id}/approve (T12)
-        group.MapPost("/applications/{id:guid}/approve", async (
+        group.MapPost("/applications/{id:guid}/approve", async Task<IResult> (
             Guid id,
             AnalystDecisionRequest request,
-            ApplicationDbContext appDb) =>
+            ApplicationDbContext appDb,
+            ICompanyLookupService? lookupService) =>
         {
             var app = await appDb.Applications
                 .Include(a => a.CurrentOffer)
@@ -117,19 +137,22 @@ public static class BankEmployeeModuleExtensions
             });
 
             await appDb.SaveChangesAsync();
-            return Results.Ok(new { message = "Заявка успешно одобрена аналитиком", applicationId = app.Id, status = app.Status.ToString() });
+            return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
         .RequireAuthorization()
         .WithName("AnalystApproveApplication")
         .WithSummary("T12: Одобрение заявки аналитиком (переход в offer)");
 
         // POST /api/employee/applications/{id}/decline (T13)
-        group.MapPost("/applications/{id:guid}/decline", async (
+        group.MapPost("/applications/{id:guid}/decline", async Task<IResult> (
             Guid id,
             AnalystDecisionRequest request,
-            ApplicationDbContext appDb) =>
+            ApplicationDbContext appDb,
+            ICompanyLookupService? lookupService) =>
         {
-            var app = await appDb.Applications.FirstOrDefaultAsync(a => a.Id == id);
+            var app = await appDb.Applications
+                .Include(a => a.CurrentOffer)
+                .FirstOrDefaultAsync(a => a.Id == id);
             if (app is null) return Results.NotFound(new { error = "Заявка не найдена." });
             if (app.Status != ApplicationStatus.Review)
             {
@@ -157,19 +180,22 @@ public static class BankEmployeeModuleExtensions
             });
 
             await appDb.SaveChangesAsync();
-            return Results.Ok(new { message = "Заявка отклонена аналитиком", applicationId = app.Id, status = app.Status.ToString() });
+            return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
         .RequireAuthorization()
         .WithName("AnalystDeclineApplication")
         .WithSummary("T13: Отказ аналитика (переход в declined)");
 
         // POST /api/employee/applications/{id}/request-info (T11)
-        group.MapPost("/applications/{id:guid}/request-info", async (
+        group.MapPost("/applications/{id:guid}/request-info", async Task<IResult> (
             Guid id,
             AnalystDecisionRequest request,
-            ApplicationDbContext appDb) =>
+            ApplicationDbContext appDb,
+            ICompanyLookupService? lookupService) =>
         {
-            var app = await appDb.Applications.FirstOrDefaultAsync(a => a.Id == id);
+            var app = await appDb.Applications
+                .Include(a => a.CurrentOffer)
+                .FirstOrDefaultAsync(a => a.Id == id);
             if (app is null) return Results.NotFound(new { error = "Заявка не найдена." });
             if (app.Status != ApplicationStatus.Review)
             {
@@ -192,19 +218,22 @@ public static class BankEmployeeModuleExtensions
             });
 
             await appDb.SaveChangesAsync();
-            return Results.Ok(new { message = "Запрос сведений направлен клиенту", applicationId = app.Id, status = app.Status.ToString() });
+            return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
         .RequireAuthorization()
         .WithName("AnalystRequestInfo")
         .WithSummary("T11: Запрос сведений у клиента аналитиком (переход в need_info)");
 
         // POST /api/employee/applications/{id}/recheck (T14)
-        group.MapPost("/applications/{id:guid}/recheck", async (
+        group.MapPost("/applications/{id:guid}/recheck", async Task<IResult> (
             Guid id,
             ApplicationDbContext appDb,
-            IMessageBus bus) =>
+            IMessageBus bus,
+            ICompanyLookupService? lookupService) =>
         {
-            var app = await appDb.Applications.FirstOrDefaultAsync(a => a.Id == id);
+            var app = await appDb.Applications
+                .Include(a => a.CurrentOffer)
+                .FirstOrDefaultAsync(a => a.Id == id);
             if (app is null) return Results.NotFound(new { error = "Заявка не найдена." });
             if (app.Status != ApplicationStatus.Review)
             {
@@ -239,12 +268,214 @@ public static class BankEmployeeModuleExtensions
                 app.PersonalIncome
             ));
 
-            return Results.Ok(new { message = "Заявка возвращена на проверку скорингом", applicationId = app.Id, status = app.Status.ToString() });
+            return await BuildApplicationResponseAsync(app, appDb, lookupService);
         })
         .RequireAuthorization()
         .WithName("AnalystRecheckApplication")
         .WithSummary("T14: Уточнены факты аналитиком, возврат на автопроверку (переход в checking)");
 
+        // POST /api/employee/applications/{id}/close (T16: Некредитное препятствие)
+        group.MapPost("/applications/{id:guid}/close", async Task<IResult> (
+            Guid id,
+            AnalystDecisionRequest request,
+            ApplicationDbContext appDb,
+            ICompanyLookupService? lookupService) =>
+        {
+            var app = await appDb.Applications
+                .Include(a => a.CurrentOffer)
+                .FirstOrDefaultAsync(a => a.Id == id);
+            if (app is null) return Results.NotFound(new { error = "Заявка не найдена." });
+            if (app.Status != ApplicationStatus.Review && app.Status != ApplicationStatus.Checking)
+            {
+                return Results.BadRequest(new { error = "Закрытие по некредитной причине доступно только из статусов review или checking." });
+            }
+
+            var prevStatus = app.Status;
+            app.Status = ApplicationStatus.Closed;
+            app.Decision = CreditDecision.Declined;
+            if (!string.IsNullOrWhiteSpace(request.ReasonCode))
+            {
+                app.ReasonCodes = new List<string> { request.ReasonCode };
+            }
+            app.UpdatedAt = DateTimeOffset.UtcNow;
+
+            appDb.TransitionHistory.Add(new TransitionRecord
+            {
+                ApplicationId = app.Id,
+                FromStatus = prevStatus,
+                ToStatus = ApplicationStatus.Closed,
+                Actor = "analyst",
+                ReasonCode = request.ReasonCode,
+                Comment = request.Comment ?? "Некредитное препятствие (T16)"
+            });
+
+            await appDb.SaveChangesAsync();
+            return await BuildApplicationResponseAsync(app, appDb, lookupService);
+        })
+        .RequireAuthorization()
+        .WithName("AnalystCloseApplication")
+        .WithSummary("T16: Закрытие заявки аналитиком по некредитному препятствию (переход в closed)");
+
         return app;
+    }
+
+    private static async Task<IResult> BuildApplicationResponseAsync(
+        SmartKabinet.Application.Domain.Application app,
+        ApplicationDbContext appDb,
+        ICompanyLookupService? lookupService)
+    {
+        var transitions = await appDb.TransitionHistory
+            .Where(t => t.ApplicationId == app.Id)
+            .OrderBy(t => t.Timestamp)
+            .ToListAsync();
+
+        string companyName = $"ИП (ИНН {app.Inn})";
+        CompanyLookupDto? companyInfo = null;
+        if (lookupService is not null && !string.IsNullOrWhiteSpace(app.Inn))
+        {
+            try
+            {
+                var lookupRes = await lookupService.LookupByInnAsync(app.Inn);
+                if (lookupRes.IsSuccess && lookupRes.Value is not null)
+                {
+                    companyInfo = lookupRes.Value;
+                    if (!string.IsNullOrWhiteSpace(companyInfo.FullName))
+                    {
+                        companyName = companyInfo.FullName;
+                    }
+                }
+            }
+            catch
+            {
+                // ignore lookup error
+            }
+        }
+
+        var historyDtos = transitions.Select(t => new
+        {
+            id = t.Id.ToString(),
+            transitionCode = !string.IsNullOrWhiteSpace(t.ReasonCode) && t.ReasonCode.StartsWith("T") ? t.ReasonCode : "T00",
+            fromStatus = t.FromStatus.ToString().ToLowerInvariant(),
+            toStatus = t.ToStatus.ToString().ToLowerInvariant(),
+            actor = t.Actor.ToLowerInvariant(),
+            actorName = t.Actor switch
+            {
+                "client" => "Клиент ИП",
+                "analyst" => "Аналитик Банка",
+                _ => "SmartKabinet Engine"
+            },
+            reasonCode = t.ReasonCode,
+            comment = t.Comment,
+            timestamp = t.Timestamp.ToString("o")
+        }).ToList();
+
+        var response = new
+        {
+            id = app.Id,
+            applicationId = app.Id,
+            clientId = app.ClientId,
+            inn = app.Inn,
+            companyName,
+            stage = (int)app.Stage,
+            purpose = (int)app.Purpose,
+            productCode = !string.IsNullOrWhiteSpace(app.ProductCode) 
+                ? app.ProductCode 
+                : (app.Purpose == LoanPurpose.Equipment ? "EQ" : (app.Stage == BusinessStage.Prelaunch ? "START" : "WC")),
+            requestedAmount = app.RequestedAmount,
+            ownContribution = app.OwnContribution,
+            requestedTermMonths = app.RequestedTermMonths ?? 12,
+            neededByDate = app.NeededByDate,
+            asSoonAsPossible = app.AsSoonAsPossible,
+            bkiConsent = app.BkiConsent,
+            personalDataConsent = app.PersonalDataConsent,
+            purposeText = app.Purpose == LoanPurpose.Equipment ? "Покупка оборудования" : "Пополнение оборотных средств",
+            monthlyRevenue = app.ProjectedMonthlyRevenue ?? (companyInfo?.AnnualRevenue.HasValue == true ? companyInfo.AnnualRevenue.Value / 12m : 0m),
+            monthlyExpenses = companyInfo?.AverageMonthlyExpenses ?? 0m,
+            equipmentPrice = app.EquipmentPrice,
+            equipmentSupplier = app.EquipmentSupplier,
+            equipmentList = app.EquipmentList,
+            status = app.Status.ToString().ToLowerInvariant(),
+            decision = app.Decision.ToString(),
+            reasonCodes = app.ReasonCodes,
+            createdAt = app.CreatedAt.ToString("o"),
+            updatedAt = (app.UpdatedAt ?? app.CreatedAt).ToString("o"),
+            history = historyDtos,
+            currentOffer = app.CurrentOffer is not null ? new
+            {
+                approvedAmount = app.CurrentOffer.ApprovedAmount,
+                termMonths = app.CurrentOffer.TermMonths,
+                annualRatePercent = app.CurrentOffer.AnnualRatePercent,
+                monthlyPayment = app.CurrentOffer.MonthlyPayment,
+                isCounterOffer = app.CurrentOffer.IsCounterOffer,
+                reasonCode = app.CurrentOffer.ReasonCode
+            } : null,
+            scoring = companyInfo is not null ? new
+            {
+                score = companyInfo.IsBankrupt || companyInfo.HasFnsBlock || companyInfo.ZskRiskLevel == "HIGH" ? 35 : 82,
+                riskLevel = companyInfo.IsBankrupt || companyInfo.HasFnsBlock || companyInfo.ZskRiskLevel == "HIGH" ? "high" : "low",
+                dscr = companyInfo.NetCashFlow > 0 && app.CurrentOffer?.MonthlyPayment > 0 
+                    ? Math.Round((double)(companyInfo.NetCashFlow.Value / app.CurrentOffer.MonthlyPayment), 2)
+                    : 1.45,
+                netCashFlow = companyInfo.NetCashFlow ?? (app.ProjectedMonthlyRevenue ?? 300_000m) * 0.4m,
+                recommendedMaxPayment = (companyInfo.NetCashFlow ?? (app.ProjectedMonthlyRevenue ?? 300_000m) * 0.4m) * 0.7m,
+                calculatedAt = DateTime.UtcNow.ToString("o"),
+                stopFactors = new object[]
+                {
+                    new {
+                        id = "sf-fns",
+                        code = "FNS_BLOCK",
+                        title = "Блокировки счетов ФНС",
+                        description = companyInfo.HasFnsBlock ? "Обнаружены решения о приостановлении операций по счетам" : "Решений ФНС о блокировке счетов не обнаружено",
+                        isTriggered = companyInfo.HasFnsBlock,
+                        severity = "critical"
+                    },
+                    new {
+                        id = "sf-zsk",
+                        code = "ZSK_RISK",
+                        title = "Платформа ЗСК ЦБ РФ",
+                        description = $"Уровень риска: {companyInfo.ZskRiskLevel}",
+                        isTriggered = companyInfo.ZskRiskLevel == "HIGH",
+                        severity = "critical"
+                    },
+                    new {
+                        id = "sf-bankrupt",
+                        code = "EFRSB_BANKRUPTCY",
+                        title = "Реестр банкротств ЕФРСБ",
+                        description = companyInfo.IsBankrupt ? "Найдены сведения о признании ИП банкротом" : "Сведений о процедурах банкротства не обнаружено",
+                        isTriggered = companyInfo.IsBankrupt,
+                        severity = "critical"
+                    }
+                },
+                egrip = new
+                {
+                    inn = companyInfo.Inn,
+                    ogrnip = companyInfo.Ogrnip ?? "",
+                    fullName = companyInfo.FullName ?? companyName,
+                    status = companyInfo.EgripStatus ?? "ACTIVE",
+                    registrationDate = companyInfo.RegistrationDate?.ToString("yyyy-MM-dd") ?? "",
+                    okved = companyInfo.OkvedMain ?? "",
+                    okvedName = companyInfo.OkvedMainName ?? "",
+                    region = companyInfo.RegionName ?? ""
+                },
+                fns = new
+                {
+                    taxDebtAmount = 0m,
+                    hasSuspendedAccounts = companyInfo.HasFnsBlock,
+                    isDisqualifiedPerson = false,
+                    lastReportingSubmitted = true
+                },
+                bki = new
+                {
+                    rating = companyInfo.IsAlfaClient ? 780 : 710,
+                    activeLoansCount = companyInfo.IsAlfaClient ? 1 : 0,
+                    totalDebt = 0m,
+                    maxOverdueDays = 0,
+                    currentOverdueAmount = 0m,
+                    hasCriticalDelays = false
+                }
+            } : null
+        };
+
+        return Results.Ok(response);
     }
 }

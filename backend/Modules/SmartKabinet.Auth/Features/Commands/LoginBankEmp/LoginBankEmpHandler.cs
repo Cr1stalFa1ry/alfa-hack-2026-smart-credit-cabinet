@@ -2,12 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using SmartKabinet.Auth.Features.DTOs;
 using SmartKabinet.Auth.Infrastructure.Persistence;
 using SmartKabinet.Auth.Infrastructure.Security;
+using SmartKabinet.Shared;
 
 namespace SmartKabinet.Auth.Features.Commands.LoginBankEmp;
 
 public class LoginBankEmpHandler
 {
-    public static async Task<AuthResponse?> Handle(
+    public static async Task<Result<AuthResponse>> Handle(
         LoginBankEmpCommand request,
         AuthDbContext dbContext,
         IPasswordHasher passwordHasher,
@@ -18,14 +19,9 @@ public class LoginBankEmpHandler
         var user = await dbContext.Users
             .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower() && u.IsActive, ct);
 
-        if (user is null)
+        if (user is null || !passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
         {
-            return null;
-        }
-
-        if (!passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
-        {
-            return null;
+            return Error.Unauthorized("Auth.InvalidCredentials", "Неверный логин или пароль.");
         }
 
         user.UpdateLastLogin();
@@ -46,11 +42,11 @@ public class LoginBankEmpHandler
             user.Role.ToString().ToLowerInvariant()
         );
 
-        return new AuthResponse(
+        return Result.Success(new AuthResponse(
             accessToken,
             refreshToken.Token,
             3600,
             profile
-        );
+        ));
     }
 }

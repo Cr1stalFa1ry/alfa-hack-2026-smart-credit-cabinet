@@ -8,12 +8,12 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
 // Pages
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
+import { EmployeeLoginPage } from '../pages/auth/EmployeeLoginPage';
 import { ClientDashboardPage } from '../pages/client/ClientDashboardPage';
 import { NewApplicationWizardPage } from '../pages/client/NewApplicationWizardPage';
 import { ApplicationDetailsPage } from '../pages/client/ApplicationDetailsPage';
 import { AnalystQueuePage } from '../pages/analyst/AnalystQueuePage';
 import { AnalystReviewPage } from '../pages/analyst/AnalystReviewPage';
-import { StateMachineVisualizerPage } from '../pages/dev/StateMachineVisualizerPage';
 
 const RootRedirect: React.FC = () => {
   const { role, isAuthenticated } = useAuth();
@@ -29,6 +29,8 @@ export const AppRouter: React.FC = () => {
           {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/employee/login" element={<EmployeeLoginPage />} />
+          <Route path="/staff/login" element={<Navigate to="/employee/login" replace />} />
 
           {/* Authenticated Layout */}
           <Route element={<AppLayout />}>
@@ -46,9 +48,6 @@ export const AppRouter: React.FC = () => {
               <Route path="/analyst/queue" element={<AnalystQueuePage />} />
               <Route path="/analyst/review/:id" element={<AnalystReviewPage />} />
             </Route>
-
-            {/* State Machine Specification & Dev Tool */}
-            <Route path="/dev/state-machine" element={<StateMachineVisualizerPage />} />
           </Route>
 
           {/* 404 fallback */}

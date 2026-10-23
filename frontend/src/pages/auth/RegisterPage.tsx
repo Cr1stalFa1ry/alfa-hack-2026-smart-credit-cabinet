@@ -33,7 +33,6 @@ export const RegisterPage: React.FC = () => {
       const company = await egripApi.getCompanyByInn(clean);
       if (company) {
         setEgripStatus(`ЕГРИП: ${company.fullName} (${company.region})`);
-        // Only set full name if it's empty and starts with 'ИП '
         if (!fullName && company.fullName.startsWith('ИП ')) {
           setFullName(company.fullName.replace(/^ИП\s+/, ''));
         }
@@ -70,7 +69,6 @@ export const RegisterPage: React.FC = () => {
         inn: inn.trim(),
         fullName: fullName.trim(),
       });
-
       setUser(res.user);
       navigate('/client/dashboard');
     } catch {
@@ -128,7 +126,7 @@ export const RegisterPage: React.FC = () => {
               required
             />
 
-            {/* Логин (без email и телефона) */}
+            {/* Логин */}
             <Input
               label="Логин (Username)"
               type="text"
@@ -201,9 +199,9 @@ export const RegisterPage: React.FC = () => {
           </form>
 
           <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
-            Уже есть аккаунт?{' '}
-            <Link to="/login" className="font-semibold text-alfa-600 dark:text-alfa-400 hover:text-alfa-700">
-              Войти
+            Уже есть учётная запись?{' '}
+            <Link to="/login" className="font-semibold text-alfa-600 dark:text-alfa-400 hover:underline">
+              Войти в систему
             </Link>
           </div>
         </Card>

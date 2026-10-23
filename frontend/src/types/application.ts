@@ -1,4 +1,5 @@
 import { ScoringResult } from './scoring';
+import { ProductCode, BusinessStage, LoanPurpose } from './products';
 
 export type ApplicationStatus =
   | 'draft'          // T01, T02: Создана, заполняется клиентом
@@ -8,6 +9,9 @@ export type ApplicationStatus =
   | 'review'         // T07: Направлена аналитику банка на ручной разбор
   | 'offer'          // T08, T12: Одобрено банком, сформирована оферта
   | 'declined'       // T09, T13: Отказ (по правилу или аналитиком)
+  | 'accepted'       // T21: Клиент принял оферту
+  | 'signed_sim'     // T22: Договор подписан ЭЦП (симуляция)
+  | 'disbursed_sim'  // T23: Кредит выдан, средства на счёте
   | 'closed';        // T16 (некредитное препятствие) или T17 (отзыв клиентом)
 
 export type BusinessType = 'operating' | 'prelaunch';
@@ -31,7 +35,10 @@ export type TransitionCode =
   | 'T14' // Аналитик: факты уточнены (review -> checking)
   | 'T15' // Повторный скоринг: нужны сведения (checking -> need_info)
   | 'T16' // Некредитное препятствие (checking/review -> closed)
-  | 'T17';// Клиент: отозвать заявку (any -> closed)
+  | 'T17' // Клиент: отозвать заявку (any -> closed)
+  | 'T21' // Клиент: принять оферту (offer -> accepted)
+  | 'T22' // Клиент: подписать договор ЭЦП (accepted -> signed_sim)
+  | 'T23';// Система: выдать средства на счет (signed_sim -> disbursed_sim)
 
 export interface StateTransitionRecord {
   id: string;
@@ -74,10 +81,27 @@ export interface CreditApplication {
   id: string;
   inn: string;
   companyName: string;
+  productCode?: ProductCode; // 'EQ' | 'WC' | 'START'
+  stage?: BusinessStage;
   businessType: BusinessType;
-  requestedAmount: number;
-  requestedTermMonths: number;
+  purposeCode?: LoanPurpose;
   purpose: string;
+  requestedAmount: number;
+  ownContribution?: number;
+  equipmentPrice?: number;
+  equipmentSupplier?: string;
+  equipmentList?: string;
+  requestedTermMonths: number;
+  neededByDate?: string;
+  asSoonAsPossible?: boolean;
+  bkiConsent?: boolean;
+  bkiConsentDate?: string;
+  bkiConsentValidUntil?: string;
+  personalDataConsent?: boolean;
+  personalDataConsentDate?: string;
+  leasingPartnerConsent?: boolean;
+  leasingPartnerName?: string;
+  leasingPartnerConsentDate?: string;
   monthlyRevenue: number;
   monthlyExpenses: number;
   status: ApplicationStatus;
@@ -90,15 +114,38 @@ export interface CreditApplication {
   offer?: CreditOffer;
   scoring?: ScoringResult;
   history: StateTransitionRecord[];
+  clientAnswers?: Record<string, any>;
+  specialistNotes?: string[];
+  scenario?: string;
+  submissionPayload?: any;
 }
 
 export interface CreateDraftRequest {
   inn: string;
   companyName?: string;
+  productCode?: ProductCode;
+  stage?: BusinessStage;
   businessType: BusinessType;
+  purposeCode?: LoanPurpose;
   requestedAmount: number;
+  ownContribution?: number;
+  equipmentPrice?: number;
+  equipmentSupplier?: string;
   requestedTermMonths: number;
+  neededByDate?: string;
+  asSoonAsPossible?: boolean;
+  bkiConsent?: boolean;
+  bkiConsentDate?: string;
+  personalDataConsent?: boolean;
+  personalDataConsentDate?: string;
+  leasingPartnerConsent?: boolean;
+  leasingPartnerName?: string;
+  leasingPartnerConsentDate?: string;
   purpose: string;
   monthlyRevenue: number;
   monthlyExpenses: number;
+  clientAnswers?: Record<string, any>;
+  specialistNotes?: string[];
+  scenario?: string;
+  submissionPayload?: any;
 }
