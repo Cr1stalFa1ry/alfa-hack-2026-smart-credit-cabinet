@@ -262,15 +262,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       {/* Uploaded documents list */}
       {existingDocuments.length > 0 ? (
         <div className="space-y-2 mt-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Прикрепленные документы ({existingDocuments.length})
-            </span>
-            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900/50">
-              Сохранены в банке
-            </span>
-          </div>
-
           <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
             {existingDocuments.map((doc) => (
               <div
