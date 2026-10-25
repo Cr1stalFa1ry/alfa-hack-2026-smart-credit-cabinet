@@ -207,6 +207,16 @@ export const ApplicationDetailsPage: React.FC = () => {
   const history = application.history || [];
   const companyTitle = application.companyName || `ИП (ИНН ${application.inn})`;
 
+  // Оставляем только реальные изменения статуса и событие создания (T01), исключая промежуточные автосохранения (T02)
+  const statusHistory = history.filter((record) => {
+    const isAutosave =
+      record.transitionCode === 'T02' ||
+      (record.fromStatus === 'draft' &&
+        record.toStatus === 'draft' &&
+        (record.comment?.includes('T02') || record.comment?.includes('Сохранены изменения')));
+    return !isAutosave;
+  });
+
   return (
     <div className="space-y-6">
       {/* Top action bar */}
@@ -441,26 +451,26 @@ export const ApplicationDetailsPage: React.FC = () => {
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     История переходов
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                      {history.length}
+                      {statusHistory.length}
                     </span>
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Хронология этапов рассмотрения, проверок и решений по заявке
+                    Хронология изменения статусов и решений по заявке
                   </p>
                 </div>
               </div>
             </div>
 
-            {history.length === 0 ? (
+            {statusHistory.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                 Пока нет записей в истории переходов
               </div>
             ) : (
               <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
-                {history.map((record, index) => {
+                {statusHistory.map((record, index) => {
                   const fromMeta = STATUS_MAP[record.fromStatus] || STATUS_MAP.draft;
                   const toMeta = STATUS_MAP[record.toStatus] || STATUS_MAP.draft;
-                  const isLatest = index === history.length - 1;
+                  const isLatest = index === statusHistory.length - 1;
 
                   return (
                     <div key={record.id} className="relative">
@@ -493,13 +503,21 @@ export const ApplicationDetailsPage: React.FC = () => {
 
                         {/* Transition flow */}
                         <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <span className={`px-2 py-0.5 rounded-full border text-[11px] ${fromMeta.badgeClass}`}>
-                            {fromMeta.label}
-                          </span>
-                          <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                          <span className={`px-2 py-0.5 rounded-full border text-[11px] ${toMeta.badgeClass}`}>
-                            {toMeta.label}
-                          </span>
+                          {record.fromStatus === record.toStatus ? (
+                            <span className={`px-2 py-0.5 rounded-full border text-[11px] ${toMeta.badgeClass}`}>
+                              {toMeta.label}
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <span className={`px-2 py-0.5 rounded-full border text-[11px] ${fromMeta.badgeClass}`}>
+                                {fromMeta.label}
+                              </span>
+                              <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                              <span className={`px-2 py-0.5 rounded-full border text-[11px] ${toMeta.badgeClass}`}>
+                                {toMeta.label}
+                              </span>
+                            </div>
+                          )}
                           <div className="ml-auto">{getActorBadge(record.actor, record.actorName)}</div>
                         </div>
 

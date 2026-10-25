@@ -334,6 +334,36 @@ export const AnalystReviewPage: React.FC = () => {
             </span>
           </div>
         </div>
+
+        {/* ML Statement Analysis Details for Underwriter */}
+        {(application.monthlyRevenue > 0 || application.monthlyExpenses > 0) && (
+          <div className="p-3 bg-white dark:bg-slate-850 rounded-xl border border-indigo-100 dark:border-indigo-900/40 mt-3 text-xs">
+            <span className="font-bold text-slate-800 dark:text-slate-200 block mb-2 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-indigo-600" />
+              Финансовые метрики, извлечённые ML-моделью из выписки заёмщика:
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
+                <span className="text-[10px] text-slate-400 block">Очищенная выручка</span>
+                <span className="font-extrabold text-emerald-600 text-sm">{formatRubles(application.monthlyRevenue)} / мес</span>
+              </div>
+              <div className="p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
+                <span className="text-[10px] text-slate-400 block">Операционные расходы</span>
+                <span className="font-extrabold text-slate-800 dark:text-slate-200 text-sm">{formatRubles(application.monthlyExpenses)} / мес</span>
+              </div>
+              <div className="p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
+                <span className="text-[10px] text-slate-400 block">Кредитные выплаты</span>
+                <span className="font-extrabold text-slate-800 dark:text-slate-200 text-sm">{formatRubles(application.existingMonthlyObligations || 0)} / мес</span>
+              </div>
+              <div className="p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
+                <span className="text-[10px] text-slate-400 block">Чистый доход (Net)</span>
+                <span className="font-extrabold text-indigo-600 text-sm">
+                  {formatRubles(Math.max(0, application.monthlyRevenue - application.monthlyExpenses - (application.existingMonthlyObligations || 0)))} / мес
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Специфический маршрут для нового бизнеса (Prelaunch) */}

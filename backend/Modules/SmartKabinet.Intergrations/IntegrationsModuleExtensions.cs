@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartKabinet.Intergrations.AlfaBank.Features;
 using SmartKabinet.Intergrations.AlfaBank.Persistence;
+using SmartKabinet.Intergrations.AlfaBank.Services;
 using SmartKabinet.Intergrations.Ml.Models;
 using SmartKabinet.Intergrations.Ml.Services;
 using SmartKabinet.Intergrations.Synthetic.Services;
@@ -26,6 +27,7 @@ public static class IntegrationsModuleExtensions
 
         // 2. Handlers и клиенты
         services.AddScoped<GetCustomerByInnHandler>();
+        services.AddScoped<IAlfaBankCustomerDataClient, AlfaBankCustomerDataClient>();
         services.AddScoped<ICompanyLookupService, CompanyLookupService>();
         services.AddScoped<IEquipmentCatalogService, EquipmentCatalogService>();
 

@@ -58,11 +58,11 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
             .ToListAsync(ct);
 
         var history = await dbContext.TransitionHistory
-            .Where(h => h.ApplicationId == id)
+            .Where(h => h.ApplicationId == id && !(h.FromStatus == ApplicationStatus.Draft && h.ToStatus == ApplicationStatus.Draft && (h.ReasonCode == "T02" || (h.Comment != null && h.Comment.Contains("T02")))))
             .OrderBy(h => h.Timestamp)
             .Select(h => new ApplicationTransitionHistoryDto(
                 h.Id,
-                h.ReasonCode ?? "T00",
+                h.ReasonCode ?? (h.Comment != null && h.Comment.Contains("T03") ? "T03" : h.Comment != null && h.Comment.Contains("T01") ? "T01" : "T00"),
                 h.FromStatus.ToString().ToLowerInvariant(),
                 h.ToStatus.ToString().ToLowerInvariant(),
                 h.Actor,

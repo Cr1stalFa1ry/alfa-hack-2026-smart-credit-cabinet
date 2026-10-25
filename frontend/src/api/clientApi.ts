@@ -119,16 +119,39 @@ export function mapBackendApplication(item: any): CreditApplication {
         }))
       : [],
     history: Array.isArray(item.history)
-      ? item.history.map((h: any) => ({
-          id: String(h.id),
-          transitionCode: h.transitionCode || 'T00',
-          fromStatus: normalizeStatus(h.fromStatus),
-          toStatus: normalizeStatus(h.toStatus),
-          actor: (h.actor as any) || 'system',
-          actorName: h.actorName || (h.actor === 'analyst' ? 'Кредитный аналитик' : h.actor === 'client' ? 'Заявитель (ИП)' : 'Система скоринга'),
-          comment: h.comment,
-          timestamp: h.timestamp || new Date().toISOString(),
-        }))
+      ? item.history
+          .filter((h: any) => {
+            const isAutosave =
+              h.transitionCode === 'T02' ||
+              h.reasonCode === 'T02' ||
+              (h.fromStatus === 'draft' &&
+                h.toStatus === 'draft' &&
+                (h.comment?.includes('T02') || h.comment?.includes('Сохранены изменения')));
+            return !isAutosave;
+          })
+          .map((h: any) => {
+            let code = h.transitionCode || h.reasonCode || 'T00';
+            if (code === 'T00' && h.comment) {
+              const match = h.comment.match(/\b(T\d{2})\b/);
+              if (match) code = match[1];
+            }
+            return {
+              id: String(h.id),
+              transitionCode: code,
+              fromStatus: normalizeStatus(h.fromStatus),
+              toStatus: normalizeStatus(h.toStatus),
+              actor: (h.actor as any) || 'system',
+              actorName:
+                h.actorName ||
+                (h.actor === 'analyst'
+                  ? 'Кредитный аналитик'
+                  : h.actor === 'client'
+                  ? 'Заявитель (ИП)'
+                  : 'Система скоринга'),
+              comment: h.comment,
+              timestamp: h.timestamp || new Date().toISOString(),
+            };
+          })
       : [],
     needInfoPrompt: item.needInfoPrompt,
     needInfoResponse: item.needInfoResponse,

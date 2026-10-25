@@ -35,7 +35,7 @@ public class ApplicationSubmittedHandler
         if (!profileResult.Success && profileResult.ErrorCode == "SOURCE_UNAVAILABLE")
         {
             _logger.LogWarning("Источник недоступен (503) для ИНН {Inn}. Перевод заявки в waiting_check.", @event.Inn);
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 3, // WaitingCheck
                 Decision: 4, // ReviewRequired
@@ -49,7 +49,7 @@ public class ApplicationSubmittedHandler
         if (!profileResult.Success || profileResult.Data is null)
         {
             _logger.LogWarning("ИП с ИНН {Inn} не найден в базе данных.", @event.Inn);
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 6, // Review (T07) - скоринг сам не отказывает, передает сотруднику
                 Decision: 4, // ReviewRequired
@@ -66,7 +66,7 @@ public class ApplicationSubmittedHandler
         if (customer.RiskFlags.Has115FzBlocks || customer.RiskFlags.HasBankruptcySigns)
         {
             _logger.LogInformation("Стоп-фактор: Блокировки по 115-ФЗ или банкротство.");
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 6, // Review (T07) - скоринг передает стоп-фактор аналитику
                 Decision: 4, // ReviewRequired
@@ -81,7 +81,7 @@ public class ApplicationSubmittedHandler
         if (overdueDays > 30)
         {
             _logger.LogInformation("Стоп-фактор: Просрочка более 30 дней в КИ ({Days} дней).", overdueDays);
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 6, // Review (T07) - скоринг передает кредитный негатив аналитику
                 Decision: 4, // ReviewRequired
@@ -98,7 +98,7 @@ public class ApplicationSubmittedHandler
             if ((@event.ProductCode == "START" || @event.Purpose == 2) && @event.RequestedAmount > 500000m)
             {
                 _logger.LogInformation("Prelaunch: сумма превышает лимит продукта START (500 000 руб).");
-                await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+                await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                     @event.ApplicationId,
                     TargetStatus: 13, // Closed (T16 - некредитное препятствие)
                     Decision: 3,
@@ -112,7 +112,7 @@ public class ApplicationSubmittedHandler
             if ((@event.ProductCode == "EQ" || @event.Purpose == 1) && totalEqCost > 0 && (@event.OwnContribution / totalEqCost < 0.20m))
             {
                 _logger.LogInformation("Prelaunch: взнос на оборудование ниже 20%.");
-                await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+                await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                     @event.ApplicationId,
                     TargetStatus: 13, // Closed (T16 - некредитное препятствие)
                     Decision: 3,
@@ -123,7 +123,7 @@ public class ApplicationSubmittedHandler
 
             // T07: Передача аналитику на рассмотрение (Review)
             _logger.LogInformation("Prelaunch: автопроверка пройдена, передача аналитику (Review).");
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 6, // Review
                 Decision: 4, // ReviewRequired
@@ -138,7 +138,7 @@ public class ApplicationSubmittedHandler
         if ((@event.ProductCode == "EQ" || @event.Purpose == 1) && operatingTotalEqCost > 0 && (@event.OwnContribution / operatingTotalEqCost < 0.10m))
         {
             _logger.LogInformation("Operating EQ: взнос на оборудование ниже 10%.");
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 13, // Closed (T16 - некредитное препятствие)
                 Decision: 3,
@@ -148,10 +148,10 @@ public class ApplicationSubmittedHandler
         }
 
         // 4.1. Проверка необходимости сведений (тестовый кейс S2 Сидорова: 500100000022)
-        if (@event.Inn == "500100000022" && @event.FinancialReserve == null)
+        if (@event.Inn == "500100000022" && @event.FinancialReserve == null && !@event.MonthlyRevenue.HasValue)
         {
             _logger.LogInformation("Operating: Запрос сведений (выписка / справка о лизинге) -> T04 need_info.");
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 4, // NeedInfo
                 Decision: 4, // ReviewRequired
@@ -165,7 +165,7 @@ public class ApplicationSubmittedHandler
         if (@event.DebtsVerificationStatus is "change" or "needs_correction" or "Нужны исправления" or "needs_clarification" or "Нужно уточнить")
         {
             _logger.LogInformation("Operating: Содержательный конфликт обязательств -> передача аналитику (Review).");
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 6, // Review (T07)
                 Decision: 4, // ReviewRequired
@@ -205,7 +205,7 @@ public class ApplicationSubmittedHandler
         if (availableCash <= 0)
         {
             _logger.LogInformation("Operating: Доступный поток C <= 0 -> передача аналитику (NO_AVAILABLE_CASH).");
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 6, // Review (T07) - скоринг передает дефицит потока аналитику
                 Decision: 4, // ReviewRequired
@@ -243,7 +243,7 @@ public class ApplicationSubmittedHandler
         // Аналитик проверяет результат и принимает решение (T12 одобрить оферту / T13 отказать / T11 запросить сведения).
         if (scoring.Approved)
         {
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 6, // Review (T07)
                 Decision: 4, // ReviewRequired
@@ -263,7 +263,7 @@ public class ApplicationSubmittedHandler
         }
         else
         {
-            await _bus.PublishAsync(new ApplyCheckingDecisionCommand(
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
                 @event.ApplicationId,
                 TargetStatus: 6, // Review (T07)
                 Decision: 4, // ReviewRequired

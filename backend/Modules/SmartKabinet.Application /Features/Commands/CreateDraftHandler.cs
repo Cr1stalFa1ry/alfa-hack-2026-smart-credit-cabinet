@@ -71,6 +71,7 @@ public class CreateDraftHandler(ApplicationDbContext dbContext) : ICreateDraft
             FromStatus = ApplicationStatus.Draft,
             ToStatus = ApplicationStatus.Draft,
             Actor = "client",
+            ReasonCode = "T01",
             Comment = "Создан черновик заявки (T01)"
         });
 

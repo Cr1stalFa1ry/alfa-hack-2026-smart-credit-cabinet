@@ -17,7 +17,7 @@ public class BankApplicationDossierBuilder(
         CancellationToken ct = default)
     {
         var transitions = await appDb.TransitionHistory
-            .Where(t => t.ApplicationId == app.Id)
+            .Where(t => t.ApplicationId == app.Id && !(t.FromStatus == SmartKabinet.Application.Domain.ApplicationStatus.Draft && t.ToStatus == SmartKabinet.Application.Domain.ApplicationStatus.Draft && (t.ReasonCode == "T02" || (t.Comment != null && t.Comment.Contains("T02")))))
             .OrderBy(t => t.Timestamp)
             .ToListAsync(ct);
 

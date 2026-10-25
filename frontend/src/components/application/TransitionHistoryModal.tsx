@@ -16,6 +16,15 @@ export const TransitionHistoryModal: React.FC<TransitionHistoryModalProps> = ({
   onClose,
   history,
 }) => {
+  const filteredHistory = history.filter((record) => {
+    const isAutosave =
+      record.transitionCode === 'T02' ||
+      (record.fromStatus === 'draft' &&
+        record.toStatus === 'draft' &&
+        (record.comment?.includes('T02') || record.comment?.includes('Сохранены изменения')));
+    return !isAutosave;
+  });
+
   const getActorBadge = (actor: string, name: string) => {
     switch (actor) {
       case 'client':
@@ -48,7 +57,7 @@ export const TransitionHistoryModal: React.FC<TransitionHistoryModalProps> = ({
       maxWidth="lg"
     >
       <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
-        {history.map((record) => {
+        {filteredHistory.map((record) => {
           const fromMeta = STATUS_MAP[record.fromStatus] || STATUS_MAP.draft;
           const toMeta = STATUS_MAP[record.toStatus] || STATUS_MAP.draft;
 
@@ -74,13 +83,21 @@ export const TransitionHistoryModal: React.FC<TransitionHistoryModalProps> = ({
 
                 {/* Transition flow */}
                 <div className="flex items-center gap-2 text-xs">
-                  <span className={`px-2 py-0.5 rounded-full border text-[11px] ${fromMeta.badgeClass}`}>
-                    {fromMeta.label}
-                  </span>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  <span className={`px-2 py-0.5 rounded-full border text-[11px] ${toMeta.badgeClass}`}>
-                    {toMeta.label}
-                  </span>
+                  {record.fromStatus === record.toStatus ? (
+                    <span className={`px-2 py-0.5 rounded-full border text-[11px] ${toMeta.badgeClass}`}>
+                      {toMeta.label}
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <span className={`px-2 py-0.5 rounded-full border text-[11px] ${fromMeta.badgeClass}`}>
+                        {fromMeta.label}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                      <span className={`px-2 py-0.5 rounded-full border text-[11px] ${toMeta.badgeClass}`}>
+                        {toMeta.label}
+                      </span>
+                    </div>
+                  )}
                   <div className="ml-auto">{getActorBadge(record.actor, record.actorName)}</div>
                 </div>
 

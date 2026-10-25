@@ -73,15 +73,6 @@ public class SaveDraftHandler(ApplicationDbContext dbContext) : ISaveDraft
 
         app.UpdatedAt = DateTimeOffset.UtcNow;
 
-        dbContext.TransitionHistory.Add(new TransitionRecord
-        {
-            ApplicationId = app.Id,
-            FromStatus = ApplicationStatus.Draft,
-            ToStatus = ApplicationStatus.Draft,
-            Actor = "client",
-            Comment = "Сохранены изменения в черновике (T02)"
-        });
-
         await dbContext.SaveChangesAsync(ct);
         return Result.Success();
     }
