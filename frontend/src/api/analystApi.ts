@@ -8,15 +8,19 @@ export const analystApi = {
     try {
       const res = await apiClient.get<any>('/employee/applications/queue', { timeout: 4000 });
       const data = (res.data as any)?.value || res.data;
-      if (Array.isArray(data) && data.length > 0) {
-        const mapped = data.map(mapBackendApplication);
+      if (Array.isArray(data)) {
+        const mapped = data
+          .map(mapBackendApplication)
+          .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
         mapped.forEach((app) => applicationStore.saveApp(app));
-        return applicationStore.getAll();
+        const local = applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
+        const mapIds = new Set(mapped.map((m) => m.id));
+        return [...mapped, ...local.filter((l) => !mapIds.has(l.id))];
       }
     } catch (err) {
       console.warn('Backend employee queue unavailable, using local store:', err);
     }
-    return applicationStore.getAll();
+    return applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
   },
 
   getApplicationDetails: async (id: string): Promise<CreditApplication> => {
