@@ -1,7 +1,5 @@
 import React from 'react';
 import { ScoringResult } from '../../types/scoring';
-import { Card } from '../common/Card';
-import { ScoringRiskBadge } from '../badges/ScoringRiskBadge';
 import { formatRubles } from '../../utils/formatters';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 
@@ -13,249 +11,233 @@ interface ScoringCardProps {
 export const ScoringCard: React.FC<ScoringCardProps> = ({ scoring, showDetails = true }) => {
   const isDscrSafe = scoring.dscr >= 1.25;
 
+  const componentsList =
+    scoring.components && scoring.components.length > 0
+      ? scoring.components
+      : [
+          {
+            key: 'coverage',
+            label: 'Покрытие платежей (DSCR)',
+            points: isDscrSafe ? Math.min(40, Math.round((scoring.score / 100) * 40)) : 16,
+            max: 40,
+            value: `DSCR ${scoring.dscr.toFixed(2)} (норма ≥ 1.25)`,
+            rule: 'R20–R21',
+          },
+          {
+            key: 'credit',
+            label: 'Кредитная история (БКИ)',
+            points: scoring.bki.hasCriticalDelays ? 0 : scoring.bki.maxOverdueDays > 0 ? 15 : 25,
+            max: 25,
+            value: scoring.bki.hasCriticalDelays
+              ? 'Критическая просрочка'
+              : scoring.bki.maxOverdueDays > 0
+              ? 'Просрочка до 30 дней'
+              : 'Без просрочек, рейтинг БКИ ' + scoring.bki.rating,
+            rule: 'R09–R10',
+          },
+          {
+            key: 'history',
+            label: 'Длительность деятельности',
+            points: scoring.egrip?.status === 'ACTIVE' ? 14 : 6,
+            max: 15,
+            value: 'Регистрация ИП: ' + (scoring.egrip?.registrationDate || 'более 12 мес'),
+            rule: 'R18, R22',
+          },
+          {
+            key: 'variation',
+            label: 'Устойчивость выручки (CV)',
+            points: 12,
+            max: 15,
+            value: 'Коэффициент вариации CV ≤ 0.35',
+            rule: 'R19, R22',
+          },
+          {
+            key: 'annual',
+            label: 'Сумма к годовой выручке',
+            points: 5,
+            max: 5,
+            value: 'Соответствует лимиту годового оборота',
+            rule: 'R23',
+          },
+        ];
+
   return (
-    <Card className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+    <div className="space-y-6 text-[#141414]">
+      {/* Заголовок секции */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            Результаты скоринга и проверок
+          <span className="text-[11px] tracking-[0.12em] uppercase text-[#686b70] font-bold block mb-1">
+            Движок SmartKabinet.Checking
+          </span>
+          <h3 className="text-[20px] font-bold text-[#141414] m-0">
+            Детализация скоринга и внешних проверок
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Движок SmartKabinet.Checking • Рассчитано автоматически
-          </p>
         </div>
-        <ScoringRiskBadge riskLevel={scoring.riskLevel} score={scoring.score} />
+        <span
+          className={`inline-block rounded-[7px] px-[10px] py-[5px] text-[12px] font-bold ${
+            scoring.score >= 70
+              ? 'bg-[#edf7f0] text-[#176b45]'
+              : scoring.score >= 50
+              ? 'bg-[#fff6e4] text-[#885215]'
+              : 'bg-[#fff1ef] text-[#a42b22]'
+          }`}
+        >
+          Итоговый балл: {scoring.score} из 100
+        </span>
       </div>
 
-      {/* Primary KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Score 0-100 */}
-        <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between">
-          <span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Скоринговый балл</span>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{scoring.score}</span>
-            <span className="text-xs text-slate-400 dark:text-slate-500 font-semibold">из 100</span>
-          </div>
-          <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
-            <div
-              className={`h-full rounded-full ${
-                scoring.score >= 75
-                  ? 'bg-emerald-500'
-                  : scoring.score >= 55
-                  ? 'bg-blue-500'
-                  : 'bg-rose-500'
-              }`}
-              style={{ width: `${scoring.score}%` }}
-            />
+      {/* 3 ключевых метрики (.analysis-stats из макет.html) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="p-[18px] bg-[#f5f6f7] rounded-[13px]">
+          <span className="text-[#686b70] text-[11px] block">Скоринговый балл</span>
+          <strong className="text-[23px] block tracking-[-0.04em] my-1.5 text-[#141414]">
+            {scoring.score} <span className="text-[13px] font-normal text-[#686b70]">/ 100</span>
+          </strong>
+          <div className="h-[4px] bg-[#e6e8ea] rounded-[4px] overflow-hidden mt-2">
+            <i className="h-full block bg-[#EF3124]" style={{ width: `${scoring.score}%` }} />
           </div>
         </div>
 
-        {/* DSCR */}
-        <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between">
+        <div className="p-[18px] bg-[#f5f6f7] rounded-[13px]">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Коэффициент DSCR</span>
+            <span className="text-[#686b70] text-[11px]">Коэффициент DSCR</span>
             <span
-              className={`text-xs px-2 py-0.5 rounded-md font-semibold ${
-                isDscrSafe
-                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
-                  : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+              className={`rounded-[7px] px-2 py-0.5 text-[10px] font-bold ${
+                isDscrSafe ? 'bg-[#edf7f0] text-[#176b45]' : 'bg-[#fff6e4] text-[#885215]'
               }`}
             >
-              {isDscrSafe ? 'В норме' : 'Риск'}
+              {isDscrSafe ? 'Норма ≥ 1.25' : 'Ниже нормы'}
             </span>
           </div>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{scoring.dscr.toFixed(2)}</span>
-            <span className="text-xs text-slate-400 dark:text-slate-500">норм. &ge; 1.25</span>
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">Покрытие долга чистым потоком</p>
+          <strong className="text-[23px] block tracking-[-0.04em] my-1.5 text-[#141414]">
+            {scoring.dscr.toFixed(2)}
+          </strong>
+          <span className="text-[#686b70] text-[11px] block">Покрытие платежа чистым потоком</span>
         </div>
 
-        {/* Net cash flow */}
-        <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between">
-          <span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Чистый поток в месяц</span>
-          <div className="mt-2">
-            <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatRubles(scoring.netCashFlow)}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-            Реком. платеж: до {formatRubles(scoring.recommendedMaxPayment)}
-          </p>
+        <div className="p-[18px] bg-[#f5f6f7] rounded-[13px]">
+          <span className="text-[#686b70] text-[11px] block">Чистый денежный поток</span>
+          <strong className="text-[23px] block tracking-[-0.04em] my-1.5 text-[#141414]">
+            {formatRubles(scoring.netCashFlow)}
+          </strong>
+          <span className="text-[#686b70] text-[11px] block">
+            Допустимый платёж: до {formatRubles(scoring.recommendedMaxPayment)}
+          </span>
         </div>
       </div>
 
-      {/* Integrations data: BKI and FNS */}
+      {/* Интеграции: БКИ и ФНС (.two-cols из макет.html) */}
       {showDetails && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          {/* BKI */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-              <span>Кредитная история (БКИ)</span>
-              <span className="text-slate-500 dark:text-slate-400">Рейтинг: {scoring.bki.rating} / 850</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-              <div>
-                <span className="text-slate-400 dark:text-slate-500 block">Открытые кредиты</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">{scoring.bki.activeLoansCount} шт.</span>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-500 block">Текущий долг</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">{formatRubles(scoring.bki.totalDebt)}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-500 block">Макс. просрочка</span>
-                <span className={`font-semibold ${scoring.bki.maxOverdueDays > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {scoring.bki.maxOverdueDays} дней
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-500 block">Стоп-просрочки</span>
-                <span className={`font-semibold ${scoring.bki.hasCriticalDelays ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {scoring.bki.hasCriticalDelays ? 'Есть' : 'Нет'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* FNS */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-              <span>ФНС «Прозрачный бизнес»</span>
-              <span className={scoring.fns.taxDebtAmount === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
-                {scoring.fns.taxDebtAmount === 0 ? 'Долгов нет' : formatRubles(scoring.fns.taxDebtAmount)}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-5 rounded-[14px] border border-[#e6e8ea] bg-white">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#e6e8ea]">
+              <strong className="text-[14px] text-[#141414]">Кредитная история (БКИ)</strong>
+              <span className="inline-block rounded-[7px] bg-[#f5f6f7] px-2.5 py-1 text-[11px] font-medium text-[#141414]">
+                Рейтинг: {scoring.bki.rating} / 850
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-              <div>
-                <span className="text-slate-400 dark:text-slate-500 block">Блокировка счетов</span>
-                <span className={`font-semibold ${scoring.fns.hasSuspendedAccounts ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {scoring.fns.hasSuspendedAccounts ? 'Есть ограничения' : 'Отсутствует'}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-500 block">Дисквалификация</span>
-                <span className={`font-semibold ${scoring.fns.isDisqualifiedPerson ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {scoring.fns.isDisqualifiedPerson ? 'Дисквалифицирован' : 'Нет'}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-500 block">Сдача отчетности</span>
-                <span className={`font-semibold ${scoring.fns.lastReportingSubmitted ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                  {scoring.fns.lastReportingSubmitted ? 'Сдана вовремя' : 'Задержана'}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-500 block">Статус ЕГРИП</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Действует</span>
-              </div>
+            <dl className="grid grid-cols-2 gap-y-2.5 text-[13px] m-0">
+              <dt className="text-[#686b70]">Активные договоры</dt>
+              <dd className="m-0 font-bold text-right">{scoring.bki.activeLoansCount} шт.</dd>
+              <dt className="text-[#686b70]">Остаток долга</dt>
+              <dd className="m-0 font-bold text-right">{formatRubles(scoring.bki.totalDebt)}</dd>
+              <dt className="text-[#686b70]">Макс. просрочка (12 мес.)</dt>
+              <dd
+                className={`m-0 font-bold text-right ${
+                  scoring.bki.maxOverdueDays > 0 ? 'text-[#885215]' : 'text-[#176b45]'
+                }`}
+              >
+                {scoring.bki.maxOverdueDays} дн.
+              </dd>
+              <dt className="text-[#686b70]">Критические просрочки</dt>
+              <dd
+                className={`m-0 font-bold text-right ${
+                  scoring.bki.hasCriticalDelays ? 'text-[#a42b22]' : 'text-[#176b45]'
+                }`}
+              >
+                {scoring.bki.hasCriticalDelays ? 'Обнаружены' : 'Нет'}
+              </dd>
+            </dl>
+          </div>
+
+          <div className="p-5 rounded-[14px] border border-[#e6e8ea] bg-white">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#e6e8ea]">
+              <strong className="text-[14px] text-[#141414]">ФНС и государственные реестры</strong>
+              <span
+                className={`inline-block rounded-[7px] px-2.5 py-1 text-[11px] font-medium ${
+                  scoring.fns.taxDebtAmount === 0
+                    ? 'bg-[#edf7f0] text-[#176b45]'
+                    : 'bg-[#fff1ef] text-[#a42b22]'
+                }`}
+              >
+                {scoring.fns.taxDebtAmount === 0 ? 'Задолженностей нет' : formatRubles(scoring.fns.taxDebtAmount)}
+              </span>
             </div>
+            <dl className="grid grid-cols-2 gap-y-2.5 text-[13px] m-0">
+              <dt className="text-[#686b70]">Блокировки счетов (ст. 76 НК)</dt>
+              <dd
+                className={`m-0 font-bold text-right ${
+                  scoring.fns.hasSuspendedAccounts ? 'text-[#a42b22]' : 'text-[#176b45]'
+                }`}
+              >
+                {scoring.fns.hasSuspendedAccounts ? 'Есть ограничения' : 'Нет'}
+              </dd>
+              <dt className="text-[#686b70]">Реестр дисквалифицированных</dt>
+              <dd className="m-0 font-bold text-right text-[#176b45]">
+                {scoring.fns.isDisqualifiedPerson ? 'Числится' : 'Не числится'}
+              </dd>
+              <dt className="text-[#686b70]">Налоговая дисциплина</dt>
+              <dd className="m-0 font-bold text-right text-[#176b45]">
+                {scoring.fns.lastReportingSubmitted ? 'Без нарушений' : 'Требует сверки'}
+              </dd>
+              <dt className="text-[#686b70]">Статус в ЕГРИП</dt>
+              <dd className="m-0 font-bold text-right text-[#176b45]">Действующий ИП</dd>
+            </dl>
           </div>
         </div>
       )}
 
-      {/* Score Components Breakdown (Составляющие балла) */}
+      {/* Составляющие скорингового балла (5 факторов) */}
       {showDetails && (
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="pt-4 border-t border-[#e6e8ea]">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Составляющие скорингового балла ({scoring.score} из 100)
+              <h4 className="text-[15px] font-bold text-[#141414] m-0">
+                Факторная декомпозиция скорингового балла ({scoring.score} из 100)
               </h4>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Распределение весовых коэффициентов по регламенту кредитного скоринга
+              <p className="text-[12px] text-[#686b70] m-0">
+                Распределение весов согласно регламенту оценки кредитного риска
               </p>
             </div>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+            <span className="inline-block rounded-[7px] bg-[#f5f6f7] px-2.5 py-1 text-[11px] font-medium text-[#686b70]">
               5 факторов
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(scoring.components && scoring.components.length > 0
-              ? scoring.components
-              : [
-                  {
-                    key: 'coverage',
-                    label: 'Покрытие платежей (DSCR)',
-                    points: isDscrSafe ? Math.min(40, Math.round((scoring.score / 100) * 40)) : 16,
-                    max: 40,
-                    value: `DSCR ${scoring.dscr.toFixed(2)} (норма ≥ 1.25)`,
-                    rule: 'R20–R21',
-                  },
-                  {
-                    key: 'credit',
-                    label: 'Кредитная история (БКИ)',
-                    points: scoring.bki.hasCriticalDelays ? 0 : (scoring.bki.maxOverdueDays > 0 ? 15 : 25),
-                    max: 25,
-                    value: scoring.bki.hasCriticalDelays
-                      ? 'Критическая просрочка'
-                      : scoring.bki.maxOverdueDays > 0
-                      ? 'Просрочка до 30 дней'
-                      : 'Без просрочек, рейтинг БКИ ' + scoring.bki.rating,
-                    rule: 'R09–R10',
-                  },
-                  {
-                    key: 'history',
-                    label: 'Длительность деятельности',
-                    points: scoring.egrip?.status === 'ACTIVE' ? 14 : 6,
-                    max: 15,
-                    value: 'Регистрация ИП: ' + (scoring.egrip?.registrationDate || 'более 12 мес'),
-                    rule: 'R18, R22',
-                  },
-                  {
-                    key: 'variation',
-                    label: 'Устойчивость выручки (CV)',
-                    points: 12,
-                    max: 15,
-                    value: 'Коэффициент вариации CV ≤ 0.35',
-                    rule: 'R19, R22',
-                  },
-                  {
-                    key: 'annual',
-                    label: 'Сумма к годовой выручке',
-                    points: 5,
-                    max: 5,
-                    value: 'Соответствует лимиту годового оборота',
-                    rule: 'R23',
-                  },
-                ]
-            ).map((comp) => {
+            {componentsList.map((comp) => {
               const pct = Math.min(100, Math.round((comp.points / comp.max) * 100));
               return (
-                <div
-                  key={comp.key}
-                  className="p-3 bg-slate-50/70 dark:bg-slate-800/50 rounded-xl border border-slate-200/70 dark:border-slate-800"
-                >
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <div className="flex items-center gap-1.5 truncate mr-2">
-                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{comp.label}</span>
+                <div key={comp.key} className="p-4 bg-[#f5f6f7] rounded-[13px] border border-[#e6e8ea]">
+                  <div className="flex items-center justify-between text-[13px] mb-2">
+                    <div className="flex items-center gap-2 truncate">
+                      <strong className="font-bold text-[#141414] truncate">{comp.label}</strong>
                       {comp.rule && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-[#e6e8ea] text-[#686b70]">
                           {comp.rule}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-baseline gap-1 shrink-0">
-                      <span className="font-extrabold text-slate-900 dark:text-white text-sm">{comp.points}</span>
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500">/ {comp.max} б.</span>
-                    </div>
+                    <strong className="text-[14px] text-[#141414] shrink-0">
+                      {comp.points} <span className="text-[11px] font-normal text-[#686b70]">/ {comp.max} б.</span>
+                    </strong>
                   </div>
 
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mb-1.5">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-blue-500' : 'bg-rose-500'
-                      }`}
-                      style={{ width: `${pct}%` }}
-                    />
+                  <div className="h-[4px] bg-[#e6e8ea] rounded-[4px] overflow-hidden mb-2">
+                    <i className="h-full block bg-[#EF3124]" style={{ width: `${pct}%` }} />
                   </div>
 
-                  {comp.value && (
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                      {String(comp.value)}
-                    </div>
-                  )}
+                  {comp.value && <span className="text-[11px] text-[#686b70] block">{String(comp.value)}</span>}
                 </div>
               );
             })}
@@ -263,36 +245,36 @@ export const ScoringCard: React.FC<ScoringCardProps> = ({ scoring, showDetails =
         </div>
       )}
 
-      {/* Stop factors list */}
+      {/* Проверка стоп-факторов */}
       {scoring.stopFactors && scoring.stopFactors.length > 0 && (
-        <div className="pt-2">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+        <div className="pt-4 border-t border-[#e6e8ea]">
+          <h4 className="text-[15px] font-bold text-[#141414] mb-3">
             Проверка стоп-факторов ({scoring.stopFactors.length})
           </h4>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {scoring.stopFactors.map((sf) => (
               <div
                 key={sf.id}
-                className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs ${
+                className={`p-3.5 rounded-[12px] border text-[12px] flex items-start gap-2.5 ${
                   sf.isTriggered
-                    ? 'bg-rose-50/60 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 text-rose-900 dark:text-rose-200'
-                    : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                    ? 'bg-[#fff1ef] border-[#fac6c2] text-[#9d231b]'
+                    : 'bg-[#eef8f1] border-[#cde8d6] text-[#176b45]'
                 }`}
               >
                 {sf.isTriggered ? (
-                  <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 ) : (
-                  <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 )}
                 <div>
-                  <span className="font-semibold block">{sf.title}</span>
-                  <span className="text-slate-500 dark:text-slate-400">{sf.description}</span>
+                  <strong className="font-bold block text-[#141414]">{sf.title}</strong>
+                  <span className="text-[#686b70] text-[11px]">{sf.description}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 };

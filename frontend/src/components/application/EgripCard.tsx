@@ -1,7 +1,5 @@
 import React from 'react';
 import { EgripCompany } from '../../types/scoring';
-import { Card } from '../common/Card';
-import { Building2, Calendar, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
 import { formatInn } from '../../utils/formatters';
 
 interface EgripCardProps {
@@ -12,61 +10,49 @@ export const EgripCard: React.FC<EgripCardProps> = ({ company }) => {
   const isActive = company.status === 'ACTIVE';
 
   return (
-    <Card className="bg-slate-50/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800">
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center">
-            <Building2 className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{company.fullName}</h4>
-            <span className="text-xs font-mono text-slate-500 dark:text-slate-400">ИНН: {formatInn(company.inn)}</span>
-          </div>
+    <div className="p-6 border border-[#e6e8ea] rounded-[16px] bg-[#f5f6f7] text-[#141414]">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <span className="text-[11px] tracking-[0.12em] uppercase text-[#686b70] font-bold block mb-1">
+            Выписка из реестра ФНС (ЕГРИП)
+          </span>
+          <h3 className="text-[18px] font-bold text-[#141414] m-0">{company.fullName}</h3>
         </div>
 
         <span
-          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-            isActive
-              ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
-              : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
+          className={`inline-block rounded-[7px] px-[9px] py-[5px] text-[11px] font-medium shrink-0 ${
+            isActive ? 'bg-[#edf7f0] text-[#176b45]' : 'bg-[#fff1ef] text-[#a42b22]'
           }`}
         >
-          {isActive ? (
-            <>
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Действующий ИП
-            </>
-          ) : (
-            <>
-              <AlertCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> Ликвидирован
-            </>
-          )}
+          {isActive ? 'Действующий ИП' : 'Прекратил деятельность'}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-200/60 dark:border-slate-800 text-xs">
+      {/* Сетка фактов (.facts / .fact из макет.html) */}
+      <div className="grid grid-cols-2 gap-4 my-4 pt-4 border-t border-[#e6e8ea]">
         <div>
-          <span className="text-slate-400 dark:text-slate-500 block mb-0.5">ОГРНИП</span>
-          <span className="font-medium text-slate-700 dark:text-slate-300 font-mono">{company.ogrnip}</span>
+          <small className="block text-[#686b70] text-[11px] mb-1">ИНН</small>
+          <strong className="text-[14px] font-medium font-mono">{formatInn(company.inn)}</strong>
         </div>
         <div>
-          <span className="text-slate-400 dark:text-slate-500 block mb-0.5">Дата регистрации</span>
-          <span className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-            {company.registrationDate}
-          </span>
+          <small className="block text-[#686b70] text-[11px] mb-1">ОГРНИП</small>
+          <strong className="text-[14px] font-medium font-mono">{company.ogrnip}</strong>
         </div>
         <div>
-          <span className="text-slate-400 dark:text-slate-500 block mb-0.5">Регион</span>
-          <span className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-            {company.region}
-          </span>
+          <small className="block text-[#686b70] text-[11px] mb-1">Дата регистрации</small>
+          <strong className="text-[14px] font-medium">{company.registrationDate}</strong>
+        </div>
+        <div>
+          <small className="block text-[#686b70] text-[11px] mb-1">Регион ведения бизнеса</small>
+          <strong className="text-[14px] font-medium">{company.region}</strong>
+        </div>
+        <div className="col-span-2 pt-2 border-t border-[#e6e8ea]">
+          <small className="block text-[#686b70] text-[11px] mb-1">Основной вид деятельности (ОКВЭД)</small>
+          <strong className="text-[13px] font-medium">
+            {company.okved} — {company.okvedName}
+          </strong>
         </div>
       </div>
-
-      <div className="mt-3 pt-2 text-xs text-slate-500 dark:text-slate-400">
-        <span className="font-semibold text-slate-700 dark:text-slate-300">Основной ОКВЭД:</span> {company.okved} — {company.okvedName}
-      </div>
-    </Card>
+    </div>
   );
 };

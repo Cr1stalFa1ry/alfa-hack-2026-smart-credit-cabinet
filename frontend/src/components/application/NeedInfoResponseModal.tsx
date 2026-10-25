@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
-import { Button } from '../common/Button';
-import { Textarea } from '../common/Textarea';
 import { FileUpload } from '../common/FileUpload';
 import { UploadedDocument } from '../../types/application';
 
@@ -43,41 +41,50 @@ export const NeedInfoResponseModal: React.FC<NeedInfoResponseModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Ответ на запрос банка"
-      description="Предоставьте пояснения или прикрепите подтверждающие документы для продолжения проверки (переход T10)"
+      description="Предоставьте пояснения или приложите документы для продолжения рассмотрения заявки (T10)"
       maxWidth="lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
-          <span className="font-bold block mb-1">Вопрос аналитика / системы:</span>
+      <form onSubmit={handleSubmit} className="space-y-4 text-[#141414]">
+        {/* Блок предупреждения (.message.warn из макет.html) */}
+        <div className="p-4 rounded-[12px] bg-[#fff7e8] text-[#714817] text-[13px] leading-[1.6]">
+          <strong className="block mb-1">Запрос специалиста банка:</strong>
           {promptText}
         </div>
 
-        <Textarea
-          label="Ваш комментарий / пояснение"
-          placeholder="Опишите подробности или причину изменения финансовых показателей..."
-          rows={4}
-          value={response}
-          onChange={(e) => setResponse(e.target.value)}
-          required
-        />
-
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-            Прикрепить документы (по желанию)
-          </label>
-          <FileUpload
-            onFileUploaded={onFileUpload}
-            existingDocuments={uploadedDocuments}
+          <label className="block font-bold text-[14px] mb-2">Ваш комментарий / пояснение</label>
+          <textarea
+            className="w-full px-4 py-3.5 border border-[#D1D5D8] rounded-[11px] bg-white text-[#141414] text-[14px] focus:outline-2 focus:outline-[#EF3124]"
+            placeholder="Опишите подробности или причину изменения финансовых показателей..."
+            rows={4}
+            value={response}
+            onChange={(e) => setResponse(e.target.value)}
+            required
           />
         </div>
 
-        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
-          <Button variant="ghost" type="button" onClick={onClose}>
+        <div>
+          <label className="block font-bold text-[14px] mb-2">
+            Подтверждающие документы <span className="text-[11px] font-normal text-[#686b70] ml-1">необязательно</span>
+          </label>
+          <FileUpload onFileUploaded={onFileUpload} existingDocuments={uploadedDocuments} />
+        </div>
+
+        <div className="pt-4 border-t border-[#e6e8ea] flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] cursor-pointer"
+          >
             Отмена
-          </Button>
-          <Button variant="primary" type="submit" isLoading={isSubmitting}>
-            Отправить ответ в банк (T10)
-          </Button>
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
+          >
+            {isSubmitting ? 'Отправка...' : 'Отправить ответ в банк (T10)'}
+          </button>
         </div>
       </form>
     </Modal>

@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { CreditApplication } from '../../types/application';
-import { Card } from '../common/Card';
-import { Button } from '../common/Button';
-import { Input } from '../common/Input';
-import { Textarea } from '../common/Textarea';
 import { Modal } from '../common/Modal';
 import { formatRubles, formatPercent, calculateMonthlyPayment } from '../../utils/formatters';
 import { Check, X, HelpCircle, RefreshCw, Ban, Sparkles, Calculator } from 'lucide-react';
 
 interface AnalystActionPanelProps {
   application: CreditApplication;
-  onApprove: (params: { approvedAmount: number; approvedTermMonths: number; annualInterestRate: number; comment?: string }) => Promise<void>;
+  onApprove: (params: {
+    approvedAmount: number;
+    approvedTermMonths: number;
+    annualInterestRate: number;
+    comment?: string;
+  }) => Promise<void>;
   onDecline: (reasonCode: string, comment: string) => Promise<void>;
   onRequestInfo: (prompt: string) => Promise<void>;
   onReturnToChecking: (comment?: string) => Promise<void>;
@@ -25,13 +26,26 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
   onReturnToChecking,
   onCloseNonCredit,
 }) => {
-  const [activeModal, setActiveModal] = useState<'approve' | 'decline' | 'need_info' | 'recheck' | 'close' | null>(null);
+  const [activeModal, setActiveModal] = useState<'approve' | 'decline' | 'need_info' | 'recheck' | 'close' | null>(
+    null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form states with fallback to calculated scoring recommendation if present
-  const defaultAmount = application.currentOffer?.approvedAmount || application.recommendedOffer?.approvedAmount || application.offer?.approvedAmount || application.requestedAmount;
-  const defaultTerm = application.currentOffer?.termMonths || application.recommendedOffer?.approvedTermMonths || application.offer?.approvedTermMonths || application.requestedTermMonths;
-  const defaultRate = application.currentOffer?.annualRatePercent || application.recommendedOffer?.annualInterestRate || application.offer?.annualInterestRate || 18.0;
+  const defaultAmount =
+    application.currentOffer?.approvedAmount ||
+    application.recommendedOffer?.approvedAmount ||
+    application.offer?.approvedAmount ||
+    application.requestedAmount;
+  const defaultTerm =
+    application.currentOffer?.termMonths ||
+    application.recommendedOffer?.approvedTermMonths ||
+    application.offer?.approvedTermMonths ||
+    application.requestedTermMonths;
+  const defaultRate =
+    application.currentOffer?.annualRatePercent ||
+    application.recommendedOffer?.annualInterestRate ||
+    application.offer?.annualInterestRate ||
+    18.0;
 
   const [approveAmount, setApproveAmount] = useState(defaultAmount);
   const [approveTerm, setApproveTerm] = useState(defaultTerm);
@@ -40,9 +54,24 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
   const [reasonCode, setReasonCode] = useState('HIGH_RISK_SCORE');
 
   React.useEffect(() => {
-    setApproveAmount(application.currentOffer?.approvedAmount || application.recommendedOffer?.approvedAmount || application.offer?.approvedAmount || application.requestedAmount);
-    setApproveTerm(application.currentOffer?.termMonths || application.recommendedOffer?.approvedTermMonths || application.offer?.approvedTermMonths || application.requestedTermMonths);
-    setApproveRate(application.currentOffer?.annualRatePercent || application.recommendedOffer?.annualInterestRate || application.offer?.annualInterestRate || 18.0);
+    setApproveAmount(
+      application.currentOffer?.approvedAmount ||
+        application.recommendedOffer?.approvedAmount ||
+        application.offer?.approvedAmount ||
+        application.requestedAmount
+    );
+    setApproveTerm(
+      application.currentOffer?.termMonths ||
+        application.recommendedOffer?.approvedTermMonths ||
+        application.offer?.approvedTermMonths ||
+        application.requestedTermMonths
+    );
+    setApproveRate(
+      application.currentOffer?.annualRatePercent ||
+        application.recommendedOffer?.annualInterestRate ||
+        application.offer?.annualInterestRate ||
+        18.0
+    );
   }, [application]);
 
   const currentMonthlyPayment = calculateMonthlyPayment(approveAmount, approveRate, approveTerm);
@@ -101,152 +130,165 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await onCloseNonCredit('PRODUCT_NA_AMOUNT', comment || 'Запрашиваемые параметры не соответствуют продуктовой линейке');
+      await onCloseNonCredit(
+        'PRODUCT_NA_AMOUNT',
+        comment || 'Запрашиваемые параметры не соответствуют продуктовой линейке'
+      );
       setActiveModal(null);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const inputClass =
+    'w-full px-4 py-3.5 border border-[#D1D5D8] rounded-[11px] bg-white text-[#141414] text-[14px] focus:outline-2 focus:outline-[#EF3124] focus:outline-offset-2';
+
   return (
     <>
-      <Card className="bg-gradient-to-r from-purple-50/50 dark:from-purple-950/30 via-white dark:via-slate-900 to-slate-50 dark:to-slate-900 border-purple-200 dark:border-purple-900/60">
+      {/* Блок инструментов банка в стиле .bank-tools из макет.html */}
+      <div className="bg-[#f5f6f7] rounded-[14px] p-[22px] border border-[#e6e8ea]">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+            <span className="text-[11px] tracking-[0.12em] uppercase text-[#686b70] font-bold block mb-1">
               Рабочее место андеррайтера
             </span>
-            <h3 className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">
+            <h3 className="text-[18px] font-bold text-[#141414] m-0">
               Принятие экспертного решения по заявке
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Доступны переходы T11–T16 согласно регламенту оценки рисков
+            <p className="text-[12px] text-[#686b70] mt-1 mb-0">
+              Доступны регламентные переходы T11–T16 с автоматической записью в журнал аудита
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* T12 Approve */}
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Check className="w-4 h-4" />}
+          {/* Кнопки действий (.primary, .secondary, .danger из макет.html) */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
               onClick={() => {
                 setComment('');
                 setActiveModal('approve');
               }}
+              className="rounded-[12px] px-[21px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-[#EF3124] hover:bg-[#cd2017] text-white transition-colors cursor-pointer"
             >
+              <Check className="w-4 h-4" />
               Одобрить оферту (T12)
-            </Button>
+            </button>
 
-            {/* T11 Need Info */}
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<HelpCircle className="w-4 h-4 text-orange-600 dark:text-orange-400" />}
+            <button
+              type="button"
               onClick={() => {
                 setComment('Просим прислать выписку по счетам за последние 6 месяцев для подтверждения оборотов');
                 setActiveModal('need_info');
               }}
+              className="rounded-[12px] px-[18px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-white text-[#141414] border border-[#e6e8ea] hover:bg-[#eeeff1] transition-colors cursor-pointer"
             >
+              <HelpCircle className="w-4 h-4 text-[#885215]" />
               Запросить сведения (T11)
-            </Button>
+            </button>
 
-            {/* T14 Recheck */}
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+            <button
+              type="button"
               onClick={() => {
                 setComment('Параметры скорректированы, запуск повторного скоринга');
                 setActiveModal('recheck');
               }}
+              className="rounded-[12px] px-[18px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-white text-[#141414] border border-[#e6e8ea] hover:bg-[#eeeff1] transition-colors cursor-pointer"
             >
+              <RefreshCw className="w-4 h-4 text-[#686b70]" />
               На скоринг (T14)
-            </Button>
+            </button>
 
-            {/* T13 Decline */}
-            <Button
-              variant="danger"
-              size="sm"
-              leftIcon={<X className="w-4 h-4" />}
+            <button
+              type="button"
               onClick={() => {
                 setComment('');
                 setActiveModal('decline');
               }}
+              className="rounded-[12px] px-[18px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-white text-[#EF3124] border border-[#fac6c2] hover:bg-[#fff1ef] transition-colors cursor-pointer"
             >
+              <X className="w-4 h-4" />
               Отказать (T13)
-            </Button>
+            </button>
 
-            {/* T16 Close non-credit */}
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={<Ban className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
+            <button
+              type="button"
               onClick={() => {
                 setComment('');
                 setActiveModal('close');
               }}
+              className="rounded-[12px] px-[14px] py-[13px] font-bold text-[13px] inline-flex items-center justify-center gap-1.5 text-[#686b70] hover:text-[#141414] transition-colors cursor-pointer"
             >
+              <Ban className="w-4 h-4" />
               Закрыть (T16)
-            </Button>
+            </button>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Modal: T12 Approve */}
+      {/* Модальное окно T12: Одобрение */}
       <Modal
         isOpen={activeModal === 'approve'}
         onClose={() => setActiveModal(null)}
         title="Одобрение кредитной заявки (T12)"
-        description="Сформируйте финальные условия оферты для предпринимателя"
+        description="Сформируйте финальные параметры индивидуальной оферты для предпринимателя"
       >
-        <form onSubmit={handleApproveSubmit} className="space-y-4">
-          <Input
-            label="Одобренная сумма (₽)"
-            type="number"
-            value={approveAmount}
-            onChange={(e) => setApproveAmount(Number(e.target.value))}
-            required
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Срок кредитования (мес)"
+        <form onSubmit={handleApproveSubmit} className="space-y-4 text-[#141414]">
+          <div>
+            <label className="block font-bold text-[14px] mb-2">Одобренная сумма (₽)</label>
+            <input
               type="number"
-              value={approveTerm}
-              onChange={(e) => setApproveTerm(Number(e.target.value))}
-              required
-            />
-            <Input
-              label="Ставка (% годовых)"
-              type="number"
-              step="0.1"
-              value={approveRate}
-              onChange={(e) => setApproveRate(Number(e.target.value))}
+              className={inputClass}
+              value={approveAmount}
+              onChange={(e) => setApproveAmount(Number(e.target.value))}
               required
             />
           </div>
 
-          {/* Dynamic calculated payment and terms box */}
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
-                <Calculator className="w-3.5 h-3.5 text-alfa-500" />
-                Расчётный платёж (аннуитет):
-              </span>
-              <span className="font-extrabold text-slate-900 dark:text-white text-base">
-                {formatRubles(currentMonthlyPayment)} <span className="text-xs font-normal text-slate-400">/ мес</span>
-              </span>
+          <div className="grid grid-cols-2 gap-3.5">
+            <div>
+              <label className="block font-bold text-[14px] mb-2">Срок (месяцев)</label>
+              <input
+                type="number"
+                className={inputClass}
+                value={approveTerm}
+                onChange={(e) => setApproveTerm(Number(e.target.value))}
+                required
+              />
             </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 pt-1 border-t border-slate-200/50 dark:border-slate-700/50">
-              <span>Всего к возврату за {approveTerm} мес.:</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">
-                {formatRubles(totalRepayment)}
-              </span>
+            <div>
+              <label className="block font-bold text-[14px] mb-2">Ставка (% годовых)</label>
+              <input
+                type="number"
+                step="0.1"
+                className={inputClass}
+                value={approveRate}
+                onChange={(e) => setApproveRate(Number(e.target.value))}
+                required
+              />
             </div>
+          </div>
+
+          <div className="p-4 rounded-[14px] bg-[#fff8f6] border border-[#efddd8] space-y-2">
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="text-[#686b70] flex items-center gap-1.5 font-medium">
+                <Calculator className="w-4 h-4 text-[#EF3124]" />
+                Расчётный аннуитетный платёж:
+              </span>
+              <strong className="text-[18px] font-bold text-[#141414]">
+                {formatRubles(currentMonthlyPayment)} <span className="text-[12px] font-normal text-[#686b70]">/ мес</span>
+              </strong>
+            </div>
+            <div className="flex items-center justify-between text-[12px] text-[#686b70] pt-2 border-t border-[#efddd8]">
+              <span>Общая сумма выплат за {approveTerm} мес.:</span>
+              <strong className="text-[#141414]">{formatRubles(totalRepayment)}</strong>
+            </div>
+
             {application.offer && (
-              <div className="pt-1.5 mt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px]">
-                <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1 font-medium">
-                  <Sparkles className="w-3.5 h-3.5 shrink-0" /> Рекомендация: {formatRubles(application.offer.approvedAmount)} • {application.offer.approvedTermMonths} мес • {formatPercent(application.offer.annualInterestRate)}
+              <div className="pt-2 border-t border-[#efddd8] flex items-center justify-between text-[12px]">
+                <span className="text-[#176b45] flex items-center gap-1 font-medium">
+                  <Sparkles className="w-3.5 h-3.5" /> Рекомендация:{' '}
+                  {formatRubles(application.offer.approvedAmount)} • {application.offer.approvedTermMonths} мес •{' '}
+                  {formatPercent(application.offer.annualInterestRate)}
                 </span>
                 <button
                   type="button"
@@ -255,7 +297,7 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
                     setApproveTerm(application.offer!.approvedTermMonths);
                     setApproveRate(application.offer!.annualInterestRate);
                   }}
-                  className="text-alfa-600 dark:text-alfa-400 hover:underline font-bold shrink-0 ml-2"
+                  className="text-[#EF3124] font-bold hover:underline cursor-pointer"
                 >
                   Применить
                 </button>
@@ -263,47 +305,65 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
             )}
           </div>
 
-          <Textarea
-            label="Комментарий андеррайтера (для аудита)"
-            placeholder="Обоснование решения, учтенные факторы..."
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="ghost" type="button" onClick={() => setActiveModal(null)}>
+          <div>
+            <label className="block font-bold text-[14px] mb-2">
+              Комментарий андеррайтера <span className="text-[11px] font-normal text-[#686b70] ml-1">для аудита</span>
+            </label>
+            <textarea
+              className={inputClass}
+              rows={3}
+              placeholder="Обоснование решения и учтённые факторы..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e8ea]">
+            <button
+              type="button"
+              onClick={() => setActiveModal(null)}
+              className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] cursor-pointer"
+            >
               Отмена
-            </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
-              Утвердить оферту
-            </Button>
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
+            >
+              {isSubmitting ? 'Сохранение...' : 'Утвердить оферту'}
+            </button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal: T11 Need Info */}
+      {/* Модальное окно T11: Запрос сведений */}
       <Modal
         isOpen={activeModal === 'need_info'}
         onClose={() => setActiveModal(null)}
         title="Запрос сведений у клиента (T11)"
-        description="Заявка перейдет в статус need_info. Клиент получит уведомление"
+        description="Заявка перейдёт в статус дозапроса (need_info). Предприниматель получит уведомление в кабинете"
       >
-        <form onSubmit={handleNeedInfoSubmit} className="space-y-4">
-          <Textarea
-            label="Текст запроса клиенту"
-            placeholder="Укажите, какие документы или пояснения требуются..."
-            rows={4}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            required
-          />
+        <form onSubmit={handleNeedInfoSubmit} className="space-y-4 text-[#141414]">
+          <div>
+            <label className="block font-bold text-[14px] mb-2">Текст запроса клиенту</label>
+            <textarea
+              className={inputClass}
+              rows={4}
+              placeholder="Укажите, какие документы или пояснения требуются..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              required
+            />
+          </div>
 
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
-              Быстрые шаблоны дозапроса сведений:
+          <div>
+            <span className="text-[11px] tracking-[0.12em] uppercase text-[#686b70] font-bold block mb-2">
+              Быстрые шаблоны запроса:
             </span>
             <div className="flex flex-col gap-1.5">
               {[
-                'Предоставьте выписку по расчетному счету за последние 6 месяцев для подтверждения оборотов',
+                'Предоставьте выписку по расчётному счёту за последние 6 месяцев для подтверждения оборотов',
                 'Приложите договор аренды коммерческого помещения или свидетельство о собственности',
                 'Предоставьте спецификацию или счёт на оплату оборудования от выбранного поставщика',
                 'Поясните расхождение между заявленной выручкой и данными налоговой отчётности',
@@ -312,7 +372,7 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
                   key={i}
                   type="button"
                   onClick={() => setComment(templateText)}
-                  className="text-left text-xs p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                  className="text-left text-[12px] p-2.5 rounded-[10px] bg-[#f5f6f7] hover:bg-[#e6e8ea] text-[#141414] transition-colors cursor-pointer"
                 >
                   • {templateText}
                 </button>
@@ -320,34 +380,36 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="ghost" type="button" onClick={() => setActiveModal(null)}>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e8ea]">
+            <button
+              type="button"
+              onClick={() => setActiveModal(null)}
+              className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] cursor-pointer"
+            >
               Отмена
-            </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
-              Отправить запрос клиенту
-            </Button>
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
+            >
+              {isSubmitting ? 'Отправка...' : 'Отправить запрос клиенту'}
+            </button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal: T13 Decline */}
+      {/* Модальное окно T13: Отказ */}
       <Modal
         isOpen={activeModal === 'decline'}
         onClose={() => setActiveModal(null)}
         title="Отказ по заявке (T13)"
-        description="Зафиксируйте код причины и комментарий для прозрачного информирования"
+        description="Зафиксируйте код причины и пояснение для прозрачного информирования клиента"
       >
-        <form onSubmit={handleDeclineSubmit} className="space-y-4">
+        <form onSubmit={handleDeclineSubmit} className="space-y-4 text-[#141414]">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-              Причина отказа
-            </label>
-            <select
-              className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-alfa-100"
-              value={reasonCode}
-              onChange={(e) => setReasonCode(e.target.value)}
-            >
+            <label className="block font-bold text-[14px] mb-2">Причина отказа</label>
+            <select className={inputClass} value={reasonCode} onChange={(e) => setReasonCode(e.target.value)}>
               <option value="HIGH_RISK_SCORE">Недостаточный скоринговый балл (высокий риск)</option>
               <option value="DSCR_TOO_LOW">Коэффициент покрытия долга (DSCR) ниже норматива</option>
               <option value="CRITICAL_BKI_OVERDUE">Критические просрочки по данным БКИ</option>
@@ -356,74 +418,107 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
             </select>
           </div>
 
-          <Textarea
-            label="Пояснение клиенту"
-            placeholder="Опишите причину понятным языком..."
-            rows={3}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            required
-          />
+          <div>
+            <label className="block font-bold text-[14px] mb-2">Пояснение клиенту</label>
+            <textarea
+              className={inputClass}
+              rows={3}
+              placeholder="Опишите причину отказа понятным языком..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              required
+            />
+          </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="ghost" type="button" onClick={() => setActiveModal(null)}>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e8ea]">
+            <button
+              type="button"
+              onClick={() => setActiveModal(null)}
+              className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] cursor-pointer"
+            >
               Отмена
-            </Button>
-            <Button variant="danger" type="submit" isLoading={isSubmitting}>
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
+            >
               Подтвердить отказ
-            </Button>
+            </button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal: T14 Recheck */}
+      {/* Модальное окно T14: На повторную автопроверку */}
       <Modal
         isOpen={activeModal === 'recheck'}
         onClose={() => setActiveModal(null)}
         title="Возврат на автопроверку (T14)"
-        description="Заявка вернется в checking для пересчета скоринга"
+        description="Заявка вернётся в статус checking для повторного расчёта скоринга"
       >
-        <form onSubmit={handleRecheckSubmit} className="space-y-4">
-          <Textarea
-            label="Причина повторной проверки"
-            placeholder="Уточнены обороты / обновлена выписка..."
-            rows={3}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="ghost" type="button" onClick={() => setActiveModal(null)}>
+        <form onSubmit={handleRecheckSubmit} className="space-y-4 text-[#141414]">
+          <div>
+            <label className="block font-bold text-[14px] mb-2">Причина повторной проверки</label>
+            <textarea
+              className={inputClass}
+              rows={3}
+              placeholder="Уточнены обороты / обновлена выписка..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e8ea]">
+            <button
+              type="button"
+              onClick={() => setActiveModal(null)}
+              className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] cursor-pointer"
+            >
               Отмена
-            </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
+            >
               Отправить на скоринг
-            </Button>
+            </button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal: T16 Close non-credit */}
+      {/* Модальное окно T16: Некредитное закрытие */}
       <Modal
         isOpen={activeModal === 'close'}
         onClose={() => setActiveModal(null)}
         title="Некредитное закрытие (T16)"
-        description="Закрытие заявки по некредитным препятствиям (например, несоответствие продукту)"
+        description="Закрытие заявки по некредитным основаниям (например, несоответствие продуктовой линейке)"
       >
-        <form onSubmit={handleCloseSubmit} className="space-y-4">
-          <Textarea
-            label="Комментарий"
-            placeholder="Причина закрытия..."
-            rows={3}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="ghost" type="button" onClick={() => setActiveModal(null)}>
+        <form onSubmit={handleCloseSubmit} className="space-y-4 text-[#141414]">
+          <div>
+            <label className="block font-bold text-[14px] mb-2">Комментарий</label>
+            <textarea
+              className={inputClass}
+              rows={3}
+              placeholder="Укажите причину закрытия..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e8ea]">
+            <button
+              type="button"
+              onClick={() => setActiveModal(null)}
+              className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] cursor-pointer"
+            >
               Отмена
-            </Button>
-            <Button variant="danger" type="submit" isLoading={isSubmitting}>
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
+            >
               Закрыть заявку
-            </Button>
+            </button>
           </div>
         </form>
       </Modal>
