@@ -83,6 +83,21 @@ class ApplicationStore {
     this.save();
   }
 
+  public syncApps(freshApps: CreditApplication[]): void {
+    this.apps = freshApps.filter((a) => !isDemoApp(a.id));
+    this.save();
+  }
+
+  public removeApp(id: string): void {
+    this.apps = this.apps.filter((a) => a.id !== id);
+    this.save();
+  }
+
+  public clearAll(): void {
+    this.apps = [];
+    this.save();
+  }
+
   public addEvent(appId: string, text: string, isPublic = true, actor = 'Специалист'): void {
     const app = this.getById(appId);
     if (!app) return;

@@ -12,15 +12,14 @@ export const analystApi = {
         const mapped = data
           .map(mapBackendApplication)
           .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
-        mapped.forEach((app) => applicationStore.saveApp(app));
-        const local = applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
-        const mapIds = new Set(mapped.map((m) => m.id));
-        return [...mapped, ...local.filter((l) => !mapIds.has(l.id))];
+        applicationStore.syncApps(mapped);
+        return mapped;
       }
     } catch (err) {
       console.warn('Backend employee queue unavailable, using local store:', err);
+      return applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
     }
-    return applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
+    return [];
   },
 
   getApplicationDetails: async (id: string): Promise<CreditApplication> => {
@@ -32,7 +31,11 @@ export const analystApi = {
         applicationStore.saveApp(mapped);
         return mapped;
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        applicationStore.removeApp(id);
+        throw new Error('Заявка не найдена');
+      }
       console.warn(`Backend application ${id} fetch error, fallback to local store:`, err);
     }
     const local = applicationStore.getById(id);

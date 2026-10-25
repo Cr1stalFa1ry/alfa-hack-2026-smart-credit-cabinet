@@ -168,15 +168,14 @@ export const clientApi = {
         const mapped = data
           .map(mapBackendApplication)
           .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
-        mapped.forEach((a) => applicationStore.saveApp(a));
-        const local = applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
-        const mapIds = new Set(mapped.map((m) => m.id));
-        return [...mapped, ...local.filter((l) => !mapIds.has(l.id))];
+        applicationStore.syncApps(mapped);
+        return mapped;
       }
     } catch (err) {
       console.warn('Backend client applications unavailable, using local store:', err);
+      return applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
     }
-    return applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
+    return [];
   },
 
   getApplicationById: async (id: string): Promise<CreditApplication> => {
@@ -188,7 +187,11 @@ export const clientApi = {
         applicationStore.saveApp(mapped);
         return mapped;
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        applicationStore.removeApp(id);
+        throw new Error('Заявка не найдена');
+      }
       console.warn(`Backend client getApplicationById ${id} error:`, err);
     }
     const local = applicationStore.getById(id);
