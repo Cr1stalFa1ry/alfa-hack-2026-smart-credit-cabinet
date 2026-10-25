@@ -165,6 +165,8 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
   const [draftSavedMessage, setDraftSavedMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const isInitializedRef = useRef<boolean>(false);
+  const isAutoCreatingDraftRef = useRef<boolean>(false);
+  const justCreatedDraftIdRef = useRef<string | null>(null);
 
   const fetchDossier = async (innToFetch: string) => {
     const clean = innToFetch.trim();
@@ -207,11 +209,47 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
 
   useEffect(() => {
     if (!draftIdParam) {
-      const innToUse = selectedInn || user?.inn;
+      const innToUse = selectedInn || user?.inn || '500100000011';
       if (innToUse && innToUse.length === 12) {
         if (!selectedInn) setSelectedInn(innToUse);
         fetchDossier(innToUse);
       }
+
+      // Как только клиент переходит на страницу создания анкеты client/new сразу же создаётся черновик
+      if (!isAutoCreatingDraftRef.current && !currentDraftId) {
+        isAutoCreatingDraftRef.current = true;
+        const createInitialDraft = async () => {
+          try {
+            const initialInn = innToUse || user?.inn || '500100000011';
+            const payload = {
+              inn: initialInn,
+              businessType: 'operating',
+              stage: 'operating',
+              purpose: 'Пополнение оборотных средств',
+              purposeCode: 'working_capital',
+              productCode: 'WC',
+              requestedAmount: 1000000,
+              requestedTermMonths: 12,
+              ownContribution: 0,
+              asSoonAsPossible: true,
+              bkiConsent: false,
+              personalDataConsent: false,
+            };
+            const created = await clientApi.createDraft(payload as any);
+            justCreatedDraftIdRef.current = created.id;
+            setCurrentDraftId(created.id);
+            navigate(`/client/new?draftId=${created.id}`, { replace: true });
+          } catch (e) {
+            console.error('Ошибка автоматического создания черновика при входе в /client/new:', e);
+            isAutoCreatingDraftRef.current = false;
+          }
+        };
+        createInitialDraft();
+      }
+      return;
+    }
+
+    if (justCreatedDraftIdRef.current === draftIdParam) {
       return;
     }
 
