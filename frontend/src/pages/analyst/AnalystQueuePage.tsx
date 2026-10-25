@@ -29,7 +29,9 @@ export const AnalystQueuePage: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await analystApi.getReviewQueue();
-      setApplications(data);
+      // Исключаем черновики: сотрудник банка работает только с отправленными заявками
+      const submittedOnly = data.filter((a) => a.status !== 'draft');
+      setApplications(submittedOnly);
     } finally {
       setIsLoading(false);
     }
@@ -41,6 +43,7 @@ export const AnalystQueuePage: React.FC = () => {
   const checkingCount = applications.filter((a) => a.status === 'checking').length;
 
   const filteredApplications = applications.filter((app) => {
+    if (app.status === 'draft') return false;
     const matchesFilter = filterStatus === 'all' || app.status === filterStatus;
     const company = app.companyName || `ИП (ИНН ${app.inn || ''})`;
     const inn = app.inn || '';

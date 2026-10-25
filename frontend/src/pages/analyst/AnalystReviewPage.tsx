@@ -42,6 +42,10 @@ export const AnalystReviewPage: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await analystApi.getApplicationDetails(appId);
+      if (data.status === 'draft') {
+        navigate('/analyst/queue');
+        return;
+      }
       const normalized: CreditApplication = {
         ...data,
         companyName: data.companyName || `ИП (ИНН ${data.inn || ''})`,

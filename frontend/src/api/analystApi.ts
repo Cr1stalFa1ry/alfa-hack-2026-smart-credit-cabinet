@@ -11,13 +11,17 @@ export const analystApi = {
       if (Array.isArray(data)) {
         const mapped = data
           .map(mapBackendApplication)
-          .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
+          .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'))
+          .filter((a) => a.status !== 'draft');
         applicationStore.syncApps(mapped);
         return mapped;
       }
     } catch (err) {
       console.warn('Backend employee queue unavailable, using local store:', err);
-      return applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
+      return applicationStore
+        .getAll()
+        .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'))
+        .filter((a) => a.status !== 'draft');
     }
     return [];
   },

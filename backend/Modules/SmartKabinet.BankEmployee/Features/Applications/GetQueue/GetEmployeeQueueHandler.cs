@@ -13,11 +13,12 @@ public class GetEmployeeQueueHandler(ApplicationDbContext appDb)
     {
         var dbQuery = appDb.Applications
             .Include(a => a.CurrentOffer)
+            .Where(a => a.Status != ApplicationStatus.Draft)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query.Status) && query.Status != "all")
         {
-            if (Enum.TryParse<ApplicationStatus>(query.Status, true, out var parsedStatus))
+            if (Enum.TryParse<ApplicationStatus>(query.Status, true, out var parsedStatus) && parsedStatus != ApplicationStatus.Draft)
             {
                 dbQuery = dbQuery.Where(a => a.Status == parsedStatus);
             }
