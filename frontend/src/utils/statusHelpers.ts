@@ -21,13 +21,13 @@ export const STATUS_MAP: Record<ApplicationStatus, StatusMeta> = {
     description: 'Заявка создана и заполняется заёмщиком',
   },
   checking: {
-    label: 'Скоринг и проверка',
+    label: 'На проверке',
     badgeClass: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800',
     bgLightClass: 'bg-blue-50/50 dark:bg-blue-950/30',
     borderClass: 'border-blue-200 dark:border-blue-800',
     textClass: 'text-blue-700 dark:text-blue-300',
     dotClass: 'bg-blue-500 animate-pulse',
-    description: 'Система рассчитывает баллы, проверяет БКИ, ФНС и стоп-факторы',
+    description: 'Система проверяет сведения бизнеса в государственных реестрах',
   },
   waiting_check: {
     label: 'Ожидание сервиса',
@@ -48,13 +48,13 @@ export const STATUS_MAP: Record<ApplicationStatus, StatusMeta> = {
     description: 'Банк ожидает от клиента уточняющие данные или документы',
   },
   review: {
-    label: 'Ручной разбор (Аналитик)',
+    label: 'На рассмотрении',
     badgeClass: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800',
     bgLightClass: 'bg-purple-50/40 dark:bg-purple-950/30',
     borderClass: 'border-purple-200 dark:border-purple-800',
     textClass: 'text-purple-700 dark:text-purple-300',
     dotClass: 'bg-purple-500',
-    description: 'Заявка на рабочем месте андеррайтера для детальной оценки',
+    description: 'Заявка на рассмотрении у специалиста банка для детальной оценки',
   },
   offer: {
     label: 'Одобрено (Оферта)',

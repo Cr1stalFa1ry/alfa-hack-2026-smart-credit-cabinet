@@ -41,7 +41,11 @@ public class CreateDraftHandler(ApplicationDbContext dbContext) : ICreateDraft
             PersonalDataConsent = command.PersonalDataConsent,
             EquipmentSupplier = command.EquipmentSupplier,
             EquipmentPrice = command.EquipmentPrice,
-            NeededByDate = command.NeededByDate,
+            NeededByDate = command.NeededByDate.HasValue
+                ? (command.NeededByDate.Value.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(command.NeededByDate.Value, DateTimeKind.Utc)
+                    : command.NeededByDate.Value.ToUniversalTime())
+                : null,
             ExpensePeriod = command.ExpensePeriod,
             HasExpenseContract = command.HasExpenseContract,
             IsTaxRegimeActual = command.IsTaxRegimeActual,

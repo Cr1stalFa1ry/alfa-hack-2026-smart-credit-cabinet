@@ -46,7 +46,12 @@ public class SaveDraftHandler(ApplicationDbContext dbContext) : ISaveDraft
 
         if (cmd.StatementFilePath is not null) app.StatementFilePath = cmd.StatementFilePath;
         if (cmd.FinancialReserve.HasValue) app.FinancialReserve = cmd.FinancialReserve.Value;
-        if (cmd.NeededByDate.HasValue) app.NeededByDate = cmd.NeededByDate.Value;
+        if (cmd.NeededByDate.HasValue)
+        {
+            app.NeededByDate = cmd.NeededByDate.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(cmd.NeededByDate.Value, DateTimeKind.Utc)
+                : cmd.NeededByDate.Value.ToUniversalTime();
+        }
         if (cmd.ExpensePeriod is not null) app.ExpensePeriod = cmd.ExpensePeriod;
         if (cmd.HasExpenseContract.HasValue) app.HasExpenseContract = cmd.HasExpenseContract.Value;
         if (cmd.IsTaxRegimeActual.HasValue) app.IsTaxRegimeActual = cmd.IsTaxRegimeActual.Value;

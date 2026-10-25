@@ -122,6 +122,20 @@ export const ApplicationDetailsPage: React.FC = () => {
     if (!application) return;
     const doc = await clientApi.uploadDocument(application.id, file);
     setApplication((prev) => (prev ? { ...prev, documents: [...(prev.documents || []), doc] } : null));
+    return doc;
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (!application) return;
+    await clientApi.deleteDocument(application.id, docId);
+    setApplication((prev) =>
+      prev
+        ? {
+            ...prev,
+            documents: (prev.documents || []).filter((d) => d.id !== docId),
+          }
+        : null
+    );
   };
 
   if (isLoading) {
@@ -156,6 +170,9 @@ export const ApplicationDetailsPage: React.FC = () => {
       <NewApplicationWizardPage
         draftId={application.id}
         initialApplication={application}
+        onSubmitted={async (submittedId) => {
+          await loadApplication(submittedId);
+        }}
       />
     );
   }
@@ -181,7 +198,9 @@ export const ApplicationDetailsPage: React.FC = () => {
                 Заявка № {application.id}
               </h1>
               {application.productCode && <ProductCodeBadge code={application.productCode} size="sm" />}
-              <ApplicationStatusBadge status={application.status} />
+              {application.status !== 'checking' && (
+                <ApplicationStatusBadge status={application.status} />
+              )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Создана: {formatDateTime(application.createdAt)} • {companyTitle}
@@ -268,7 +287,7 @@ export const ApplicationDetailsPage: React.FC = () => {
           <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
             {application.needInfoPrompt || 'Пожалуйста, прикрепите подтверждающие документы или уточните данные.'}
           </p>
-          Ответьте на запрос, чтобы заявка вернулась на скоринг.
+          Ответьте на запрос, чтобы заявка вернулась на проверку.
         </Alert>
       )}
 
@@ -278,7 +297,7 @@ export const ApplicationDetailsPage: React.FC = () => {
           type="info"
           title="Заявка на рассмотрении у специалиста банка"
         >
-          Скоринг и предварительные проверки завершены. Кредитный специалист проверяет результаты расчёта и готовит персональные условия кредитования. Как только сотрудник одобрит условия, оферта появится в вашем кабинете.
+          Предварительные проверки сведений завершены. Кредитный специалист проверяет результаты расчёта и готовит персональные условия кредитования. Как только сотрудник одобрит условия, оферта появится в вашем кабинете.
         </Alert>
       )}
 
@@ -431,6 +450,7 @@ export const ApplicationDetailsPage: React.FC = () => {
 
             <FileUpload
               onFileUploaded={handleFileUpload}
+              onDeleteDocument={handleDeleteDocument}
               existingDocuments={documents}
             />
           </Card>

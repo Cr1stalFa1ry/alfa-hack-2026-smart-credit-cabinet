@@ -17,6 +17,9 @@ using SmartKabinet.Intergrations;
 using SmartKabinet.Intergrations.AlfaBank.Persistence;
 using Wolverine;
 
+// Разрешаем DateTime без указания часового пояса (Kind=Unspecified) для Npgsql / PostgreSQL
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Сериализация enum в виде строковых значений ("Review", "Offer", etc.)

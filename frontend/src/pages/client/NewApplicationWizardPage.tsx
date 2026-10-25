@@ -139,11 +139,13 @@ const buildInitialAnswersForClient = (app: Partial<DemoApplication> & { inn?: st
 export interface NewApplicationWizardPageProps {
   draftId?: string;
   initialApplication?: CreditApplication;
+  onSubmitted?: (submittedId: string) => void;
 }
 
 export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> = ({
   draftId: propDraftId,
   initialApplication,
+  onSubmitted,
 }) => {
   const navigate = useNavigate();
   const { id: routeId } = useParams<{ id: string }>();
@@ -287,6 +289,24 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
 
           return merged;
         });
+
+        // Восстановление ранее прикрепленных документов по черновику
+        if (app.documents && Array.isArray(app.documents) && app.documents.length > 0) {
+          const restored: Record<string, UploadedFileMeta[]> = {};
+          app.documents.forEach((d) => {
+            const grp = d.fileType === 'bank_statement' ? 'statements' : (d.fileType || 'other');
+            restored[grp] = restored[grp] || [];
+            restored[grp].push({
+              id: d.id,
+              name: d.fileName,
+              size: d.fileSizeBytes,
+              type: d.fileType,
+              group: grp,
+              url: d.downloadUrl,
+            });
+          });
+          setUploadedFiles((prev) => ({ ...restored, ...prev }));
+        }
       } catch (e) {
         console.error('Ошибка загрузки черновика:', e);
       } finally {
@@ -1599,7 +1619,15 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
               Перейти в список моих обращений
             </button>
             <button
-              onClick={() => navigate(`/client/applications/${submittedAppId}`)}
+              onClick={() => {
+                if (onSubmitted) {
+                  onSubmitted(submittedAppId);
+                } else if (window.location.pathname === `/client/applications/${submittedAppId}`) {
+                  window.location.reload();
+                } else {
+                  navigate(`/client/applications/${submittedAppId}`);
+                }
+              }}
               className="alfa-btn-secondary"
             >
               Открыть статус заявки

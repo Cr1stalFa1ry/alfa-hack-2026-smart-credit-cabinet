@@ -17,14 +17,14 @@ export const StateMachineStepper: React.FC<StateMachineStepperProps> = ({ status
     },
     {
       id: 'checking',
-      label: 'Скоринг и проверки',
+      label: 'Проверка данных',
       description: 'ЕГРИП, БКИ, ФНС',
       statuses: ['checking', 'waiting_check'],
     },
     {
       id: 'analysis',
       label: 'Рассмотрение',
-      description: 'Андеррайтер / Уточнения',
+      description: 'Специалист / Уточнения',
       statuses: ['review', 'need_info'],
     },
     {
