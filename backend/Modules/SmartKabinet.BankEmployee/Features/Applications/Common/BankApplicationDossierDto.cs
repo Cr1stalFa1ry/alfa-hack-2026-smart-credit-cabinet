@@ -123,5 +123,7 @@ public record BankApplicationDossierDto(
     decimal? AdditionalIncomeAmount = null,
     string? DebtsVerificationStatus = null,
     string? RepaymentSourceDescription = null,
-    IReadOnlyList<ApplicationDocumentDto>? Documents = null
+    IReadOnlyList<ApplicationDocumentDto>? Documents = null,
+    string? MlExplanation = null,
+    string? MlExplanationSource = null
 );

@@ -2,13 +2,15 @@ using Microsoft.EntityFrameworkCore;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Application.Domain;
 using SmartKabinet.Application.Infrastructure.Persistence;
+using SmartKabinet.Intergrations.Ml.Services;
 using SmartKabinet.Intergrations.Synthetic.Services;
 
 namespace SmartKabinet.BankEmployee.Features.Applications.Common;
 
 public class BankApplicationDossierBuilder(
     ApplicationDbContext appDb,
-    ICompanyLookupService? lookupService = null) : IBankApplicationDossierBuilder
+    ICompanyLookupService? lookupService = null,
+    IMlServiceClient? mlClient = null) : IBankApplicationDossierBuilder
 {
     public async Task<BankApplicationDossierDto> BuildAsync(
         SmartKabinet.Application.Domain.Application app,
@@ -237,6 +239,45 @@ public class BankApplicationDossierBuilder(
 
         var monthlyExpenses = companyInfo?.AverageMonthlyExpenses ?? 0m;
 
+        string? mlExplanation = null;
+        string? mlExplanationSource = null;
+
+        if (mlClient is not null)
+        {
+            try
+            {
+                var primaryReason = app.ReasonCodes.FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(primaryReason))
+                {
+                    primaryReason = app.Status switch
+                    {
+                        ApplicationStatus.Offer or ApplicationStatus.Accepted => app.CurrentOffer?.IsCounterOffer == true ? "OFFER_COUNTER" : "OFFER_ORIGINAL",
+                        ApplicationStatus.Declined => "SCORE_BELOW_MIN",
+                        _ => "DATA_REQUIRED"
+                    };
+                }
+
+                var details = new Dictionary<string, object>
+                {
+                    ["amount"] = app.CurrentOffer?.ApprovedAmount ?? app.RequestedAmount,
+                    ["term"] = app.CurrentOffer?.TermMonths ?? (app.RequestedTermMonths ?? 12),
+                    ["rate"] = app.CurrentOffer?.AnnualRatePercent ?? 18.5m,
+                    ["payment"] = app.CurrentOffer?.MonthlyPayment ?? 0m
+                };
+
+                var expRes = await mlClient.ExplainDecisionAsync(primaryReason, details, "analyst", ct);
+                if (expRes != null)
+                {
+                    mlExplanation = expRes.Text;
+                    mlExplanationSource = expRes.Source;
+                }
+            }
+            catch
+            {
+                // Graceful fallback if ML is unavailable or times out
+            }
+        }
+
         return new BankApplicationDossierDto(
             app.Id,
             app.Id,
@@ -277,7 +318,9 @@ public class BankApplicationDossierBuilder(
             app.AdditionalIncomeAmount,
             app.DebtsVerificationStatus,
             app.RepaymentSourceDescription,
-            documents
+            documents,
+            mlExplanation,
+            mlExplanationSource
         );
     }
 }

@@ -82,6 +82,8 @@ public static class UploadAndAnalyzeStatementEndpoint
                 app.HistoryMonths = analysisResult.Metrics.MonthsCount;
                 app.ExistingMonthlyObligations = analysisResult.Metrics.AvgMonthlyLoanPaymentsRub;
                 app.ProjectedMonthlyRevenue = analysisResult.Metrics.AvgMonthlyRevenueRub;
+                app.MonthlyRevenue = analysisResult.Metrics.AvgMonthlyRevenueRub;
+                app.MonthlyExpenses = analysisResult.Metrics.AvgMonthlyExpensesRub;
             }
 
             app.UpdatedAt = DateTimeOffset.UtcNow;
