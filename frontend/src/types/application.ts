@@ -152,6 +152,7 @@ export interface CreditApplication {
   needInfoPrompt?: string;
   needInfoResponse?: string;
   declineReason?: string;
+  reasonCodes?: string[];
   offer?: CreditOffer;
   recommendedOffer?: CreditOffer;
   currentOffer?: any;
@@ -165,6 +166,8 @@ export interface CreditApplication {
     rulesVersion?: string;
   };
   scoring?: ScoringResult;
+  mlExplanation?: string;
+  mlExplanationSource?: string;
   history: StateTransitionRecord[];
   events?: Array<{
     at: string;

@@ -38,6 +38,7 @@ import {
   Calendar,
   Download,
   Save,
+  Sparkles,
 } from 'lucide-react';
 
 interface UploadedFileMeta {
@@ -161,6 +162,22 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
   const [dossierFound, setDossierFound] = useState<boolean | null>(null);
   const [lookupData, setLookupData] = useState<CompanyLookupResponse | null>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(() => draftIdParam || null);
+  const [statementMlResult, setStatementMlResult] = useState<{
+    status: string;
+    metrics?: {
+      avgMonthlyRevenueRub: number;
+      avgMonthlyExpensesRub: number;
+      avgMonthlyNetRub: number;
+      avgMonthlyLoanPaymentsRub: number;
+      revenueCv: number;
+      monthsCount: number;
+      annualRevenueRub: number;
+    };
+    reason?: string;
+    message?: string;
+    fileName?: string;
+  } | null>(null);
+  const [isAnalyzingStatement, setIsAnalyzingStatement] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const isInitializedRef = useRef<boolean>(false);
   const isAutoCreatingDraftRef = useRef<boolean>(false);
@@ -1352,6 +1369,42 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
       ...prev,
       [group]: false,
     }));
+
+    // Автоматический ML-анализ выписки по счёту
+    const filesArray = Array.from(filesList);
+    const statementFile = filesArray.find((f) =>
+      f.name.toLowerCase().endsWith('.csv') || f.name.toLowerCase().endsWith('.xlsx')
+    );
+    const targetDraftId = currentDraftId || draftIdParam || justCreatedDraftIdRef.current;
+    if (statementFile && targetDraftId) {
+      setIsAnalyzingStatement(true);
+      clientApi
+        .uploadAndAnalyzeStatement(targetDraftId, statementFile)
+        .then((res) => {
+          setStatementMlResult({
+            ...res,
+            fileName: statementFile.name,
+          });
+          if (res.status === 'ok' && res.metrics) {
+            setAnswers((prev) => ({
+              ...prev,
+              monthlyRevenue: res.metrics!.avgMonthlyRevenueRub,
+              monthlyExpenses: res.metrics!.avgMonthlyExpensesRub,
+            }));
+          }
+        })
+        .catch((err) => {
+          console.warn('ML statement analysis error:', err);
+          setStatementMlResult({
+            status: 'error',
+            message: 'Сервис ML временно недоступен или файл требует уточнения. Показатели можно ввести вручную.',
+            fileName: statementFile.name,
+          });
+        })
+        .finally(() => {
+          setIsAnalyzingStatement(false);
+        });
+    }
   };
 
   const handleFileUpload = (group: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3275,13 +3328,93 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
                   )}
 
                   {/* 2. Выписки сторонних банков и финансовая отчетность */}
-                  {renderUploadCard({
-                    group: 'otherBankStatements',
-                    title: 'Выписки по счетам из других банков',
-                    subtitle: 'Выписки за последние 6–12 месяцев для подтверждения совокупного оборота бизнеса (1C, PDF, Excel, CSV, TXT)',
-                    badge: (answers.receiptCoverage || []).includes('other_banks') ? 'Рекомендуется для скоринга' : undefined,
-                    inputId: 'upload-banks',
-                  })}
+                  <div>
+                    {renderUploadCard({
+                      group: 'otherBankStatements',
+                      title: 'Выписки по счетам из других банков',
+                      subtitle: 'Выписки за последние 6–12 месяцев для подтверждения совокупного оборота бизнеса (1C, PDF, Excel, CSV, TXT)',
+                      badge: (answers.receiptCoverage || []).includes('other_banks') ? 'Рекомендуется для скоринга' : undefined,
+                      inputId: 'upload-banks',
+                      extraHeaderControl: (
+                        <a
+                          href="/api/client/applications/statement/template"
+                          download="statement_template.csv"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#fff1ef] hover:bg-[#ffe2de] text-xs font-semibold text-[#EF3124] transition-colors"
+                          title="Скачать эталонный CSV-шаблон для ML-анализа"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Шаблон выписки (.CSV)</span>
+                        </a>
+                      ),
+                    })}
+
+                    {/* Индикатор работы ML-анализа */}
+                    {isAnalyzingStatement && (
+                      <div className="mt-3 p-3.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-3 text-xs text-blue-800 animate-pulse">
+                        <Sparkles className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
+                        <div>
+                          <strong className="block">Нейросеть и ML-модуль анализируют выписку...</strong>
+                          <span className="text-[11px] text-blue-600">Распознаются обороты, очищенная выручка и кредитные платежи бизнеса.</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Результат работы ML-анализа */}
+                    {statementMlResult && (
+                      <div className={`mt-3 p-4 rounded-xl border text-xs ${
+                        statementMlResult.status === 'ok'
+                          ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                          : 'bg-amber-50/70 border-amber-200 text-amber-950'
+                      }`}>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className={`w-4 h-4 ${statementMlResult.status === 'ok' ? 'text-emerald-600' : 'text-amber-600'}`} />
+                            <strong className="text-sm">
+                              {statementMlResult.status === 'ok' ? 'ML-анализ выписки завершён успешно' : 'ML-анализ выписки'}
+                            </strong>
+                          </div>
+                          {statementMlResult.fileName && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 border border-slate-200">
+                              {statementMlResult.fileName}
+                            </span>
+                          )}
+                        </div>
+                        {statementMlResult.status === 'ok' && statementMlResult.metrics ? (
+                          <div>
+                            <p className="text-slate-700 mb-2.5">
+                              Данные выписки успешно обработаны алгоритмом машинного обучения (ML Pipeline). Рассчитанные показатели автоматически подставлены в параметры заявки:
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                              <div className="p-2.5 bg-white rounded-lg border border-emerald-200 shadow-2xs">
+                                <span className="text-slate-400 block text-[10px]">Подтвержд. выручка</span>
+                                <span className="font-extrabold text-emerald-700 text-sm">{formatRubles(statementMlResult.metrics.avgMonthlyRevenueRub)}/мес</span>
+                              </div>
+                              <div className="p-2.5 bg-white rounded-lg border border-emerald-200 shadow-2xs">
+                                <span className="text-slate-400 block text-[10px]">Расходы бизнеса</span>
+                                <span className="font-extrabold text-slate-800 text-sm">{formatRubles(statementMlResult.metrics.avgMonthlyExpensesRub)}/мес</span>
+                              </div>
+                              <div className="p-2.5 bg-white rounded-lg border border-emerald-200 shadow-2xs">
+                                <span className="text-slate-400 block text-[10px]">Кредитные выплаты</span>
+                                <span className="font-extrabold text-slate-800 text-sm">{formatRubles(statementMlResult.metrics.avgMonthlyLoanPaymentsRub)}/мес</span>
+                              </div>
+                              <div className="p-2.5 bg-white rounded-lg border border-emerald-200 shadow-2xs">
+                                <span className="text-slate-400 block text-[10px]">Глубина истории</span>
+                                <span className="font-extrabold text-slate-800 text-sm">{statementMlResult.metrics.monthsCount} мес.</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-slate-700">
+                              {statementMlResult.message || 'Требуется ручной ввод показателей выручки и расходов в анкете.'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   {/* 3. Документы по залогу / недвижимости (если применимо) */}
                   {(answers.collateral === 'yes' || isNew) && (

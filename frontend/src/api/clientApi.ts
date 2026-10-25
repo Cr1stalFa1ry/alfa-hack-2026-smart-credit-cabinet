@@ -134,6 +134,9 @@ export function mapBackendApplication(item: any): CreditApplication {
     needInfoResponse: item.needInfoResponse,
     issues: item.issues || (item.scoring?.issues) || [],
     scoring: item.scoring,
+    mlExplanation: item.mlExplanation,
+    mlExplanationSource: item.mlExplanationSource,
+    reasonCodes: item.reasonCodes || [],
     declineReason: item.declineReason,
     currentOffer: item.currentOffer,
     recommendedOffer: (item.currentOffer || item.offer) ? {
@@ -410,6 +413,41 @@ export const clientApi = {
       // 404 or backend lookup not found
     }
     return null;
+  },
+
+  uploadAndAnalyzeStatement: async (id: string, file: File): Promise<{
+    applicationId: string;
+    status: string;
+    reason?: string;
+    message?: string;
+    metrics?: {
+      avgMonthlyRevenueRub: number;
+      avgMonthlyExpensesRub: number;
+      avgMonthlyNetRub: number;
+      avgMonthlyLoanPaymentsRub: number;
+      revenueCv: number;
+      monthsCount: number;
+      annualRevenueRub: number;
+    };
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post<any>(`/client/applications/${id}/statement`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 30000,
+    });
+    return (res.data as any)?.value || res.data;
+  },
+
+  getExplanation: async (id: string): Promise<{
+    applicationId: string;
+    status: string;
+    reasonCode?: string;
+    explanation: string;
+    source?: string;
+  }> => {
+    const res = await apiClient.get<any>(`/client/applications/${id}/explanation`, { timeout: 10000 });
+    return (res.data as any)?.value || res.data;
   },
 };
 

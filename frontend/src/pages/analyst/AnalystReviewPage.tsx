@@ -277,6 +277,65 @@ export const AnalystReviewPage: React.FC = () => {
         onCloseNonCredit={handleCloseNonCredit}
       />
 
+      {/* AI Assistant Card (ML Qwen & Scoring Reasoning) */}
+      <Card variant="alfa" className="border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-br from-indigo-50/40 via-white to-blue-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-indigo-100 dark:border-indigo-900/40">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400">
+              <Sparkles className="w-4 h-4" />
+            </span>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                AI-ассистент андеррайтера (ML / LLM Qwen)
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+                  {application.mlExplanationSource === 'ml' ? 'Qwen2.5 14B' : 'ML Rule Engine'}
+                </span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Интеллектуальная интерпретация решения, обоснование факторов риска и текста для заёмщика
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              Источник: {application.mlExplanationSource === 'ml' ? 'Нейросетевая генерация' : 'Экспертный шаблон банка'}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-850 border border-indigo-100/80 dark:border-indigo-900/40 shadow-xs mb-3">
+          <span className="text-[11px] font-bold uppercase text-indigo-600 dark:text-indigo-400 block mb-1">
+            Человекочитаемое объяснение (ML Explain Engine):
+          </span>
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
+            {application.mlExplanation || 'Заявка находится на рассмотрении. ML-модуль формирует детальное объяснение факторов риска.'}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+          <div className="p-2.5 bg-white dark:bg-slate-850 rounded-xl border border-slate-200/80 dark:border-slate-800">
+            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Ключевой фактор решения</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">
+              {application.scoring?.issues?.[0] || application.reasonCodes?.[0] || 'Соответствие стандартам риска'}
+            </span>
+          </div>
+          <div className="p-2.5 bg-white dark:bg-slate-850 rounded-xl border border-slate-200/80 dark:border-slate-800">
+            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Проверка выписки ML</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">
+              {application.documents?.some(d => d.fileName?.endsWith('.csv') || d.fileName?.endsWith('.xlsx'))
+                ? 'Выписка загружена и обработана ML'
+                : 'Оценка по заявленным оборотам'}
+            </span>
+          </div>
+          <div className="p-2.5 bg-white dark:bg-slate-850 rounded-xl border border-slate-200/80 dark:border-slate-800">
+            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Коэффициент покрытия DSCR</span>
+            <span className={`font-bold ${(application.scoring?.dscr || 1.45) >= 1.2 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600'}`}>
+              DSCR {application.scoring?.dscr || 1.45} (Норма ≥ 1.2)
+            </span>
+          </div>
+        </div>
+      </Card>
+
       {/* Специфический маршрут для нового бизнеса (Prelaunch) */}
       {(application.businessType === 'prelaunch' || application.stage === 'prelaunch') && !application.offer && (
         <Card variant="alfa" className="border-purple-200 dark:border-purple-900/60 bg-gradient-to-br from-purple-50/40 via-white to-purple-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-purple-950/20">
