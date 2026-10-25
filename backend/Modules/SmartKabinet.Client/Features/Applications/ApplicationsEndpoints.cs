@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using SmartKabinet.Auth.Infrastructure.Security;
 using SmartKabinet.Client.Features.Applications.CreateDraft;
+using SmartKabinet.Client.Features.Applications.Documents;
 using SmartKabinet.Client.Features.Applications.GetApplicationById;
 using SmartKabinet.Client.Features.Applications.GetApplications;
 using SmartKabinet.Client.Features.Applications.GetExplanation;
@@ -34,6 +35,7 @@ public static class ApplicationsEndpoints
         group.MapGetApplicationsEndpoint();
         group.MapGetExplanationEndpoint();
         group.MapSignAndDisburseEndpoints();
+        group.MapDocumentEndpoints();
 
         return app;
     }

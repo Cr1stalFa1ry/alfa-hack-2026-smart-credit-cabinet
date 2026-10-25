@@ -30,25 +30,25 @@ export const ConsentModal: React.FC<ConsentModalProps> = ({
     switch (type) {
       case 'pdn':
         return {
-          title: 'Согласие на обработку персональных данных (ФЗ-152)',
-          subtitle: 'Правовое основание: Федеральный закон от 27.07.2006 № 152-ФЗ «О персональных данных»',
-          badge: '152-ФЗ',
+          title: 'Согласие на обработку персональных данных',
+          subtitle: 'Для проверки сведений, идентификации и рассмотрения кредитной заявки',
+          badge: 'Персональные данные',
           icon: ShieldCheck,
           accentColor: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-900',
         };
       case 'bki':
         return {
-          title: 'Согласие на получение кредитного отчета в БКИ (ФЗ-218)',
-          subtitle: 'Правовое основание: Федеральный закон от 30.12.2004 № 218-ФЗ «О кредитных историях»',
-          badge: '218-ФЗ',
+          title: 'Согласие на запрос кредитной истории',
+          subtitle: 'Для оценки долговой нагрузки и расчёта кредитного лимита',
+          badge: 'Кредитная история',
           icon: FileText,
           accentColor: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900',
         };
       case 'leasing':
         return {
-          title: `Согласие на передачу сведений лизинговому партнёру`,
-          subtitle: `Правовое основание: ст. 7, 9 Федерального закона № 152-ФЗ (передача третьим лицам)`,
-          badge: 'Партнёрская передача',
+          title: 'Согласие на передачу сведений лизинговому партнёру',
+          subtitle: `Для подготовки коммерческого предложения и графика в ${partnerName}`,
+          badge: 'Альфа-Лизинг',
           icon: Building2,
           accentColor: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 border-purple-200 dark:border-purple-900',
         };

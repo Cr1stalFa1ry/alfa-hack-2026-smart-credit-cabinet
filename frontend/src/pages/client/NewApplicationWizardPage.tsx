@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { clientApi } from '../../api/clientApi';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { clientApi, CompanyLookupResponse } from '../../api/clientApi';
 import { useAuth } from '../../context/AuthContext';
 import {
   ALFA_DATA,
@@ -8,6 +8,7 @@ import {
   DemoPassport,
   DemoFact,
   DemoDebt,
+  DemoIncome,
   DemoSupplier,
   DemoProperty,
 } from '../../data/alfaDemoData';
@@ -18,6 +19,7 @@ import {
   ScoringResult,
 } from '../../utils/scoreEngine';
 import { formatRubles } from '../../utils/formatters';
+import { ConsentModal, ConsentType } from '../../components/application/ConsentModal';
 import {
   Check,
   ChevronRight,
@@ -29,6 +31,12 @@ import {
   Search,
   CheckCircle2,
   ShieldAlert,
+  ShieldCheck,
+  Building2,
+  ExternalLink,
+  Calendar,
+  Download,
+  Save,
 } from 'lucide-react';
 
 interface UploadedFileMeta {
@@ -38,44 +46,341 @@ interface UploadedFileMeta {
   type: string;
   group: string;
   url?: string;
+  file?: File;
 }
 
-export const NewApplicationWizardPage: React.FC = () => {
+const buildInitialAnswersForClient = (app: Partial<DemoApplication> & { inn?: string; phone?: string; full_name?: string }) => {
+  const isOperating = app.stage === 'operating';
+  const hasActiveBki = app.bki_consent === 'да';
+  const bkiValidUntil = hasActiveBki
+    ? new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString()
+    : undefined;
+
+  return {
+    // Step 1: Profile & ПДн
+    profileCurrent: 'yes',
+    phone: app.phone || '',
+    email: app.email || '',
+    profileChanges: '',
+    personalDataConsent: false,
+    personalDataConsentDate: undefined,
+    // Step 2: Passport
+    passportCurrent: 'yes',
+    passportName: app.full_name || '',
+    passportSeries: '',
+    passportNumber: '',
+    passportBirth: '',
+    passportIssued: '',
+    passportIssuer: '',
+    passportCode: '',
+    // Step 3: Request
+    business: isOperating ? 'operating' : app.stage === 'paused' ? 'paused' : 'new',
+    purpose: app.purpose === 'equipment' ? 'equipment' : 'working_capital',
+    amount: String(app.amount_rub || 1000000),
+    term: String(app.requested_term_months || 12),
+    termUnspecified: false,
+    activity: '',
+    launchMonth: '',
+    launchMonthUnspecified: false,
+    // Step 4: Details & Лизинговый партнёр
+    leasing: 'yes',
+    leasingPartnerConsent: false,
+    leasingPartnerName: 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
+    leasingPartnerConsentDate: undefined,
+    equipment: '',
+    equipmentChosen: 'Да',
+    equipmentCost: '',
+    equipmentCostUnspecified: false,
+    costIncludes: 'Доставка и пусконаладочные работы',
+    ownFunds: '0',
+    supplierChosen: 'Нет',
+    supplierInn: '',
+    purchaseDate: '',
+    expenseType: 'goods',
+    expenseDescription: '',
+    expensePeriod: '',
+    hasContract: 'Да',
+    paymentDate: '',
+    collateral: 'no',
+    propertyInput: 'cadastre',
+    cadastralNumber: '',
+    // Step 5: Finances & БКИ
+    hasExistingActiveBkiConsent: hasActiveBki,
+    bkiConsent: hasActiveBki,
+    bkiConsentDate: hasActiveBki ? new Date().toISOString() : undefined,
+    bkiConsentValidUntil: bkiValidUntil,
+    taxCurrent: 'yes',
+    taxRegimes: [app.tax_regime || 'УСН (доходы)'],
+    taxOther: '',
+    receiptCoverage: ['all'],
+    otherBanks: '',
+    cashAmount: '',
+    expensesComplete: 'yes',
+    extraExpensesDetails: '',
+    extraExpenses: '',
+    additionalIncome: 'Нет',
+    otherIncomeSource: '',
+    personalExpenses: app.household_expenses_monthly_rub ? String(Math.round(Number(app.household_expenses_monthly_rub))) : '50000',
+    debtsComplete: 'yes',
+    debtChanges: '',
+    extraDebts: [],
+    repaymentSources: ['revenue'],
+    personalIncome: '',
+    incomeContinues: 'Да',
+    committedCosts: '0',
+    cashReserve: '0',
+    repaymentDescription: 'За счёт регулярной выручки от текущей операционной деятельности',
+    // Step 7: Review
+    reviewConfirmed: false,
+  };
+};
+
+export interface NewApplicationWizardPageProps {
+  draftId?: string;
+}
+
+export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> = ({ draftId: propDraftId }) => {
   const navigate = useNavigate();
+  const { id: routeId } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const draftIdParam = propDraftId || routeId || searchParams.get('draftId') || null;
   const { user } = useAuth();
 
   // ----------------------------------------------------
-  // Тестовый клиент (100 синтетических досье ИП)
+  // ИНН и сведения из SyntheticDb
   // ----------------------------------------------------
-  const [selectedInn, setSelectedInn] = useState<string>(() => {
-    if (user?.inn && ALFA_DATA.applications.some((a) => a.inn === user.inn)) {
-      return user.inn;
+  const [selectedInn, setSelectedInn] = useState<string>(() => user?.inn || '');
+  const [isLoadingDossier, setIsLoadingDossier] = useState<boolean>(false);
+  const [dossierFound, setDossierFound] = useState<boolean | null>(null);
+  const [lookupData, setLookupData] = useState<CompanyLookupResponse | null>(null);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(() => draftIdParam || null);
+  const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
+  const [draftSavedMessage, setDraftSavedMessage] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const isInitializedRef = useRef<boolean>(false);
+
+  const fetchDossier = async (innToFetch: string) => {
+    const clean = innToFetch.trim();
+    if (clean.length !== 12) {
+      setDossierFound(null);
+      setLookupData(null);
+      return;
     }
-    return ALFA_DATA.applications[0].inn;
-  });
+    setIsLoadingDossier(true);
+    try {
+      const data = await clientApi.lookupCompany(clean);
+      if (data && data.inn) {
+        setLookupData(data);
+        setDossierFound(true);
+        setAnswers((prev) => ({
+          ...prev,
+          passportName: data.fullName || prev.passportName,
+          phone: data.phone || prev.phone,
+          email: data.email || prev.email,
+          passportSeries: data.passportSeries || prev.passportSeries,
+          passportNumber: data.passportNumber || prev.passportNumber,
+          passportBirth: data.passportBirthDate || prev.passportBirth,
+          passportIssued: data.passportIssueDate || prev.passportIssued,
+          passportIssuer: data.passportIssuer || prev.passportIssuer,
+          passportCode: data.passportDepartmentCode || prev.passportCode,
+          taxRegimes: data.taxRegime ? [data.taxRegime] : prev.taxRegimes,
+          business: data.suggestedStage === 'prelaunch' ? 'new' : (data.suggestedStage || 'operating'),
+        }));
+      } else {
+        setLookupData(null);
+        setDossierFound(false);
+      }
+    } catch {
+      setLookupData(null);
+      setDossierFound(false);
+    } finally {
+      setIsLoadingDossier(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!draftIdParam) {
+      const innToUse = selectedInn || user?.inn;
+      if (innToUse && innToUse.length === 12) {
+        if (!selectedInn) setSelectedInn(innToUse);
+        fetchDossier(innToUse);
+      }
+      return;
+    }
+
+    let isCancelled = false;
+    const loadDraft = async () => {
+      setIsLoadingDossier(true);
+      try {
+        const app = await clientApi.getApplicationById(draftIdParam);
+        if (isCancelled) return;
+
+        isInitializedRef.current = true;
+        setCurrentDraftId(app.id);
+
+        if (app.inn) {
+          setSelectedInn(app.inn);
+          await fetchDossier(app.inn);
+        }
+
+        // 1. Создаем дефолтные ответы анкеты для профиля заявителя
+        const innToUse = app.inn || user?.inn || '';
+        const defaultAnswers = buildInitialAnswersForClient({
+          inn: innToUse,
+          full_name: app.companyName || user?.fullName || (innToUse ? `ИП (ИНН ${innToUse})` : '—'),
+          phone: user?.username || '',
+          stage: app.stage || 'operating',
+          purpose: app.purposeCode || 'working_capital',
+          amount_rub: app.requestedAmount || 1000000,
+          requested_term_months: app.requestedTermMonths || 12,
+        });
+
+        // 2. Проверяем сохраненные ответы анкеты в локальном хранилище
+        let cachedAnswers: Record<string, any> = {};
+        const cached = localStorage.getItem(`draft_answers_${draftIdParam}`);
+        if (cached) {
+          try {
+            cachedAnswers = JSON.parse(cached);
+          } catch {}
+        }
+
+        setAnswers((prev) => {
+          const merged: Record<string, any> = { ...defaultAnswers, ...prev, ...cachedAnswers };
+          if (app.clientAnswers && typeof app.clientAnswers === 'object') {
+            Object.assign(merged, app.clientAnswers);
+          }
+          if (app.requestedAmount) merged.amount = String(Math.round(app.requestedAmount));
+          if (app.requestedTermMonths) merged.term = String(app.requestedTermMonths);
+          if (app.stage) merged.business = app.stage === 'prelaunch' ? 'new' : 'operating';
+          if (app.purposeCode) merged.purpose = app.purposeCode;
+          if (app.ownContribution) merged.ownFunds = String(Math.round(app.ownContribution));
+          if (app.equipmentPrice) merged.equipmentCost = String(Math.round(app.equipmentPrice));
+          if (app.equipmentSupplier) merged.supplierInn = app.equipmentSupplier;
+          if (app.neededByDate) merged.paymentDate = app.neededByDate.split('T')[0];
+          if (app.expensePeriod) merged.expensePeriod = app.expensePeriod;
+          if (app.hasExpenseContract !== undefined) merged.hasContract = app.hasExpenseContract ? 'Да' : 'Нет';
+          if (app.isTaxRegimeActual !== undefined) merged.taxCurrent = app.isTaxRegimeActual ? 'yes' : 'change';
+          if (app.declaredTaxRegime) merged.taxRegimes = [app.declaredTaxRegime];
+          if (app.receiptCoverage && app.receiptCoverage.length > 0) merged.receiptCoverage = app.receiptCoverage;
+          if (app.expensesCoverageStatus) merged.expensesComplete = app.expensesCoverageStatus;
+          if (app.hasAdditionalIncome !== undefined) merged.additionalIncome = app.hasAdditionalIncome ? 'Да' : 'Нет';
+          if (app.additionalIncomeAmount) merged.personalIncome = String(Math.round(app.additionalIncomeAmount));
+          if (app.debtsVerificationStatus) merged.debtsComplete = app.debtsVerificationStatus;
+          if (app.repaymentSourceDescription) merged.repaymentDescription = app.repaymentSourceDescription;
+          if (app.householdExpenses) merged.personalExpenses = String(Math.round(app.householdExpenses));
+          if (app.personalDataConsent !== undefined) merged.personalDataConsent = app.personalDataConsent;
+          if (app.personalDataConsentDate) merged.personalDataConsentDate = app.personalDataConsentDate;
+          if (app.bkiConsent !== undefined) merged.bkiConsent = app.bkiConsent;
+          if (app.bkiConsentDate) merged.bkiConsentDate = app.bkiConsentDate;
+          if (app.bkiConsentValidUntil) merged.bkiConsentValidUntil = app.bkiConsentValidUntil;
+          if (app.leasingPartnerConsent !== undefined) merged.leasingPartnerConsent = app.leasingPartnerConsent;
+          if (app.leasingPartnerName) merged.leasingPartnerName = app.leasingPartnerName;
+          if (app.leasingPartnerConsentDate) merged.leasingPartnerConsentDate = app.leasingPartnerConsentDate;
+
+          return merged;
+        });
+      } catch (e) {
+        console.error('Ошибка загрузки черновика:', e);
+      } finally {
+        if (!isCancelled) setIsLoadingDossier(false);
+      }
+    };
+
+    loadDraft();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [draftIdParam, user?.inn]);
 
   const clientProfile = useMemo<DemoApplication>(() => {
-    return (
-      ALFA_DATA.applications.find((a) => a.inn === selectedInn) ||
-      ALFA_DATA.applications[0]
-    );
-  }, [selectedInn]);
+    if (lookupData) {
+      return {
+        application_id: `APP-${lookupData.inn.slice(-4)}`,
+        full_name: lookupData.fullName || user?.fullName || `ИП (ИНН ${lookupData.inn})`,
+        inn: lookupData.inn,
+        ogrnip: lookupData.ogrnip || '—',
+        registration_date: lookupData.registrationDate ? lookupData.registrationDate.split('T')[0] : '—',
+        okved_main: lookupData.okvedMain ? `${lookupData.okvedMain} ${lookupData.okvedMainName || ''}`.trim() : '—',
+        registry_status: lookupData.egripStatus || 'ACTIVE',
+        phone: lookupData.phone || user?.username || '',
+        email: lookupData.email || '',
+        stage: lookupData.suggestedStage || 'operating',
+        purpose: 'working_capital',
+        amount_rub: 1000000,
+        requested_term_months: 12,
+        tax_regime: lookupData.taxRegime || 'УСН (доходы)',
+        own_bank_client: lookupData.isAlfaClient ? 'да' : 'нет',
+        applicant_match: 'PASS',
+        activity_first_full_month: lookupData.registrationDate ? lookupData.registrationDate.slice(0, 7) : '2022-01',
+      };
+    }
+
+    return {
+      application_id: selectedInn ? `APP-${selectedInn.slice(-4)}` : 'APP-0000',
+      full_name: user?.fullName || (selectedInn ? `ИП (ИНН ${selectedInn})` : '—'),
+      inn: selectedInn || '—',
+      ogrnip: '—',
+      registration_date: '—',
+      okved_main: '—',
+      registry_status: selectedInn ? 'NOT_FOUND' : '—',
+      phone: '',
+      email: '',
+      stage: 'operating',
+      purpose: 'working_capital',
+      amount_rub: 1000000,
+      requested_term_months: 12,
+      tax_regime: 'УСН (доходы)',
+      own_bank_client: 'нет',
+      applicant_match: 'PASS',
+      activity_first_full_month: '2023-01',
+    };
+  }, [lookupData, selectedInn, user]);
 
   const clientPassport = useMemo<DemoPassport | undefined>(() => {
-    return ALFA_DATA.passports.find((p) => p.applicant_inn === selectedInn);
-  }, [selectedInn]);
+    if (lookupData?.passportSeries && lookupData?.passportNumber) {
+      return {
+        applicant_inn: lookupData.inn,
+        full_name: lookupData.fullName || clientProfile.full_name,
+        series: lookupData.passportSeries,
+        number: lookupData.passportNumber,
+        birth_date: lookupData.passportBirthDate || '',
+        issue_date: lookupData.passportIssueDate || '',
+        issuer: lookupData.passportIssuer || '',
+        department_code: lookupData.passportDepartmentCode || '',
+      };
+    }
+    return undefined;
+  }, [lookupData, clientProfile]);
 
   const clientFacts = useMemo<DemoFact[]>(() => {
-    return ALFA_DATA.facts.filter((f) => f.application_id === clientProfile.application_id);
-  }, [clientProfile]);
+    if (lookupData?.facts && lookupData.facts.length > 0) {
+      return lookupData.facts.map((f) => ({
+        application_id: clientProfile.application_id,
+        month: f.month,
+        clean_receipts_rub: f.cleanReceiptsRub,
+        operating_outflow_rub: f.operatingOutflowRub,
+      }));
+    }
+    return [];
+  }, [lookupData, clientProfile]);
 
   const clientDebts = useMemo<DemoDebt[]>(() => {
-    return ALFA_DATA.debts.filter((d) => d.application_id === clientProfile.application_id);
-  }, [clientProfile]);
+    if (lookupData?.debts && lookupData.debts.length > 0) {
+      return lookupData.debts.map((d) => ({
+        application_id: clientProfile.application_id,
+        source: 'Синтетическая база банка',
+        obligation_ref: d.obligationRef || 'Обязательство',
+        kind: 'Кредит',
+        monthly_max_payment_rub: d.monthlyMaxPaymentRub,
+      }));
+    }
+    return [];
+  }, [lookupData, clientProfile]);
 
-  const clientIncome = useMemo(() => {
-    return ALFA_DATA.income.filter((i) => i.application_id === clientProfile.application_id);
-  }, [clientProfile]);
+  const clientIncome = useMemo<DemoIncome[]>(() => {
+    return [];
+  }, []);
 
   // ----------------------------------------------------
   // Состояние ответов анкеты
@@ -83,10 +388,12 @@ export const NewApplicationWizardPage: React.FC = () => {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, UploadedFileMeta[]>>({});
   const [deferredDocs, setDeferredDocs] = useState<Record<string, boolean>>({});
+  const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
   const [currentStepIdx, setCurrentStepIdx] = useState<number>(0);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedAppId, setSubmittedAppId] = useState<string | null>(null);
+  const [activeConsentType, setActiveConsentType] = useState<ConsentType | null>(null);
 
   // Supplier lookup state
   const [supplierResult, setSupplierResult] = useState<{
@@ -100,93 +407,76 @@ export const NewApplicationWizardPage: React.FC = () => {
     data?: DemoProperty;
   }>({ status: 'idle' });
 
-  // Инициализация при смене клиента
-  const initForClient = (app: DemoApplication) => {
-    const isOperating = app.stage === 'operating';
-    const initAmount = app.amount_rub ? Math.round(Number(app.amount_rub)) : 1000000;
-    const initTerm = app.requested_term_months ? Number(app.requested_term_months) : 12;
-
-    setAnswers({
-      // Step 1: Profile
-      profileCurrent: 'yes',
-      phone: app.phone || '',
-      email: app.email || '',
-      profileChanges: '',
-      // Step 2: Passport
-      passportCurrent: 'yes',
-      passportName: app.full_name,
-      passportSeries: '',
-      passportNumber: '',
-      passportBirth: '',
-      passportIssued: '',
-      passportIssuer: '',
-      passportCode: '',
-      // Step 3: Request
-      business: isOperating ? 'operating' : app.stage === 'paused' ? 'paused' : 'new',
-      purpose: app.purpose === 'equipment' ? 'equipment' : 'working_capital',
-      amount: String(initAmount),
-      term: String(initTerm),
-      termUnspecified: false,
-      activity: '',
-      launchMonth: '',
-      launchMonthUnspecified: false,
-      // Step 4: Details
-      leasing: 'yes',
-      equipment: '',
-      equipmentChosen: 'Да',
-      equipmentCost: String(Math.round(initAmount * 1.25)),
-      equipmentCostUnspecified: false,
-      costIncludes: 'Доставка и пусконаладочные работы',
-      ownFunds: String(Math.round(initAmount * 0.25)),
-      supplierChosen: 'Да',
-      supplierInn: '9990927815',
-      purchaseDate: '',
-      expenseType: 'goods',
-      expenseDescription: 'Закупка товаров, сырья и финансирование контрактов',
-      expensePeriod: 'ноябрь–декабрь 2026 года',
-      hasContract: 'Да',
-      paymentDate: '',
-      collateral: 'no',
-      propertyInput: 'cadastre',
-      cadastralNumber: '99:99:9900001:1001',
-      // Step 5: Finances
-      taxCurrent: 'yes',
-      taxRegimes: [app.tax_regime || 'USN_INCOME'],
-      receiptCoverage: ['all'],
-      expensesComplete: 'yes',
-      extraExpenses: '',
-      personalExpenses: app.household_expenses_monthly_rub ? String(Math.round(Number(app.household_expenses_monthly_rub))) : '50000',
-      debtsComplete: 'yes',
-      extraDebts: [],
-      repaymentSources: ['salary'],
-      personalIncome: clientIncome.length
-        ? String(Math.round(clientIncome.reduce((acc, c) => acc + Number(c.net_income_rub), 0) / clientIncome.length))
-        : '120000',
-      incomeContinues: 'Да',
-      committedCosts: '30000',
-      cashReserve: '150000',
-      repaymentDescription: 'За счёт регулярной выручки от текущей операционной деятельности',
-      // Step 7: Review
-      reviewConfirmed: false,
+  // Инициализация по умолчанию при первичном входе (НЕ затирает уже введённые пользователем данные!)
+  const initForClient = (app: DemoApplication, force = false) => {
+    setAnswers((prev) => {
+      if (!force && Object.keys(prev).length > 0) {
+        return {
+          ...prev,
+          phone: prev.phone || app.phone || '',
+          email: prev.email || app.email || '',
+          passportName: prev.passportName || app.full_name || '',
+        };
+      }
+      return buildInitialAnswersForClient(app);
     });
-    setUploadedFiles({});
-    setDeferredDocs({});
-    setCurrentStepIdx(0);
-    setValidationErrors({});
-    setSubmittedAppId(null);
-    setSupplierResult({ status: 'idle' });
-    setPropertyResult({ status: 'idle' });
   };
 
   useEffect(() => {
-    initForClient(clientProfile);
-  }, [clientProfile]);
+    // Если форма уже загрузила черновик или была инициализирована — не трогаем пользовательские данные!
+    if (draftIdParam || isInitializedRef.current) return;
+
+    initForClient(clientProfile, true);
+    isInitializedRef.current = true;
+  }, [clientProfile, draftIdParam]);
 
   // Helpers
   const isOperating = answers.business === 'operating';
   const isNew = answers.business === 'new';
   const isPaused = answers.business === 'paused';
   const isEquipment = answers.purpose === 'equipment';
+
+  // Обработка принятия согласий из отдельного модального окна
+  const handleAcceptConsent = (type: ConsentType | null) => {
+    const now = new Date().toISOString();
+    if (type === 'pdn') {
+      setAnswers((prev) => ({
+        ...prev,
+        personalDataConsent: true,
+        personalDataConsentDate: now,
+      }));
+      setValidationErrors((errs) => {
+        const next = { ...errs };
+        delete next.personalDataConsent;
+        return next;
+      });
+    } else if (type === 'bki') {
+      const validUntil = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+      setAnswers((prev) => ({
+        ...prev,
+        bkiConsent: true,
+        bkiConsentDate: now,
+        bkiConsentValidUntil: validUntil,
+      }));
+      setValidationErrors((errs) => {
+        const next = { ...errs };
+        delete next.bkiConsent;
+        return next;
+      });
+    } else if (type === 'leasing') {
+      setAnswers((prev) => ({
+        ...prev,
+        leasingPartnerConsent: true,
+        leasingPartnerName: 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
+        leasingPartnerConsentDate: now,
+      }));
+      setValidationErrors((errs) => {
+        const next = { ...errs };
+        delete next.leasingPartnerConsent;
+        return next;
+      });
+    }
+  };
 
   // ----------------------------------------------------
   // Конфигурация шагов мастера (6 шагов + review)
@@ -281,25 +571,447 @@ export const NewApplicationWizardPage: React.FC = () => {
   }, [answers, clientFacts, clientDebts, clientProfile]);
 
   // ----------------------------------------------------
-  // Выявление рисков / "Что уточнит специалист"
+  // Выявление рисков / "Что уточнит специалист" (соответствует findings() из макет.html)
   // ----------------------------------------------------
   const riskFindings = useMemo<string[]>(() => {
-    const flags: string[] = [];
-    if (answers.profileCurrent === 'change') flags.push('Изменены сведения ИП: требуется ручная проверка досье');
-    if (answers.passportCurrent === 'change') flags.push('Введены новые паспортные данные: требуется верификация паспорта');
-    if (clientProfile.registry_status !== 'ACTIVE') flags.push('Статус регистрации ИП в ЕГРИП требует рассмотрения андеррайтером');
-    if (isPaused) flags.push('Бизнес приостановлен: требуется индивидуальная консультация');
-    if (isNew) flags.push('Нет достаточной истории операционной выручки: источник платежей на контроле');
-    if (answers.incomeContinues === 'Нет') flags.push('Клиент указал, что текущий доход не сохранится после запуска');
-    if (answers.equipmentCostUnspecified) flags.push('Точная стоимость оборудования ещё не определена');
-    if (answers.supplierChosen === 'Нет') flags.push('Поставщик оборудования пока не выбран');
-    if (supplierResult.status === 'not_found') flags.push('Поставщик не найден в базе проверенных контрагентов');
-    if ((answers.receiptCoverage || []).includes('other_banks')) flags.push('Заявлены поступления в сторонних банках: требуется выписка');
-    if ((answers.receiptCoverage || []).includes('cash')) flags.push('Заявлена наличная выручка: требуется документальное подтверждение');
-    if (answers.debtsComplete === 'add') flags.push('Клиент заявил о корректировке кредитных обязательств');
-    if (scoringEvaluation.risks.length) flags.push(...scoringEvaluation.risks);
-    return [...new Set(flags)];
-  }, [answers, clientProfile, isPaused, isNew, supplierResult, scoringEvaluation]);
+    const out: string[] = [];
+    const add = (condition: boolean | any, text: string) => {
+      if (condition) out.push(text);
+    };
+
+    add(answers.profileCurrent === 'change', 'Изменены сведения ИП: проверить досье');
+    add(answers.passportCurrent === 'change', 'Введён новый паспорт: требуется проверка');
+    add(clientProfile.registry_status !== 'ACTIVE', 'Статус регистрации ИП требует отдельного рассмотрения');
+    add(clientProfile.applicant_match === 'нет', 'В исходном наборе есть расхождение идентификации');
+    add(isPaused, 'Бизнес приостановлен: индивидуальная консультация');
+    add(isNew, 'Нет истории текущей выручки: уточнить источник платежей');
+    add(answers.incomeContinues === 'Нет', 'Доход после запуска не сохранится');
+    add((answers.repaymentSources || []).includes('forecast'), 'Источник платежей основан только на прогнозе');
+    add(answers.equipmentCostUnspecified, 'Стоимость оборудования пока не определена');
+    add(answers.ownFundsUnspecified, 'Первоначальный взнос не определён');
+    add(answers.ownFunds === '0', 'Нулевой взнос: проверить доступные программы');
+    add(answers.supplierChosen === 'Нет', 'Поставщик пока не выбран');
+    add(supplierResult.status && supplierResult.status !== 'found', 'Поставщик не проверен по справочнику');
+    add(supplierResult.data?.status && supplierResult.data.status !== 'ACTIVE', 'Статус поставщика требует проверки');
+    add(supplierResult.data?.mass_address === 'да', 'Поставщик: отметка о массовом адресе');
+    add(supplierResult.data?.inn === clientProfile.inn, 'ИНН поставщика совпадает с заявителем');
+    add(answers.taxCurrent === 'change', 'Налоговый режим изменён со слов клиента');
+    add((answers.receiptCoverage || []).some((x: string) => x !== 'all'), 'Поступления требуют уточнения полноты');
+    add(answers.expensesComplete && answers.expensesComplete !== 'yes', 'Расходы требуют уточнения');
+    add(answers.debtsComplete && answers.debtsComplete !== 'yes', 'Нужно уточнить обязательства');
+    add(clientDebts.some((x) => x.monthly_max_payment_rub && x.source_count && Number(x.source_count) > 1), 'Есть расхождение источников по платежу одного договора');
+    add(propertyResult.data?.source_record_status === 'STALE_DEMO', 'Сведения об объекте устарели');
+    add(propertyResult.data?.rights_coverage !== 'COMPLETE_DEMO', 'Сведения о правах неполные');
+    add(answers.coownerReady && answers.coownerReady !== 'yes', 'Готовность остальных собственников не подтверждена');
+    add(answers.equipmentDocumentType === 'later', 'Документ по оборудованию предоставят позже');
+    for (const [group, isDeferred] of Object.entries(deferredDocs)) {
+      if (isDeferred) {
+        const groupLabels: Record<string, string> = {
+          equipmentDoc: 'Документ по оборудованию',
+          expenseDoc: 'Документы по планируемым расходам',
+          otherBankStatements: 'Выписки из других банков',
+          egrnDoc: 'Выписка ЕГРН',
+          ownershipDoc: 'Документ — основание права',
+        };
+        out.push(`Документ отложен: ${groupLabels[group] || group}`);
+      }
+    }
+
+    return [...new Set(out)];
+  }, [answers, clientProfile, isPaused, isNew, supplierResult, propertyResult, clientDebts, deferredDocs]);
+
+  // ----------------------------------------------------
+  // Сводка для шага "Проверка" (соответствует summaryHtml() из макет.html)
+  // ----------------------------------------------------
+  const summarySections = useMemo(() => {
+    const list: { key: string; short: string; items: { label: string; value: string }[] }[] = [];
+
+    // 1. Данные ИП
+    const profileItems: { label: string; value: string }[] = [
+      {
+        label: 'Сведения актуальны?',
+        value: answers.profileCurrent === 'yes' ? 'Да, всё верно' : 'Есть изменения',
+      },
+    ];
+    if (answers.profileCurrent === 'change') {
+      if (answers.phone) profileItems.push({ label: 'Новый телефон', value: answers.phone });
+      if (answers.email) profileItems.push({ label: 'Новый email', value: answers.email });
+      if (answers.profileChanges) profileItems.push({ label: 'Что изменилось?', value: answers.profileChanges });
+    }
+    profileItems.push({
+      label: 'Согласие на обработку персональных данных',
+      value: answers.personalDataConsent
+        ? `Предоставлено (${answers.personalDataConsentDate ? new Date(answers.personalDataConsentDate).toLocaleDateString('ru-RU') : 'ПЭП'})`
+        : 'Не предоставлено',
+    });
+    list.push({ key: 'profile', short: 'Данные ИП', items: profileItems });
+
+    // 2. Паспорт
+    const passportItems: { label: string; value: string }[] = [
+      {
+        label: 'Паспортные данные актуальны?',
+        value: answers.passportCurrent === 'yes' ? 'Да, актуальны' : 'Нет, ввести новые данные',
+      },
+    ];
+    if (answers.passportCurrent === 'change') {
+      passportItems.push(
+        { label: 'ФИО по паспорту', value: answers.passportName || 'Не указано' },
+        { label: 'Серия', value: answers.passportSeries || 'Не указано' },
+        { label: 'Номер', value: answers.passportNumber || 'Не указано' },
+        { label: 'Дата рождения', value: answers.passportBirth || 'Не указано' },
+        { label: 'Дата выдачи', value: answers.passportIssued || 'Не указано' },
+        { label: 'Кем выдан', value: answers.passportIssuer || 'Не указано' },
+        { label: 'Код подразделения', value: answers.passportCode || 'Не указано' }
+      );
+    }
+    list.push({ key: 'passport', short: 'Паспорт', items: passportItems });
+
+    // 3. Ваш запрос
+    const requestItems: { label: string; value: string }[] = [
+      {
+        label: 'Ваш бизнес уже получает выручку?',
+        value:
+          answers.business === 'operating'
+            ? 'Да, бизнес работает'
+            : answers.business === 'new'
+            ? 'Ещё нет, готовлюсь к запуску'
+            : 'Раньше работал, сейчас приостановлен',
+      },
+    ];
+    if (isPaused) {
+      requestItems.push({
+        label: 'Опишите ситуацию и нужное финансирование',
+        value: answers.pausedDetails || 'Не указано',
+      });
+    } else {
+      requestItems.push(
+        {
+          label: 'На что нужны деньги?',
+          value: isEquipment ? 'Покупка оборудования' : 'Оборотные средства',
+        },
+        {
+          label: 'Какая сумма нужна, ₽',
+          value: formatRubles(answers.amount),
+        },
+        {
+          label: 'Желаемый срок, месяцев',
+          value: answers.termUnspecified ? 'Помогите подобрать' : `${answers.term} мес.`,
+        }
+      );
+      if (isNew) {
+        requestItems.push(
+          { label: 'Чем будет заниматься бизнес?', value: answers.activity || 'Не указано' },
+          {
+            label: 'Когда планируете начать работу?',
+            value: answers.launchMonthUnspecified ? 'Пока не определился' : answers.launchMonth || 'Не указано',
+          }
+        );
+      }
+    }
+    list.push({ key: 'request', short: 'Ваш запрос', items: requestItems });
+
+    if (!isPaused) {
+      // 4. Детали
+      const detailItems: { label: string; value: string }[] = [];
+      if (isEquipment) {
+        if (isNew) {
+          detailItems.push({
+            label: 'Готовы рассмотреть лизинг?',
+            value:
+              answers.leasing === 'yes'
+                ? 'Да'
+                : answers.leasing === 'explain'
+                ? 'Сначала хочу узнать условия'
+                : 'Нет, хочу другой вариант',
+          });
+        }
+        detailItems.push(
+          { label: 'Какое оборудование нужно?', value: answers.equipment || 'Не указано' },
+          { label: 'Оборудование уже выбрано?', value: answers.equipmentChosen || 'Не указано' },
+          {
+            label: 'Полная стоимость покупки, ₽',
+            value: answers.equipmentCostUnspecified ? 'Стоимость пока неизвестна' : formatRubles(answers.equipmentCost),
+          }
+        );
+        if (answers.costIncludes) {
+          detailItems.push({ label: 'Что включено в стоимость?', value: answers.costIncludes });
+        }
+        detailItems.push(
+          {
+            label: isNew ? 'Какой первоначальный взнос готовы внести, ₽' : 'Сколько собственных средств вложите, ₽',
+            value: answers.ownFundsUnspecified ? 'Пока не определился' : formatRubles(answers.ownFunds),
+          },
+          { label: 'Поставщик выбран?', value: answers.supplierChosen || 'Не указано' }
+        );
+        if (answers.supplierChosen === 'Да') {
+          detailItems.push({ label: 'ИНН поставщика', value: answers.supplierInn || 'Не указано' });
+          if (supplierResult.data?.name || answers.supplierManualName) {
+            detailItems.push({
+              label: 'Название или ФИО поставщика',
+              value: supplierResult.data?.name || answers.supplierManualName,
+            });
+          }
+          if (supplierResult.status === 'found') {
+            detailItems.push({ label: 'Это нужный поставщик?', value: answers.supplierConfirmed || 'Да' });
+          }
+        }
+        if (answers.purchaseDate) {
+          detailItems.push({ label: 'Когда нужна оплата или поставка?', value: answers.purchaseDate });
+          if (answers.pastPurchaseNote) {
+            detailItems.push({ label: 'Поясните дату в прошлом', value: answers.pastPurchaseNote });
+          }
+        }
+      } else {
+        const expenseTypeMap: Record<string, string> = {
+          goods: 'Товары или сырьё',
+          running: 'Аренда, зарплата и текущие расходы',
+          gap: 'Кассовый разрыв',
+          contract: 'Исполнение заказа',
+          other: 'Другое',
+        };
+        detailItems.push(
+          { label: 'На какие расходы нужны деньги?', value: expenseTypeMap[answers.expenseType] || answers.expenseType || 'Не указано' },
+          { label: 'Кратко опишите расходы', value: answers.expenseDescription || 'Не указано' },
+          { label: 'За какой период нужно покрыть расходы?', value: answers.expensePeriod || 'Не указано' }
+        );
+        if (answers.expenseType === 'running') {
+          if (answers.rentAmount) detailItems.push({ label: 'На аренду, ₽', value: formatRubles(answers.rentAmount) });
+          if (answers.salaryAmount) detailItems.push({ label: 'На зарплату, ₽', value: formatRubles(answers.salaryAmount) });
+          if (answers.utilitiesAmount) detailItems.push({ label: 'На коммунальные услуги, ₽', value: formatRubles(answers.utilitiesAmount) });
+          if (answers.otherCostsAmount) detailItems.push({ label: 'На другие текущие расходы, ₽', value: formatRubles(answers.otherCostsAmount) });
+          if (answers.costDifference) detailItems.push({ label: 'Поясните разницу с запрашиваемой суммой', value: answers.costDifference });
+        }
+        if (answers.expenseType === 'gap') {
+          if (answers.expectedReceiptDate) detailItems.push({ label: 'Когда ожидаются поступления?', value: answers.expectedReceiptDate });
+          if (answers.expectedReceiptSource) detailItems.push({ label: 'За счёт каких поступлений закроется разрыв?', value: answers.expectedReceiptSource });
+        }
+        detailItems.push(
+          { label: 'Есть договор, заказ или счёт по этим расходам?', value: answers.hasContract || 'Не указано' }
+        );
+        if (answers.paymentDate) {
+          detailItems.push({ label: 'Когда нужны деньги?', value: answers.paymentDate });
+          if (answers.pastPaymentNote) {
+            detailItems.push({ label: 'Поясните дату в прошлом', value: answers.pastPaymentNote });
+          }
+        }
+        if (isNew) {
+          detailItems.push({
+            label: 'Готовы рассмотреть залог недвижимости?',
+            value: answers.collateral === 'yes' ? 'Да' : 'Нет / подходящего объекта нет',
+          });
+          if (answers.collateral === 'yes') {
+            detailItems.push({
+              label: 'Как укажете объект?',
+              value: answers.propertyInput === 'cadastre' ? 'По кадастровому номеру' : 'Указать адрес, номер уточню позже',
+            });
+            if (answers.propertyInput === 'cadastre') {
+              detailItems.push({ label: 'Кадастровый номер', value: answers.cadastralNumber || 'Не указано' });
+            }
+            if (answers.propertyAddress || propertyResult.data?.address) {
+              detailItems.push({ label: 'Адрес объекта', value: answers.propertyAddress || propertyResult.data?.address || 'Не указано' });
+            }
+            detailItems.push(
+              {
+                label: 'Кому принадлежит объект?',
+                value: ({ self: 'Мне', other: 'Другому собственнику', shared: 'Общая или долевая собственность' } as Record<string, string>)[answers.propertyOwner] || answers.propertyOwner || 'Не указано',
+              },
+              {
+                label: 'Остальные собственники готовы обсуждать залог?',
+                value: ({ yes: 'Да', no: 'Нет', not_discussed: 'Ещё не обсуждали' } as Record<string, string>)[answers.coownerReady] || answers.coownerReady || 'Не указано',
+              },
+              {
+                label: 'Есть ипотека или другие ограничения?',
+                value: ({ yes: 'Да', no: 'Нет', clarify: 'Нужно уточнить' } as Record<string, string>)[answers.declaredEncumbrance] || answers.declaredEncumbrance || 'Не указано',
+              }
+            );
+          }
+        }
+        if (answers.leasing === 'yes' || answers.leasing === 'explain') {
+          detailItems.push({
+            label: 'Согласие на передачу лизинговому партнёру',
+            value: answers.leasingPartnerConsent
+              ? `Подтверждено (ООО «Альфа-Лизинг», ${answers.leasingPartnerConsentDate ? new Date(answers.leasingPartnerConsentDate).toLocaleDateString('ru-RU') : 'ПЭП'})`
+              : 'Не подтверждено',
+          });
+        }
+      }
+      list.push({ key: 'details', short: 'Детали', items: detailItems });
+
+      // 5. Финансы
+      const finItems: { label: string; value: string }[] = [];
+      if (!isNew) {
+        finItems.push({
+          label: 'Система налогообложения актуальна?',
+          value: answers.taxCurrent === 'yes' ? 'Да' : 'Нет, указать текущую',
+        });
+        if (answers.taxCurrent === 'change') {
+          finItems.push({
+            label: 'Текущая система налогообложения',
+            value: Array.isArray(answers.taxRegimes) ? answers.taxRegimes.join(', ') : answers.taxRegimes || 'Не указано',
+          });
+          if (answers.taxOther) finItems.push({ label: 'Укажите другой режим', value: answers.taxOther });
+        }
+        const coverageMap: Record<string, string> = {
+          all: 'Да, все',
+          other_banks: 'Есть поступления в других банках',
+          cash: 'Есть неучтённая наличная выручка',
+          unsure: 'Нужно уточнить',
+        };
+        finItems.push({
+          label: 'Все поступления бизнеса учтены в показанных данных?',
+          value: (answers.receiptCoverage || []).map((x: string) => coverageMap[x] || x).join(', ') || 'Да, все',
+        });
+        if ((answers.receiptCoverage || []).includes('other_banks') && answers.otherBanks) {
+          finItems.push({ label: 'В каких ещё банках есть счета бизнеса?', value: answers.otherBanks });
+        }
+        if ((answers.receiptCoverage || []).includes('cash') && answers.cashAmount) {
+          finItems.push({ label: 'Неучтённая наличная выручка в среднем за месяц, ₽', value: formatRubles(answers.cashAmount) });
+        }
+        finItems.push({
+          label: 'Все расходы бизнеса учтены?',
+          value: answers.expensesComplete === 'yes' ? 'Да' : answers.expensesComplete === 'no' ? 'Есть дополнительные расходы' : 'Нужно уточнить',
+        });
+        if (answers.expensesComplete === 'no') {
+          if (answers.extraExpenses) finItems.push({ label: 'Дополнительные расходы в месяц, ₽', value: formatRubles(answers.extraExpenses) });
+          if (answers.extraExpensesDetails) finItems.push({ label: 'Какие расходы не учтены?', value: answers.extraExpensesDetails });
+        }
+        finItems.push({
+          label: 'Хотите сообщить о дополнительном личном доходе?',
+          value: answers.additionalIncome || 'Нет',
+        });
+        if (answers.additionalIncome === 'Да') {
+          if (answers.personalIncome) finItems.push({ label: 'Дополнительный доход после налогов, ₽/мес.', value: formatRubles(answers.personalIncome) });
+          if (answers.otherIncomeSource) finItems.push({ label: 'Источник дополнительного дохода', value: answers.otherIncomeSource });
+        }
+      } else {
+        const sourceMap: Record<string, string> = {
+          salary: 'Работа по найму',
+          business: 'Другой бизнес',
+          rent: 'Сдача имущества',
+          savings: 'Накопления',
+          forecast: 'Только будущая выручка',
+          other: 'Другой источник',
+        };
+        finItems.push(
+          {
+            label: 'Из каких средств будете платить до устойчивой выручки?',
+            value: (answers.repaymentSources || []).map((x: string) => sourceMap[x] || x).join(', ') || 'Не указано',
+          },
+          { label: 'Совокупный текущий доход после налогов, ₽/мес.', value: formatRubles(answers.personalIncome) },
+          { label: 'Этот доход сохранится после запуска?', value: answers.incomeContinues || 'Да' }
+        );
+        if (answers.committedCosts) {
+          finItems.push({ label: 'Неизбежные расходы бизнеса до устойчивой выручки, ₽/мес.', value: formatRubles(answers.committedCosts) });
+        }
+      }
+      finItems.push(
+        { label: 'Обязательные личные расходы без кредитов, ₽/мес.', value: formatRubles(answers.personalExpenses) },
+        {
+          label: 'Список кредитов и лизинга полный и верный?',
+          value:
+            answers.debtsComplete === 'yes'
+              ? 'Да'
+              : answers.debtsComplete === 'add'
+              ? 'Есть ещё обязательства'
+              : answers.debtsComplete === 'change'
+              ? 'Нужны исправления'
+              : 'Нужно уточнить',
+        }
+      );
+      if (answers.debtsComplete === 'change' && answers.debtChanges) {
+        finItems.push({ label: 'Что нужно исправить?', value: answers.debtChanges });
+      }
+      if (answers.debtsComplete === 'add' && (answers.extraDebts || []).length > 0) {
+        finItems.push({
+          label: 'Дополнительные обязательства',
+          value: answers.extraDebts.map((d: any) => `${d.creditor} · ${d.reference} · ${formatRubles(d.payment)}/мес.`).join('\n'),
+        });
+      }
+      if (!isNew && answers.repaymentDescription) {
+        finItems.push({
+          label: 'За счёт каких поступлений планируете погашать финансирование?',
+          value: answers.repaymentDescription,
+        });
+      }
+      finItems.push({
+        label: 'Согласие на запрос в БКИ',
+        value: answers.bkiConsent
+          ? `Действует ${answers.bkiConsentValidUntil ? `до ${new Date(answers.bkiConsentValidUntil).toLocaleDateString('ru-RU')}` : 'в течение 6 мес.'}`
+          : 'Не предоставлено',
+      });
+      list.push({ key: 'finances', short: 'Финансы', items: finItems });
+
+      // 6. Документы
+      const docItems: { label: string; value: string }[] = [];
+      if (isEquipment) {
+        const docTypeMap: Record<string, string> = {
+          invoice: 'Счёт',
+          quote: 'Коммерческое предложение',
+          contract: 'Договор со спецификацией',
+          later: 'Предоставлю позже',
+        };
+        docItems.push({
+          label: 'Что приложите по покупке?',
+          value: docTypeMap[answers.equipmentDocumentType] || (deferredDocs.equipmentDoc ? 'Предоставлю позже' : (uploadedFiles.equipmentDoc?.length ? 'Счёт / договор' : 'Не приложен')),
+        });
+        docItems.push({
+          label: 'Документ по оборудованию',
+          value: deferredDocs.equipmentDoc ? 'Предоставит позже' : (uploadedFiles.equipmentDoc?.map((f) => f.name).join(', ') || 'Не приложен'),
+        });
+      } else {
+        docItems.push({
+          label: 'Документы по планируемым расходам',
+          value: deferredDocs.expenseDoc ? 'Предоставит позже' : (uploadedFiles.expenseDoc?.map((f) => f.name).join(', ') || 'Не приложен'),
+        });
+      }
+      if ((answers.receiptCoverage || []).includes('other_banks')) {
+        docItems.push({
+          label: 'Выписки из других банков',
+          value: deferredDocs.otherBankStatements ? 'Предоставит позже' : (uploadedFiles.otherBankStatements?.map((f) => f.name).join(', ') || 'Не приложен'),
+        });
+      }
+      if (isNew && answers.collateral === 'yes') {
+        docItems.push(
+          {
+            label: 'Выписка ЕГРН',
+            value: deferredDocs.egrnDoc ? 'Предоставит позже' : (uploadedFiles.egrnDoc?.map((f) => f.name).join(', ') || 'Не приложен'),
+          },
+          {
+            label: 'Документ — основание права',
+            value: deferredDocs.ownershipDoc ? 'Предоставит позже' : (uploadedFiles.ownershipDoc?.map((f) => f.name).join(', ') || 'Не приложен'),
+          }
+        );
+      }
+      list.push({ key: 'documents', short: 'Документы', items: docItems });
+
+      // 7. Согласия и волеизъявления
+      const legalItems: { label: string; value: string }[] = [
+        {
+          label: '1. Согласие на обработку персональных данных',
+          value: answers.personalDataConsent
+            ? `Предоставлено (${answers.personalDataConsentDate ? new Date(answers.personalDataConsentDate).toLocaleDateString('ru-RU') : 'ПЭП'})`
+            : 'Не предоставлено',
+        },
+        {
+          label: '2. Согласие на запрос в БКИ',
+          value: answers.bkiConsent
+            ? `Действует ${answers.bkiConsentValidUntil ? `до ${new Date(answers.bkiConsentValidUntil).toLocaleDateString('ru-RU')}` : 'в течение 6 мес.'}`
+            : 'Не предоставлено',
+        },
+      ];
+      if (isEquipment && (answers.leasing === 'yes' || answers.leasing === 'explain')) {
+        legalItems.push({
+          label: '3. Передача лизинговому партнёру',
+          value: answers.leasingPartnerConsent
+            ? `Подтверждено (ООО «Альфа-Лизинг», ИНН 7707330770)`
+            : 'Не подтверждено',
+        });
+      }
+      list.push({ key: 'legal', short: 'Согласия', items: legalItems });
+    }
+
+    return list;
+  }, [answers, clientProfile, isEquipment, isNew, isPaused, supplierResult, propertyResult, deferredDocs, uploadedFiles]);
 
   // ----------------------------------------------------
   // Валидация текущего шага
@@ -310,6 +1022,9 @@ export const NewApplicationWizardPage: React.FC = () => {
     if (currentStep.key === 'profile') {
       if (answers.profileCurrent === 'change' && !answers.profileChanges?.trim()) {
         errs.profileChanges = 'Опишите, какие сведения изменились';
+      }
+      if (!answers.personalDataConsent) {
+        errs.personalDataConsent = 'Для начала оформления анкеты необходимо предоставить согласие на обработку персональных данных';
       }
     } else if (currentStep.key === 'passport') {
       if (answers.passportCurrent === 'change') {
@@ -370,6 +1085,9 @@ export const NewApplicationWizardPage: React.FC = () => {
         ) {
           errs.ownFunds = 'Собственный взнос не может превышать стоимость покупки';
         }
+        if ((answers.leasing === 'yes' || answers.leasing === 'explain') && !answers.leasingPartnerConsent) {
+          errs.leasingPartnerConsent = 'Для передачи заявки партнёру необходимо подтвердить согласие на передачу сведений ООО «Альфа-Лизинг»';
+        }
       } else {
         if (!answers.expenseDescription?.trim()) {
           errs.expenseDescription = 'Опишите планируемые расходы';
@@ -387,9 +1105,21 @@ export const NewApplicationWizardPage: React.FC = () => {
           errs.committedCosts = 'Укажите неизбежные ежемесячные расходы бизнеса';
         }
       }
+      if (!answers.bkiConsent) {
+        errs.bkiConsent = 'Перед запросом кредитной истории необходимо предоставить согласие на запрос в БКИ';
+      }
     } else if (currentStep.key === 'review') {
+      if (!answers.personalDataConsent) {
+        errs.personalDataConsent = 'Не предоставлено согласие на обработку персональных данных';
+      }
+      if (!answers.bkiConsent) {
+        errs.bkiConsent = 'Не предоставлено согласие на запрос в БКИ';
+      }
+      if (isEquipment && (answers.leasing === 'yes' || answers.leasing === 'explain') && !answers.leasingPartnerConsent) {
+        errs.leasingPartnerConsent = 'Не предоставлено согласие на передачу сведений ООО «Альфа-Лизинг»';
+      }
       if (!answers.reviewConfirmed) {
-        errs.reviewConfirmed = 'Подтвердите проверку сведений для отправки заявки';
+        errs.reviewConfirmed = 'Подтвердите проверку сведений';
       }
     }
 
@@ -457,16 +1187,17 @@ export const NewApplicationWizardPage: React.FC = () => {
   // ----------------------------------------------------
   // File upload simulated/actual handler
   // ----------------------------------------------------
-  const handleFileUpload = (group: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !files.length) return;
+  const handleFilesAdded = (group: string, filesList: FileList | File[]) => {
+    if (!filesList || !filesList.length) return;
 
-    const newItems: UploadedFileMeta[] = Array.from(files).map((f) => ({
+    const newItems: UploadedFileMeta[] = Array.from(filesList).map((f) => ({
       id: 'file-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
       name: f.name,
       size: f.size,
       type: f.type || 'application/octet-stream',
       group,
+      url: URL.createObjectURL(f),
+      file: f,
     }));
 
     setUploadedFiles((prev) => ({
@@ -474,7 +1205,18 @@ export const NewApplicationWizardPage: React.FC = () => {
       [group]: [...(prev[group] || []), ...newItems],
     }));
 
-    e.target.value = '';
+    // Автоматически снимаем флаг "Предоставлю позже", если файл загружен
+    setDeferredDocs((prev) => ({
+      ...prev,
+      [group]: false,
+    }));
+  };
+
+  const handleFileUpload = (group: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleFilesAdded(group, e.target.files);
+      e.target.value = '';
+    }
   };
 
   const removeFile = (group: string, fileId: string) => {
@@ -485,49 +1227,312 @@ export const NewApplicationWizardPage: React.FC = () => {
   };
 
   // ----------------------------------------------------
-  // Отправка заявки в API
+  // Компонент/рендер карточки загрузки документов
+  // ----------------------------------------------------
+  const renderUploadCard = (options: {
+    group: string;
+    title: string;
+    subtitle: string;
+    badge?: string;
+    hintFormats?: string;
+    inputId: string;
+    allowDefer?: boolean;
+    extraHeaderControl?: React.ReactNode;
+  }) => {
+    const {
+      group,
+      title,
+      subtitle,
+      badge,
+      hintFormats = 'PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, TXT до 25 МБ',
+      inputId,
+      allowDefer = true,
+      extraHeaderControl,
+    } = options;
+
+    const isDeferred = deferredDocs[group] || false;
+    const files = uploadedFiles[group] || [];
+    const isDragging = dragOverGroup === group;
+
+    return (
+      <div
+        className={`p-6 border rounded-2xl transition-all ${
+          isDragging
+            ? 'border-[#EF3124] bg-[#fff5f5] ring-2 ring-[#EF3124]/20'
+            : 'border-[#e6e8ea] bg-white hover:border-[#cfd3d8]'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <strong className="text-base font-bold text-[#141414]">{title}</strong>
+              {badge && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#fff1ef] text-[#EF3124]">
+                  {badge}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[#686b70] mt-1">{subtitle}</p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {extraHeaderControl}
+            {allowDefer && (
+              <label className="flex items-center gap-2 text-xs font-semibold text-[#686b70] hover:text-[#141414] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isDeferred}
+                  onChange={(e) => setDeferredDocs({ ...deferredDocs, [group]: e.target.checked })}
+                  className="rounded text-[#EF3124] focus:ring-[#EF3124]"
+                />
+                <span>Предоставлю позже</span>
+              </label>
+            )}
+          </div>
+        </div>
+
+        {isDeferred ? (
+          <div className="p-4 bg-[#f8f9fa] rounded-xl border border-dashed border-[#d8dce0] flex items-center justify-between gap-3 text-xs text-[#686b70]">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-[#00a859] flex-shrink-0" />
+              <span>
+                Документ отмечен как <b>«Предоставлю позже»</b>. Специалист запросит его при необходимости.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDeferredDocs({ ...deferredDocs, [group]: false })}
+              className="text-xs font-bold text-[#EF3124] hover:underline whitespace-nowrap"
+            >
+              Загрузить сейчас
+            </button>
+          </div>
+        ) : (
+          <div>
+            <input
+              type="file"
+              id={inputId}
+              multiple
+              onChange={(e) => handleFileUpload(group, e)}
+              className="hidden"
+            />
+            <label
+              htmlFor={inputId}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverGroup(group);
+              }}
+              onDragLeave={() => setDragOverGroup(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOverGroup(null);
+                if (e.dataTransfer.files) {
+                  handleFilesAdded(group, e.dataTransfer.files);
+                }
+              }}
+              className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                isDragging
+                  ? 'border-[#EF3124] bg-[#ffebeb]'
+                  : 'border-[#d0d4d9] hover:border-[#EF3124] bg-[#f8f9fa] hover:bg-[#fff9f9]'
+              }`}
+            >
+              <div className="w-10 h-10 rounded-full bg-white shadow-sm border border-[#e6e8ea] flex items-center justify-center mb-2 text-[#EF3124]">
+                <Upload className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold text-[#141414] text-center">
+                Перетащите файлы сюда или <span className="text-[#EF3124] underline">выберите на диске</span>
+              </span>
+              <span className="text-[11px] text-[#686b70] mt-1">{hintFormats}</span>
+            </label>
+
+            {files.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <span className="text-xs font-bold text-[#141414] block">
+                  Прикрепленные файлы ({files.length}):
+                </span>
+                <ul className="divide-y divide-[#f0f2f4] border border-[#e6e8ea] rounded-xl overflow-hidden bg-white">
+                  {files.map((f) => (
+                    <li key={f.id} className="p-3 flex items-center justify-between hover:bg-[#fafafa] transition-colors">
+                      <div className="flex items-center gap-3 min-w-0 pr-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#fff1ef] text-[#EF3124] flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-xs text-[#141414] block truncate">
+                            {f.name}
+                          </span>
+                          <span className="text-[11px] text-[#8e9399]">
+                            {(f.size / 1024).toFixed(1)} КБ · Готов к отправке
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(group, f.id)}
+                        className="p-1.5 text-slate-400 hover:text-[#EF3124] hover:bg-[#fff1ef] rounded-lg transition-colors"
+                        title="Удалить файл"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ----------------------------------------------------
+  // Сборка полезной нагрузки для черновика / заявки
+  // ----------------------------------------------------
+  const buildDraftPayload = () => {
+    return {
+      inn: clientProfile.inn,
+      companyName: clientProfile.full_name,
+      requestedAmount: Number(answers.amount) || 1000000,
+      requestedTermMonths: answers.termUnspecified ? 12 : Number(answers.term) || 12,
+      purposeCode: isEquipment ? 'equipment' : 'working_capital',
+      stage: isOperating ? 'operating' : 'prelaunch',
+      businessType: isOperating ? 'operating' : 'prelaunch',
+      ownContribution: Number(answers.ownFunds) || 0,
+      equipmentPrice: Number(answers.equipmentCost) || undefined,
+      equipmentSupplier: answers.supplierInn,
+      purpose: answers.expenseDescription || (isEquipment ? answers.equipment : 'Кредитование бизнеса'),
+      neededByDate: answers.paymentDate || answers.neededByDate || undefined,
+      expensePeriod: answers.expensePeriod,
+      hasContract: answers.hasContract,
+      hasExpenseContract: answers.hasContract === 'Да' ? true : (answers.hasContract === 'Нет' ? false : undefined),
+      monthlyRevenue: clientFacts.length
+        ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.clean_receipts_rub), 0) / clientFacts.length)
+        : undefined,
+      monthlyExpenses: clientFacts.length
+        ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.operating_outflow_rub), 0) / clientFacts.length)
+        : undefined,
+      householdExpenses: Number(answers.personalExpenses) || 0,
+      existingMonthlyObligations: (clientDebts || []).reduce((acc, d) => acc + Number(d.monthly_max_payment_rub || 0), 0) +
+        (answers.extraDebts || []).reduce((acc: number, x: any) => acc + Number(x.payment || 0), 0),
+      isTaxRegimeActual: answers.taxCurrent === 'yes',
+      declaredTaxRegime: answers.taxCurrent === 'change' ? (answers.taxRegimes?.join(',') || answers.taxOther) : clientProfile.tax_regime,
+      receiptCoverage: answers.receiptCoverage || [],
+      expensesCoverageStatus: answers.expensesComplete,
+      hasAdditionalIncome: answers.additionalIncome === 'Да',
+      additionalIncomeAmount: answers.additionalIncome === 'Да' ? Number(answers.personalIncome) || 0 : undefined,
+      debtsVerificationStatus: answers.debtsComplete,
+      repaymentSourceDescription: answers.repaymentDescription,
+      personalDataConsent: Boolean(answers.personalDataConsent),
+      personalDataConsentDate: answers.personalDataConsentDate || (answers.personalDataConsent ? new Date().toISOString() : undefined),
+      bkiConsent: Boolean(answers.bkiConsent),
+      bkiConsentDate: answers.bkiConsentDate || (answers.bkiConsent ? new Date().toISOString() : undefined),
+      bkiConsentValidUntil: answers.bkiConsentValidUntil,
+      leasingPartnerConsent: Boolean(answers.leasingPartnerConsent),
+      leasingPartnerName: answers.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
+      leasingPartnerConsentDate: answers.leasingPartnerConsentDate || (answers.leasingPartnerConsent ? new Date().toISOString() : undefined),
+      clientAnswers: answers,
+      scenario: isNew ? 'new_business' : isPaused ? 'paused' : 'operating',
+      submissionPayload: {
+        scoringResult: scoringEvaluation,
+        riskFlags: riskFindings,
+        uploadedFilesSummary: uploadedFiles,
+        deferredDocs,
+      },
+    };
+  };
+
+  // ----------------------------------------------------
+  // Сохранение черновика заявки в БД (T01 / T02)
+  // ----------------------------------------------------
+  const handleSaveDraft = async () => {
+    setIsSavingDraft(true);
+    setSubmitError(null);
+    setDraftSavedMessage(null);
+    const isUpdating = Boolean(currentDraftId);
+    try {
+      const payload = buildDraftPayload();
+      let targetId = currentDraftId;
+      if (!targetId) {
+        const created = await clientApi.createDraft(payload as any);
+        targetId = created.id;
+        setCurrentDraftId(created.id);
+        try {
+          localStorage.setItem(`draft_answers_${created.id}`, JSON.stringify(answers));
+        } catch {}
+        navigate(`/client/applications/${created.id}`, { replace: true });
+        setDraftSavedMessage('Черновик сохранен');
+      } else {
+        await clientApi.saveDraft(targetId, payload as any);
+        try {
+          localStorage.setItem(`draft_answers_${targetId}`, JSON.stringify(answers));
+        } catch {}
+        setDraftSavedMessage('Черновик обновлен');
+      }
+
+      // Загружаем выбранные файлы в S3 хранилище
+      const allFilesList = Object.values(uploadedFiles).flat();
+      for (const item of allFilesList) {
+        if (item.file) {
+          try {
+            await clientApi.uploadDocument(targetId, item.file);
+          } catch (e) {
+            console.warn('Document upload on draft save fallback:', e);
+          }
+        }
+      }
+
+      setTimeout(() => setDraftSavedMessage(null), 4000);
+    } catch (err: any) {
+      console.error('Ошибка сохранения черновика:', err);
+      setSubmitError(isUpdating ? 'Черновик не обновлен' : 'Черновик не сохранен');
+      setTimeout(() => setSubmitError(null), 5000);
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  // ----------------------------------------------------
+  // Отправка заявки в API на проверку (T03)
   // ----------------------------------------------------
   const handleSubmitApplication = async () => {
     if (!validateCurrentStep()) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
-      const payload = {
-        inn: clientProfile.inn,
-        companyName: clientProfile.full_name,
-        requestedAmount: Number(answers.amount) || 1000000,
-        requestedTermMonths: answers.termUnspecified ? 12 : Number(answers.term) || 12,
-        purposeCode: isEquipment ? 'equipment' : 'working_capital',
-        stage: isOperating ? 'operating' : 'prelaunch',
-        businessType: isOperating ? 'operating' : 'prelaunch',
-        ownContribution: Number(answers.ownFunds) || 0,
-        equipmentPrice: Number(answers.equipmentCost) || undefined,
-        equipmentSupplier: answers.supplierInn,
-        purpose: answers.expenseDescription || (isEquipment ? answers.equipment : 'Кредитование бизнеса'),
-        monthlyRevenue: clientFacts.length
-          ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.clean_receipts_rub), 0) / clientFacts.length)
-          : undefined,
-        monthlyExpenses: clientFacts.length
-          ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.operating_outflow_rub), 0) / clientFacts.length)
-          : undefined,
-        clientAnswers: answers,
-        scenario: isNew ? 'new_business' : isPaused ? 'paused' : 'operating',
-        submissionPayload: {
-          scoringResult: scoringEvaluation,
-          riskFlags: riskFindings,
-          uploadedFilesSummary: uploadedFiles,
-          deferredDocs,
-        },
-      };
+      const payload = buildDraftPayload();
 
-      const created = await clientApi.createDraft(payload as any);
-      await clientApi.submitApplication(created.id);
+      let targetId = currentDraftId;
+      if (!targetId) {
+        const created = await clientApi.createDraft(payload as any);
+        targetId = created.id;
+        setCurrentDraftId(created.id);
+      } else {
+        await clientApi.saveDraft(targetId, payload as any);
+      }
+      
+      // Отправляем реально загруженные файлы на бэкенд
+      const allFilesList = Object.values(uploadedFiles).flat();
+      for (const item of allFilesList) {
+        if (item.file) {
+          try {
+            await clientApi.uploadDocument(targetId, item.file);
+          } catch (e) {
+            console.warn('Backend document upload fallback:', e);
+          }
+        }
+      }
 
-      setSubmittedAppId(created.id);
+      await clientApi.submitApplication(targetId);
+      try {
+        localStorage.removeItem(`draft_answers_${targetId}`);
+      } catch {}
+
+      setSubmittedAppId(targetId);
     } catch (err: any) {
       console.error('Ошибка отправки заявки:', err);
-      const fallbackId = 'APP-' + Math.floor(100000 + Math.random() * 900000);
-      setSubmittedAppId(fallbackId);
+      const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message || 'Ошибка отправки заявки в банк. Проверьте соединение.';
+      setSubmitError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -586,10 +1591,10 @@ export const NewApplicationWizardPage: React.FC = () => {
               Перейти в список моих обращений
             </button>
             <button
-              onClick={() => initForClient(clientProfile)}
+              onClick={() => navigate(`/client/applications/${submittedAppId}`)}
               className="alfa-btn-secondary"
             >
-              Заполнить новое обращение
+              Открыть статус заявки
             </button>
           </div>
         </div>
@@ -601,15 +1606,7 @@ export const NewApplicationWizardPage: React.FC = () => {
   // Основной экран мастера (6 шагов + review)
   // ----------------------------------------------------
   return (
-    <div className="max-w-[1320px] mx-auto py-6 px-4 sm:px-6">
-      {/* Top Progress bar */}
-      <div className="alfa-progress-bar">
-        <div
-          className="alfa-progress-bar-fill"
-          style={{ width: `${((currentStepIdx + 1) / wizardSteps.length) * 100}%` }}
-        />
-      </div>
-
+    <div className="w-full">
       <div className="wizard-grid">
         {/* Left Step Sidebar (240px) */}
         <aside className="wizard-sidebar">
@@ -636,50 +1633,55 @@ export const NewApplicationWizardPage: React.FC = () => {
               );
             })}
           </nav>
-
-          {/* Quick Demo Profile Switcher at the bottom */}
-          <div className="mt-8 pt-6 border-t border-[#e6e8ea]">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#686b70] block mb-2">
-              Клиентское досье (демо)
-            </span>
-            <select
-              value={selectedInn}
-              onChange={(e) => setSelectedInn(e.target.value)}
-              className="w-full text-xs font-semibold p-2.5 rounded-xl border border-[#e6e8ea] bg-white text-[#141414] focus:outline-[#EF3124]"
-            >
-              {ALFA_DATA.applications.slice(0, 30).map((app) => (
-                <option key={app.inn} value={app.inn}>
-                  {app.full_name} ({app.inn})
-                </option>
-              ))}
-            </select>
-            <div className="mt-3 p-3 bg-[#f5f6f7] rounded-xl text-[11px] text-[#686b70] leading-relaxed">
-              <strong className="text-[#141414] block mb-0.5">{clientProfile.full_name}</strong>
-              ИНН: {clientProfile.inn} • {clientProfile.stage === 'operating' ? 'Действующий бизнес' : 'Новый бизнес'}
-            </div>
-          </div>
         </aside>
 
         {/* Right Step Content */}
-        <main className="wizard-content min-w-0">
-          <div className="mb-6">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#EF3124] block mb-1">
+        <main className="wizard-content max-w-[780px] min-w-0">
+          <div className="step-heading">
+            <div className="eyebrow">
               Шаг {currentStepIdx + 1} из {wizardSteps.length}
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#141414] tracking-tight">
-              {currentStep.title}
-            </h1>
-            <p className="text-[#686b70] text-sm mt-1">{currentStep.subtitle}</p>
+            </div>
+            <span className="badge">Черновик</span>
           </div>
+          <div className="progress" role="progressbar" aria-valuenow={Math.round(((currentStepIdx + 1) / wizardSteps.length) * 100)}>
+            <i style={{ width: `${Math.round(((currentStepIdx + 1) / wizardSteps.length) * 100)}%` }} />
+          </div>
+          <h1 className="text-3xl font-extrabold text-[#141414] tracking-tight mb-2">
+            {currentStep.title}
+          </h1>
+          {currentStep.subtitle && (
+            <p className="text-[#686b70] text-sm mb-6">{currentStep.subtitle}</p>
+          )}
 
           {/* Step 1: Profile */}
           {currentStep.key === 'profile' && (
             <div className="space-y-6">
               {/* Dossier Card */}
               <div className="alfa-panel">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#686b70] mb-4">
-                  Сведения из реестров и досье банка
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#686b70]">
+                    Сведения из реестров и досье банка
+                  </h3>
+                  {isLoadingDossier && (
+                    <span className="text-xs text-[#ef3124] flex items-center gap-1.5 animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-[#ef3124]" />
+                      Загрузка сведений...
+                    </span>
+                  )}
+                </div>
+
+                {dossierFound === false && (
+                  <div className="mb-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex items-start gap-2.5">
+                    <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Данные по ИНН {selectedInn || '—'} не найдены</strong>
+                      <p className="text-amber-700 mt-0.5">
+                        В базе банка и ЕГРИП нет сохранённого досье. Вы можете продолжить оформление заявки, сведения будут приняты из ответов анкеты.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="alfa-facts-grid">
                   <div className="alfa-fact">
                     <small>ФИО предпринимателя</small>
@@ -699,21 +1701,25 @@ export const NewApplicationWizardPage: React.FC = () => {
                   </div>
                   <div className="alfa-fact">
                     <small>Основной ОКВЭД</small>
-                    <strong>{clientProfile.okved_main || 'Не указан'}</strong>
+                    <strong>{clientProfile.okved_main || '—'}</strong>
                   </div>
                   <div className="alfa-fact">
                     <small>Статус в ЕГРИП</small>
                     <strong>
-                      {clientProfile.registry_status === 'ACTIVE' ? 'Действует' : clientProfile.registry_status}
+                      {clientProfile.registry_status === 'ACTIVE'
+                        ? 'Действует'
+                        : clientProfile.registry_status === 'NOT_FOUND'
+                        ? 'Нет данных в реестре'
+                        : clientProfile.registry_status}
                     </strong>
                   </div>
                   <div className="alfa-fact">
                     <small>Телефон</small>
-                    <strong>{clientProfile.phone || 'Не указан'}</strong>
+                    <strong>{clientProfile.phone || '—'}</strong>
                   </div>
                   <div className="alfa-fact">
                     <small>Email</small>
-                    <strong>{clientProfile.email || 'Не указан'}</strong>
+                    <strong>{clientProfile.email || '—'}</strong>
                   </div>
                 </div>
               </div>
@@ -788,6 +1794,68 @@ export const NewApplicationWizardPage: React.FC = () => {
                       </p>
                     </div>
                   </div>
+                )}
+              </div>
+
+              {/* Согласие на обработку персональных данных */}
+              <div className="alfa-panel border border-slate-200 dark:border-slate-800 bg-[#fafbfc] dark:bg-slate-900/60 p-4 rounded-2xl">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <h4 className="text-sm font-bold text-[#141414] dark:text-white">
+                      Обработка персональных данных
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveConsentType('pdn')}
+                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 underline font-medium flex items-center gap-1 shrink-0"
+                  >
+                    Подробнее и текст согласия ↗
+                  </button>
+                </div>
+
+                <p className="text-xs text-[#686b70] dark:text-slate-400 mb-3">
+                  Банк проверяет сведения о вас и компании, чтобы рассчитать условия и рассмотреть заявку.
+                </p>
+
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(answers.personalDataConsent)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setAnswers((prev) => ({
+                        ...prev,
+                        personalDataConsent: checked,
+                        personalDataConsentDate: checked ? new Date().toISOString() : undefined,
+                      }));
+                      if (checked) {
+                        setValidationErrors((errs) => {
+                          const next = { ...errs };
+                          delete next.personalDataConsent;
+                          return next;
+                        });
+                      }
+                    }}
+                    className="rounded text-[#EF3124] focus:ring-[#EF3124]"
+                  />
+                  <span className="text-xs font-semibold text-[#141414] dark:text-slate-200">
+                    Согласен на обработку персональных данных
+                  </span>
+                </label>
+
+                {answers.personalDataConsent && (
+                  <div className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> Согласие подтверждено
+                  </div>
+                )}
+
+                {validationErrors.personalDataConsent && (
+                  <p className="text-xs text-[#EF3124] mt-2 font-medium flex items-center gap-1">
+                    <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                    {validationErrors.personalDataConsent}
+                  </p>
                 )}
               </div>
             </div>
@@ -1150,40 +2218,103 @@ export const NewApplicationWizardPage: React.FC = () => {
             <div className="space-y-6">
               {isEquipment ? (
                 <>
-                  {isNew && (
-                    <div className="alfa-panel">
-                      <div className="alfa-message">
-                        <b>Лизинг оборудования:</b> Лизинговая компания приобретает оборудование и передаёт вам в пользование
-                        за платежи. Условия выкупа определяются договором. Возможность финансирования проверит специалист.
-                      </div>
-                      <label className="text-base font-bold text-[#141414] block">
-                        Готовы рассмотреть лизинг?
-                      </label>
-                      <div className="alfa-choices">
-                        <label
-                          className={`alfa-choice ${answers.leasing === 'yes' ? 'selected' : ''}`}
-                          onClick={() => setAnswers({ ...answers, leasing: 'yes' })}
-                        >
-                          <div className="alfa-radio-dot" />
-                          <span>Да, лизинг подходит</span>
-                        </label>
-                        <label
-                          className={`alfa-choice ${answers.leasing === 'explain' ? 'selected' : ''}`}
-                          onClick={() => setAnswers({ ...answers, leasing: 'explain' })}
-                        >
-                          <div className="alfa-radio-dot" />
-                          <span>Сначала хочу узнать условия</span>
-                        </label>
-                        <label
-                          className={`alfa-choice ${answers.leasing === 'no' ? 'selected' : ''}`}
-                          onClick={() => setAnswers({ ...answers, leasing: 'no' })}
-                        >
-                          <div className="alfa-radio-dot" />
-                          <span>Нет, хочу другой вариант</span>
-                        </label>
-                      </div>
+                  <div className="alfa-panel">
+                    <div className="alfa-message">
+                      <b>Лизинг оборудования:</b> Лизинговая компания приобретает оборудование и передаёт вам в пользование
+                      за платежи. Условия выкупа определяются договором. Возможность финансирования проверит специалист.
                     </div>
-                  )}
+                    <label className="text-base font-bold text-[#141414] block">
+                      Готовы рассмотреть лизинг?
+                    </label>
+                    <div className="alfa-choices">
+                      <label
+                        className={`alfa-choice ${answers.leasing === 'yes' ? 'selected' : ''}`}
+                        onClick={() => setAnswers({ ...answers, leasing: 'yes' })}
+                      >
+                        <div className="alfa-radio-dot" />
+                        <span>Да, лизинг подходит</span>
+                      </label>
+                      <label
+                        className={`alfa-choice ${answers.leasing === 'explain' ? 'selected' : ''}`}
+                        onClick={() => setAnswers({ ...answers, leasing: 'explain' })}
+                      >
+                        <div className="alfa-radio-dot" />
+                        <span>Сначала хочу узнать условия</span>
+                      </label>
+                      <label
+                        className={`alfa-choice ${answers.leasing === 'no' ? 'selected' : ''}`}
+                        onClick={() => setAnswers({ ...answers, leasing: 'no' })}
+                      >
+                        <div className="alfa-radio-dot" />
+                        <span>Нет, хочу только банковский кредит</span>
+                      </label>
+                    </div>
+
+                    {/* Передача данных лизинговому партнёру */}
+                    {(answers.leasing === 'yes' || answers.leasing === 'explain') && (
+                      <div className="mt-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-[#fafbfc] dark:bg-slate-900/60">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <h4 className="text-sm font-bold text-[#141414] dark:text-white">
+                              Передача данных в ООО «Альфа-Лизинг»
+                            </h4>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setActiveConsentType('leasing')}
+                            className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 underline font-medium flex items-center gap-1 shrink-0"
+                          >
+                            Подробнее и текст согласия ↗
+                          </button>
+                        </div>
+
+                        <p className="text-xs text-[#686b70] dark:text-slate-400 mb-3">
+                          Передаём параметры оборудования и заявки в Альфа-Лизинг для расчёта графика платежей и подготовки предложения.
+                        </p>
+
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(answers.leasingPartnerConsent)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setAnswers((prev) => ({
+                                ...prev,
+                                leasingPartnerConsent: checked,
+                                leasingPartnerName: 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
+                                leasingPartnerConsentDate: checked ? new Date().toISOString() : undefined,
+                              }));
+                              if (checked) {
+                                setValidationErrors((errs) => {
+                                  const next = { ...errs };
+                                  delete next.leasingPartnerConsent;
+                                  return next;
+                                });
+                              }
+                            }}
+                            className="rounded text-purple-600 focus:ring-purple-600"
+                          />
+                          <span className="text-xs font-semibold text-[#141414] dark:text-slate-200">
+                            Подтверждаю передачу сведений в ООО «Альфа-Лизинг»
+                          </span>
+                        </label>
+
+                        {answers.leasingPartnerConsent && (
+                          <div className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" /> Передача данных подтверждена
+                          </div>
+                        )}
+
+                        {validationErrors.leasingPartnerConsent && (
+                          <p className="text-xs text-[#EF3124] mt-2 font-medium flex items-center gap-1">
+                            <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                            {validationErrors.leasingPartnerConsent}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="alfa-panel space-y-6">
                     <div>
@@ -1324,6 +2455,21 @@ export const NewApplicationWizardPage: React.FC = () => {
                         </div>
                       )}
                     </div>
+
+                    <div className="pt-4 border-t border-[#e6e8ea]">
+                      <label className="block text-sm font-bold text-[#141414] mb-1">
+                        Когда нужны деньги? <span className="text-xs font-normal text-[#686b70]">(необязательно)</span>
+                      </label>
+                      <div className="relative max-w-xs">
+                        <input
+                          type="date"
+                          value={answers.purchaseDate || answers.neededByDate || ''}
+                          onChange={(e) => setAnswers({ ...answers, purchaseDate: e.target.value, neededByDate: e.target.value })}
+                          className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                        <Calendar className="w-4 h-4 text-[#686b70] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
                   </div>
                 </>
               ) : (
@@ -1366,6 +2512,76 @@ export const NewApplicationWizardPage: React.FC = () => {
                     />
                     {validationErrors.expenseDescription && (
                       <p className="text-xs text-[#EF3124] mt-1">{validationErrors.expenseDescription}</p>
+                    )}
+                  </div>
+
+                  {/* За какой период нужно покрыть расходы? */}
+                  <div>
+                    <label className="block text-sm font-bold text-[#141414] mb-1">
+                      За какой период нужно покрыть расходы?
+                    </label>
+                    <input
+                      type="text"
+                      value={answers.expensePeriod || ''}
+                      onChange={(e) => setAnswers({ ...answers, expensePeriod: e.target.value })}
+                      placeholder="Например, ноябрь–декабрь 2026 года"
+                      className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                    />
+                    <span className="text-xs text-[#686b70] block mt-1">
+                      Например, ноябрь–декабрь 2026 года.
+                    </span>
+                  </div>
+
+                  {/* Есть договор, заказ или счёт по этим расходам? */}
+                  <div className="pt-2">
+                    <label className="text-base font-bold text-[#141414] block mb-2">
+                      Есть договор, заказ или счёт по этим расходам?
+                    </label>
+                    <div className="alfa-choices">
+                      <label
+                        className={`alfa-choice ${answers.hasContract === 'Да' ? 'selected' : ''}`}
+                        onClick={() => setAnswers({ ...answers, hasContract: 'Да' })}
+                      >
+                        <div className="alfa-radio-dot" />
+                        <span>Да</span>
+                      </label>
+                      <label
+                        className={`alfa-choice ${answers.hasContract === 'Нет' ? 'selected' : ''}`}
+                        onClick={() => setAnswers({ ...answers, hasContract: 'Нет' })}
+                      >
+                        <div className="alfa-radio-dot" />
+                        <span>Нет</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Когда нужны деньги? */}
+                  <div className="pt-2">
+                    <label className="block text-sm font-bold text-[#141414] mb-1">
+                      Когда нужны деньги? <span className="text-xs font-normal text-[#686b70]">(необязательно)</span>
+                    </label>
+                    <div className="relative max-w-xs">
+                      <input
+                        type="date"
+                        value={answers.paymentDate || ''}
+                        onChange={(e) => setAnswers({ ...answers, paymentDate: e.target.value, neededByDate: e.target.value })}
+                        className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                      />
+                      <Calendar className="w-4 h-4 text-[#686b70] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    {answers.paymentDate && answers.paymentDate < new Date().toISOString().slice(0, 10) && (
+                      <div className="mt-3">
+                        <label className="block text-xs font-semibold text-[#141414] mb-1">
+                          Поясните дату в прошлом
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={answers.pastPaymentNote || ''}
+                          onChange={(e) => setAnswers({ ...answers, pastPaymentNote: e.target.value })}
+                          placeholder="Уточните, речь о состоявшейся оплате или компенсации расходов"
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                        />
+                      </div>
                     )}
                   </div>
 
@@ -1491,125 +2707,272 @@ export const NewApplicationWizardPage: React.FC = () => {
                   </div>
 
                   <div className="alfa-panel space-y-6">
+                    {/* Плашка и актуальность системы налогообложения */}
                     <div>
-                      <label className="text-base font-bold text-[#141414] block">
+                      <div className="p-4 bg-[#f5f6f7] rounded-xl text-xs text-[#141414] mb-3">
+                        Система налогообложения в исходной заявке: <b>{clientProfile.tax_regime || 'ОСНО'}</b>. Дата актуальности в источнике не указана.
+                      </div>
+                      <label className="text-base font-bold text-[#141414] block mb-2">
+                        Система налогообложения актуальна?
+                      </label>
+                      <div className="alfa-choices">
+                        <label
+                          className={`alfa-choice ${answers.taxCurrent === 'yes' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, taxCurrent: 'yes' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Да</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.taxCurrent === 'change' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, taxCurrent: 'change' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Нет, указать текущую</span>
+                        </label>
+                      </div>
+
+                      {answers.taxCurrent === 'change' && (
+                        <div className="p-4 bg-[#f5f6f7] rounded-2xl space-y-3 mt-3">
+                          <label className="block text-xs font-semibold text-[#141414]">
+                            Текущая система налогообложения (при совмещении выберите несколько)
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {[
+                              ['USN_INCOME', 'УСН «Доходы»'],
+                              ['USN_EXPENSE', 'УСН «Доходы минус расходы»'],
+                              ['OSNO', 'ОСНО (общая)'],
+                              ['PATENT', 'ПСН (патент)'],
+                              ['AUSN', 'АУСН'],
+                              ['NPD', 'НПД (самозанятость)'],
+                              ['OTHER', 'Другой режим'],
+                            ].map(([code, label]) => {
+                              const isSelected = (answers.taxRegimes || []).includes(code);
+                              return (
+                                <label
+                                  key={code}
+                                  className={`alfa-choice ${isSelected ? 'selected' : ''}`}
+                                  onClick={() => {
+                                    const cur = answers.taxRegimes || [];
+                                    const next = isSelected ? cur.filter((x: string) => x !== code) : [...cur, code];
+                                    setAnswers({ ...answers, taxRegimes: next });
+                                  }}
+                                >
+                                  <div className="alfa-checkbox-box">
+                                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                  </div>
+                                  <span>{label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          {(answers.taxRegimes || []).includes('OTHER') && (
+                            <input
+                              type="text"
+                              value={answers.taxOther || ''}
+                              onChange={(e) => setAnswers({ ...answers, taxOther: e.target.value })}
+                              placeholder="Укажите другой режим налогообложения"
+                              className="w-full p-2.5 rounded-xl border border-[#e6e8ea] text-sm bg-white"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Все поступления бизнеса учтены в показанных данных? (Чекбоксы) */}
+                    <div className="pt-4 border-t border-[#e6e8ea]">
+                      <label className="text-base font-bold text-[#141414] block mb-2">
                         Все поступления бизнеса учтены в показанных данных?
                       </label>
                       <div className="alfa-choices">
-                        <label
-                          className={`alfa-choice ${answers.receiptCoverage?.includes('all') ? 'selected' : ''}`}
-                          onClick={() => setAnswers({ ...answers, receiptCoverage: ['all'] })}
-                        >
-                          <div className="alfa-radio-dot" />
-                          <span>Да, все поступления учтены</span>
-                        </label>
-                        <label
-                          className={`alfa-choice ${answers.receiptCoverage?.includes('other_banks') ? 'selected' : ''}`}
-                          onClick={() => setAnswers({ ...answers, receiptCoverage: ['other_banks'] })}
-                        >
-                          <div className="alfa-radio-dot" />
-                          <span>Есть поступления в других банках (потребуется выписка)</span>
-                        </label>
-                        <label
-                          className={`alfa-choice ${answers.receiptCoverage?.includes('cash') ? 'selected' : ''}`}
-                          onClick={() => setAnswers({ ...answers, receiptCoverage: ['cash'] })}
-                        >
-                          <div className="alfa-radio-dot" />
-                          <span>Есть неучтённая наличная выручка</span>
-                        </label>
+                        {[
+                          ['all', 'Да, все поступления учтены'],
+                          ['other_banks', 'Есть поступления в других банках (потребуется выписка)'],
+                          ['cash', 'Есть неучтённая наличная выручка'],
+                          ['unsure', 'Нужно уточнить'],
+                        ].map(([code, label]) => {
+                          const isSelected = (answers.receiptCoverage || []).includes(code);
+                          return (
+                            <label
+                              key={code}
+                              className={`alfa-choice ${isSelected ? 'selected' : ''}`}
+                              onClick={() => {
+                                let cur = answers.receiptCoverage || [];
+                                if (code === 'all') {
+                                  cur = isSelected ? [] : ['all'];
+                                } else {
+                                  cur = cur.filter((x: string) => x !== 'all');
+                                  cur = isSelected ? cur.filter((x: string) => x !== code) : [...cur, code];
+                                }
+                                setAnswers({ ...answers, receiptCoverage: cur });
+                              }}
+                            >
+                              <div className="alfa-checkbox-box">
+                                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                              </div>
+                              <span>{label}</span>
+                            </label>
+                          );
+                        })}
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-[#e6e8ea]">
-                      <div>
-                        <label className="block text-sm font-bold text-[#141414] mb-1">
-                          Обязательные личные расходы без кредитов, ₽/мес.
-                        </label>
-                        <input
-                          type="number"
-                          value={answers.personalExpenses || ''}
-                          onChange={(e) => setAnswers({ ...answers, personalExpenses: e.target.value })}
-                          placeholder="50 000"
-                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
-                        />
-                        {validationErrors.personalExpenses && (
-                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.personalExpenses}</p>
-                        )}
-                        <span className="text-xs text-[#686b70] block mt-1">
-                          Прожиточный минимум семьи, коммунальные платежи, питание.
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-bold text-[#141414] mb-1">
-                          Дополнительные расходы бизнеса в месяц, ₽ (если есть)
-                        </label>
-                        <input
-                          type="number"
-                          value={answers.extraExpenses || ''}
-                          onChange={(e) => setAnswers({ ...answers, extraExpenses: e.target.value })}
-                          placeholder="0"
-                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
-                        />
-                        <span className="text-xs text-[#686b70] block mt-1">
-                          Только то, что не отражено в банковских выписках.
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Debts Table */}
-                    <div className="pt-4 border-t border-[#e6e8ea]">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#686b70] mb-3">
-                        Известные кредиты и лизинг предпринимателя
-                      </h3>
-                      {clientDebts.length > 0 ? (
-                        <div className="overflow-x-auto rounded-xl border border-[#e6e8ea] mb-4">
-                          <table className="w-full text-xs text-left">
-                            <thead className="bg-[#f5f6f7] text-[#686b70]">
-                              <tr>
-                                <th className="p-3">Договор / Ref</th>
-                                <th className="p-3">Тип</th>
-                                <th className="p-3">Источник</th>
-                                <th className="p-3">Платёж в месяц</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#e6e8ea]">
-                              {clientDebts.map((d, i) => (
-                                <tr key={i} className="hover:bg-slate-50">
-                                  <td className="p-3 font-semibold">{d.obligation_ref}</td>
-                                  <td className="p-3 text-[#686b70]">{d.kind}</td>
-                                  <td className="p-3">{d.source}</td>
-                                  <td className="p-3 font-bold text-[#141414]">
-                                    {formatRubles(Number(d.monthly_max_payment_rub))}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                      {(answers.receiptCoverage || []).includes('other_banks') && (
+                        <div className="mt-3">
+                          <label className="block text-xs font-semibold text-[#141414] mb-1">
+                            В каких ещё банках есть счета бизнеса?
+                          </label>
+                          <input
+                            type="text"
+                            value={answers.otherBanks || ''}
+                            onChange={(e) => setAnswers({ ...answers, otherBanks: e.target.value })}
+                            placeholder="Например: Сбербанк, Т-Банк..."
+                            className="w-full p-2.5 rounded-xl border border-[#e6e8ea] text-sm"
+                          />
                         </div>
-                      ) : (
-                        <p className="text-xs text-[#686b70] mb-4">В базе банка нет открытых кредитных договоров.</p>
                       )}
+                      {(answers.receiptCoverage || []).includes('cash') && (
+                        <div className="mt-3">
+                          <label className="block text-xs font-semibold text-[#141414] mb-1">
+                            Неучтённая наличная выручка в среднем за месяц, ₽
+                          </label>
+                          <input
+                            type="number"
+                            value={answers.cashAmount || ''}
+                            onChange={(e) => setAnswers({ ...answers, cashAmount: e.target.value })}
+                            placeholder="50 000"
+                            className="w-full max-w-xs p-2.5 rounded-xl border border-[#e6e8ea] text-sm"
+                          />
+                        </div>
+                      )}
+                    </div>
 
-                      <label className="text-sm font-bold text-[#141414] block mb-2">
-                        Список кредитов и лизинга полный и верный?
+                    {/* Все расходы бизнеса учтены? */}
+                    <div className="pt-4 border-t border-[#e6e8ea]">
+                      <label className="text-base font-bold text-[#141414] block mb-2">
+                        Все расходы бизнеса учтены?
                       </label>
                       <div className="alfa-choices">
                         <label
-                          className={`alfa-choice ${answers.debtsComplete === 'yes' ? 'selected' : ''}`}
-                          onClick={() => setAnswers({ ...answers, debtsComplete: 'yes' })}
+                          className={`alfa-choice ${answers.expensesComplete === 'yes' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, expensesComplete: 'yes' })}
                         >
                           <div className="alfa-radio-dot" />
-                          <span>Да, список полный и актуальный</span>
+                          <span>Да</span>
                         </label>
                         <label
-                          className={`alfa-choice ${answers.debtsComplete === 'add' ? 'selected' : ''}`}
-                          onClick={() => setAnswers({ ...answers, debtsComplete: 'add' })}
+                          className={`alfa-choice ${answers.expensesComplete === 'no' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, expensesComplete: 'no' })}
                         >
                           <div className="alfa-radio-dot" />
-                          <span>Есть ещё обязательства в других банках</span>
+                          <span>Есть дополнительные расходы</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.expensesComplete === 'unsure' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, expensesComplete: 'unsure' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Нужно уточнить</span>
                         </label>
                       </div>
+                      {answers.expensesComplete === 'no' && (
+                        <div className="mt-3">
+                          <label className="block text-xs font-semibold text-[#141414] mb-1">
+                            Какие расходы не учтены?
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={answers.extraExpensesDetails || ''}
+                            onChange={(e) => setAnswers({ ...answers, extraExpensesDetails: e.target.value })}
+                            placeholder="Укажите характер неучтённых расходов..."
+                            className="w-full p-2.5 rounded-xl border border-[#e6e8ea] text-sm"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Хотите сообщить о дополнительном личном доходе? */}
+                    <div className="pt-4 border-t border-[#e6e8ea]">
+                      <label className="text-base font-bold text-[#141414] block mb-2">
+                        Хотите сообщить о дополнительном личном доходе?
+                      </label>
+                      <div className="alfa-choices">
+                        <label
+                          className={`alfa-choice ${answers.additionalIncome === 'Да' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, additionalIncome: 'Да' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Да</span>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.additionalIncome === 'Нет' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, additionalIncome: 'Нет' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <span>Нет</span>
+                        </label>
+                      </div>
+
+                      {answers.additionalIncome === 'Да' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 p-4 bg-[#f5f6f7] rounded-2xl">
+                          <div>
+                            <label className="block text-xs font-semibold text-[#141414] mb-1">
+                              Дополнительный доход после налогов, ₽/мес.
+                            </label>
+                            <input
+                              type="number"
+                              value={answers.personalIncome || ''}
+                              onChange={(e) => setAnswers({ ...answers, personalIncome: e.target.value })}
+                              placeholder="50 000"
+                              className="w-full p-2.5 rounded-xl border border-[#e6e8ea] text-sm bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-[#141414] mb-1">
+                              Источник дополнительного дохода
+                            </label>
+                            <input
+                              type="text"
+                              value={answers.otherIncomeSource || ''}
+                              onChange={(e) => setAnswers({ ...answers, otherIncomeSource: e.target.value })}
+                              placeholder="Сдача недвижимости, дивиденды, подработка..."
+                              className="w-full p-2.5 rounded-xl border border-[#e6e8ea] text-sm bg-white"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Обязательные личные расходы */}
+                    <div className="pt-4 border-t border-[#e6e8ea]">
+                      <label className="block text-sm font-bold text-[#141414] mb-1">
+                        Обязательные личные расходы без кредитов, ₽/мес.
+                      </label>
+                      <input
+                        type="number"
+                        value={answers.personalExpenses || ''}
+                        onChange={(e) => setAnswers({ ...answers, personalExpenses: e.target.value })}
+                        placeholder="50 000"
+                        className="w-full max-w-md p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124]"
+                      />
+                      {validationErrors.personalExpenses && (
+                        <p className="text-xs text-[#EF3124] mt-1">{validationErrors.personalExpenses}</p>
+                      )}
+                      <span className="text-xs text-[#686b70] block mt-1">
+                        Прожиточный минимум семьи, коммунальные платежи, питание.
+                      </span>
+                    </div>
+
+                    {/* За счёт каких поступлений планируете погашать финансирование? */}
+                    <div className="pt-4 border-t border-[#e6e8ea]">
+                      <label className="block text-sm font-bold text-[#141414] mb-1">
+                        За счёт каких поступлений планируете погашать финансирование?
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={answers.repaymentDescription || ''}
+                        onChange={(e) => setAnswers({ ...answers, repaymentDescription: e.target.value })}
+                        placeholder="Опишите структуру будущих поступлений, сезонность, стабильность контрактов или договоров..."
+                        className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                      />
                     </div>
                   </div>
                 </>
@@ -1757,6 +3120,84 @@ export const NewApplicationWizardPage: React.FC = () => {
                   </div>
                 </>
               )}
+
+              {/* Согласие на запрос кредитной истории */}
+              <div className="alfa-panel border border-slate-200 dark:border-slate-800 bg-[#fafbfc] dark:bg-slate-900/60 p-4 rounded-2xl">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <h4 className="text-sm font-bold text-[#141414] dark:text-white">
+                      Запрос кредитной истории (БКИ)
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveConsentType('bki')}
+                    className="text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400 underline font-medium flex items-center gap-1 shrink-0"
+                  >
+                    Подробнее и текст согласия ↗
+                  </button>
+                </div>
+
+                {answers.hasExistingActiveBkiConsent ? (
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-900 dark:text-emerald-200">
+                    <div className="flex items-center gap-1.5 font-bold mb-0.5">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      Действующее согласие уже есть в банке
+                    </div>
+                    <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
+                      Согласие действительно до {answers.bkiConsentValidUntil ? new Date(answers.bkiConsentValidUntil).toLocaleDateString('ru-RU') : 'конца полугодия'}, повторно подписывать не требуется.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-[#686b70] dark:text-slate-400 mb-3">
+                      Банк запрашивает отчёт в бюро кредитных историй, чтобы оценить долговую нагрузку и предложить одобрение.
+                    </p>
+
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(answers.bkiConsent)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          const validUntil = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+                          setAnswers((prev) => ({
+                            ...prev,
+                            bkiConsent: checked,
+                            bkiConsentDate: checked ? new Date().toISOString() : undefined,
+                            bkiConsentValidUntil: checked ? validUntil : undefined,
+                          }));
+                          if (checked) {
+                            setValidationErrors((errs) => {
+                              const next = { ...errs };
+                              delete next.bkiConsent;
+                              return next;
+                            });
+                          }
+                        }}
+                        className="rounded text-amber-600 focus:ring-amber-600"
+                      />
+                      <span className="text-xs font-semibold text-[#141414] dark:text-slate-200">
+                        Согласен на запрос кредитной истории
+                      </span>
+                    </label>
+
+                    {answers.bkiConsent && (
+                      <div className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Согласие подтверждено
+                      </div>
+                    )}
+
+                    {validationErrors.bkiConsent && (
+                      <p className="text-xs text-[#EF3124] mt-2 font-medium flex items-center gap-1">
+                        <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                        {validationErrors.bkiConsent}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
 
@@ -1765,591 +3206,333 @@ export const NewApplicationWizardPage: React.FC = () => {
             <div className="space-y-6">
               <div className="alfa-panel">
                 <div className="alfa-message">
-                  <b>Без лишней бюрократии:</b> Загрузите только те документы, которые у вас есть прямо сейчас.
-                  Каждый файл можно предоставить позже — специалист банка запросит недостающее адресно.
+                  <b>Без лишней бюрократии:</b> Загрузите документы, которые есть у вас прямо сейчас.
+                  Любой файл можно предоставить позже — специалист банка запросит недостающее адресно и не заблокирует предварительное рассмотрение заявки.
                 </div>
 
                 <div className="space-y-6">
-                  {/* Equipment docs */}
-                  {isEquipment && (
-                    <div className="p-5 border border-[#e6e8ea] rounded-2xl">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <strong className="text-sm font-bold text-[#141414] block">
-                            Документы по оборудованию
-                          </strong>
-                          <span className="text-xs text-[#686b70]">
-                            Счёт на оплату, коммерческое предложение или спецификация
-                          </span>
-                        </div>
-                        <label className="flex items-center gap-2 text-xs text-[#686b70] cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={deferredDocs.equipmentDoc || false}
-                            onChange={(e) => setDeferredDocs({ ...deferredDocs, equipmentDoc: e.target.checked })}
-                            className="rounded text-[#EF3124]"
-                          />
-                          <span>Предоставлю позже</span>
-                        </label>
-                      </div>
+                  {/* 1. По цели кредитования */}
+                  {isEquipment ? (
+                    renderUploadCard({
+                      group: 'equipmentDoc',
+                      title: 'Документы по оборудованию и сделке',
+                      subtitle: 'Счёт на оплату от поставщика, коммерческое предложение или проект договора со спецификацией',
+                      badge: 'Цель заявки',
+                      inputId: 'upload-eq',
+                    })
+                  ) : (
+                    renderUploadCard({
+                      group: 'expenseDoc',
+                      title: 'Документы по расходам и контрактам',
+                      subtitle: 'Счета на закупку товаров или сырья, договоры с поставщиками/покупателями, договор аренды или заказ-наряды',
+                      badge: 'Цель заявки',
+                      inputId: 'upload-expenses',
+                    })
+                  )}
 
-                      {!deferredDocs.equipmentDoc && (
-                        <div>
-                          <input
-                            type="file"
-                            id="upload-eq"
-                            multiple
-                            onChange={(e) => handleFileUpload('equipmentDoc', e)}
-                            className="hidden"
-                          />
-                          <label
-                            htmlFor="upload-eq"
-                            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#e6e8ea] hover:border-[#EF3124] rounded-xl cursor-pointer bg-[#f5f6f7] transition-colors"
-                          >
-                            <Upload className="w-6 h-6 text-[#686b70] mb-2" />
-                            <span className="text-xs font-semibold text-[#141414]">
-                              Нажмите для загрузки счёта или договора
-                            </span>
-                            <span className="text-[11px] text-[#686b70] mt-0.5">PDF, DOCX, XLSX до 20 МБ</span>
-                          </label>
+                  {/* 2. Выписки сторонних банков и финансовая отчетность */}
+                  {renderUploadCard({
+                    group: 'otherBankStatements',
+                    title: 'Выписки по счетам из других банков',
+                    subtitle: 'Выписки за последние 6–12 месяцев для подтверждения совокупного оборота бизнеса (1C, PDF, Excel, CSV, TXT)',
+                    badge: (answers.receiptCoverage || []).includes('other_banks') ? 'Рекомендуется для скоринга' : undefined,
+                    inputId: 'upload-banks',
+                  })}
 
-                          {uploadedFiles.equipmentDoc?.length > 0 && (
-                            <ul className="mt-3 divide-y divide-[#e6e8ea] text-xs">
-                              {uploadedFiles.equipmentDoc.map((f) => (
-                                <li key={f.id} className="py-2 flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-[#EF3124]" />
-                                    <span className="font-medium text-[#141414]">{f.name}</span>
-                                    <span className="text-[#686b70]">({Math.round(f.size / 1024)} КБ)</span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeFile('equipmentDoc', f.id)}
-                                    className="text-slate-400 hover:text-[#EF3124]"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
+                  {/* 3. Документы по залогу / недвижимости (если применимо) */}
+                  {(answers.collateral === 'yes' || isNew) && (
+                    renderUploadCard({
+                      group: 'collateralDoc',
+                      title: 'Документы по объекту залога и недвижимости',
+                      subtitle: 'Выписка из ЕГРН, договор купли-продажи или иное основание права собственности',
+                      badge: 'Обеспечение',
+                      inputId: 'upload-collateral',
+                    })
+                  )}
+
+                  {/* 4. Дополнительные документы (всегда доступны) */}
+                  {renderUploadCard({
+                    group: 'additionalDocs',
+                    title: 'Дополнительные документы и пояснения',
+                    subtitle: 'Налоговые декларации (УСН/НДС/ОСНО), управленческие отчёты, лицензии, допуски или пояснительная записка',
+                    inputId: 'upload-additional',
+                    allowDefer: false,
+                  })}
+                </div>
+
+                {/* Status Summary Banner */}
+                <div className="mt-6 p-4 rounded-xl bg-[#f5f6f7] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#686b70]">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#EF3124]" />
+                    <span>
+                      Всего загружено документов: <b className="text-[#141414]">{Object.values(uploadedFiles).flat().length}</b>
+                      {Object.values(deferredDocs).filter(Boolean).length > 0 && (
+                        <span> · Отложено: <b className="text-[#141414]">{Object.values(deferredDocs).filter(Boolean).length}</b></span>
                       )}
-                    </div>
-                  )}
-
-                  {/* Other bank statements */}
-                  {(answers.receiptCoverage || []).includes('other_banks') && (
-                    <div className="p-5 border border-[#e6e8ea] rounded-2xl">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <strong className="text-sm font-bold text-[#141414] block">
-                            Выписки из других банков
-                          </strong>
-                          <span className="text-xs text-[#686b70]">
-                            За последние 6–12 месяцев для подтверждения совокупного оборота
-                          </span>
-                        </div>
-                        <label className="flex items-center gap-2 text-xs text-[#686b70] cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={deferredDocs.otherBankStatements || false}
-                            onChange={(e) => setDeferredDocs({ ...deferredDocs, otherBankStatements: e.target.checked })}
-                            className="rounded text-[#EF3124]"
-                          />
-                          <span>Предоставлю позже</span>
-                        </label>
-                      </div>
-
-                      {!deferredDocs.otherBankStatements && (
-                        <div>
-                          <input
-                            type="file"
-                            id="upload-banks"
-                            multiple
-                            onChange={(e) => handleFileUpload('otherBankStatements', e)}
-                            className="hidden"
-                          />
-                          <label
-                            htmlFor="upload-banks"
-                            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#e6e8ea] hover:border-[#EF3124] rounded-xl cursor-pointer bg-[#f5f6f7] transition-colors"
-                          >
-                            <Upload className="w-6 h-6 text-[#686b70] mb-2" />
-                            <span className="text-xs font-semibold text-[#141414]">
-                              Загрузить выписку стороннего банка
-                            </span>
-                            <span className="text-[11px] text-[#686b70] mt-0.5">PDF, TXT, CSV, 1C выгрузка</span>
-                          </label>
-
-                          {uploadedFiles.otherBankStatements?.length > 0 && (
-                            <ul className="mt-3 divide-y divide-[#e6e8ea] text-xs">
-                              {uploadedFiles.otherBankStatements.map((f) => (
-                                <li key={f.id} className="py-2 flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-[#EF3124]" />
-                                    <span className="font-medium text-[#141414]">{f.name}</span>
-                                    <span className="text-[#686b70]">({Math.round(f.size / 1024)} КБ)</span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeFile('otherBankStatements', f.id)}
-                                    className="text-slate-400 hover:text-[#EF3124]"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Collateral docs */}
-                  {isNew && answers.collateral === 'yes' && (
-                    <div className="p-5 border border-[#e6e8ea] rounded-2xl">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <strong className="text-sm font-bold text-[#141414] block">
-                            Документы по объекту залога
-                          </strong>
-                          <span className="text-xs text-[#686b70]">
-                            Выписка ЕГРН или договор купли-продажи / основание права
-                          </span>
-                        </div>
-                      </div>
-
-                      <input
-                        type="file"
-                        id="upload-collateral"
-                        multiple
-                        onChange={(e) => handleFileUpload('collateralDoc', e)}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="upload-collateral"
-                        className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#e6e8ea] hover:border-[#EF3124] rounded-xl cursor-pointer bg-[#f5f6f7] transition-colors"
-                      >
-                        <Upload className="w-6 h-6 text-[#686b70] mb-2" />
-                        <span className="text-xs font-semibold text-[#141414]">
-                          Загрузить документы на недвижимость
-                        </span>
-                      </label>
-                    </div>
-                  )}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#8e9399]">
+                    Файлы передаются по защищённому банковскому протоколу
+                  </span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Step 7: Review & Scoring Preview */}
+          {/* Step 7: Review (полностью как reviewHtml() в макет.html) */}
           {currentStep.key === 'review' && (
-            <div className="space-y-6">
-              {/* Scoring Analysis Card */}
-              <div className="alfa-panel">
-                <div className="alfa-message">
-                  <b>Скоринг по правилам · без «чёрного ящика» ML:</b> Расчёт выполнен по демонстрационным
-                  правилам Excel. Балл не является вероятностью одобрения или дефолта, а отражает соответствие
-                  требованиям по покрытию платежей и кредитной истории.
-                </div>
-
-                <div className="alfa-analysis-result">
-                  <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#686b70] block mb-1">
-                      {scoringEvaluation.profile === 'FULL'
-                        ? 'Фактический бизнес-поток'
-                        : scoringEvaluation.profile === 'LIMITED'
-                        ? 'Ограниченная финансовая история'
-                        : 'Индивидуальный маршрут'}
-                    </span>
-                    <h2 className="text-2xl font-black text-[#141414] leading-tight mb-2">
-                      {scoringEvaluation.recommendation}
-                    </h2>
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                        scoringEvaluation.state === 'ready'
-                          ? 'bg-[#e7f7ed] text-[#176b45]'
-                          : ['error', 'stop'].includes(scoringEvaluation.state)
-                          ? 'bg-[#fff1ef] text-[#EF3124]'
-                          : 'bg-[#fef3c7] text-[#885215]'
-                      }`}
+            <div className="alfa-panel">
+              {/* Summary Sections */}
+              {summarySections.map((sec) => (
+                <section key={sec.key} className="summary-section">
+                  <div className="summary-head">
+                    <h3 className="text-base font-bold text-[#141414]">{sec.short}</h3>
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => jumpToStep(wizardSteps.findIndex((s) => s.key === sec.key))}
                     >
-                      {scoringEvaluation.state === 'ready'
-                        ? 'Можно рассмотреть условия'
-                        : scoringEvaluation.state === 'provisional'
-                        ? 'Предварительно · нужна сверка'
-                        : scoringEvaluation.state === 'manual'
-                        ? 'Ручное рассмотрение'
-                        : scoringEvaluation.state === 'stop'
-                        ? 'Есть ограничивающий фактор'
-                        : 'Уточнить данные'}
-                    </span>
+                      Изменить
+                    </button>
                   </div>
+                  <dl className="summary-dl">
+                    {sec.items.map((item, idx) => (
+                      <React.Fragment key={idx}>
+                        <dt>{item.label}</dt>
+                        <dd>{item.value}</dd>
+                      </React.Fragment>
+                    ))}
+                  </dl>
+                </section>
+              ))}
 
-                  <div className={`alfa-score-circle ${scoringEvaluation.score === null ? 'no-score' : ''}`}>
-                    <strong>{scoringEvaluation.score === null ? '—' : scoringEvaluation.score}</strong>
-                    <span>{scoringEvaluation.score === null ? 'балл не применяется' : 'баллов из 100'}</span>
-                  </div>
-                </div>
-
-                {/* Financial Metric Cards */}
-                <div className="alfa-analysis-stats">
-                  <div className="alfa-stat">
-                    <span>Средние поступления</span>
-                    <strong>
-                      {scoringEvaluation.metrics.receipts !== null
-                        ? formatRubles(Math.round(scoringEvaluation.metrics.receipts))
-                        : '—'}
-                    </strong>
-                    <span>в месяц</span>
-                  </div>
-
-                  <div className="alfa-stat">
-                    <span>Доступный поток (C)</span>
-                    <strong>
-                      {scoringEvaluation.metrics.availableCash !== null
-                        ? formatRubles(Math.round(scoringEvaluation.metrics.availableCash))
-                        : '—'}
-                    </strong>
-                    <span>после расходов</span>
-                  </div>
-
-                  <div className="alfa-stat">
-                    <span>Текущие платежи (D)</span>
-                    <strong>
-                      {scoringEvaluation.metrics.debtPayment !== null
-                        ? formatRubles(Math.round(scoringEvaluation.metrics.debtPayment))
-                        : '0 ₽'}
-                    </strong>
-                    <span>по кредитам</span>
-                  </div>
-                </div>
-
-                {/* Candidate Offer Terms if Available */}
-                {scoringEvaluation.candidate && (
-                  <div className="alfa-candidate-card">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#EF3124] mb-3">
-                      Рассчитанные условия финансирования
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                      <div>
-                        <span className="text-[#686b70] block">Сумма:</span>
-                        <strong className="text-base text-[#141414] block mt-0.5">
-                          {formatRubles(scoringEvaluation.candidate.amount)}
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-[#686b70] block">Срок:</span>
-                        <strong className="text-base text-[#141414] block mt-0.5">
-                          {scoringEvaluation.candidate.term} мес.
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-[#686b70] block">Ориентир. ставка:</span>
-                        <strong className="text-base text-[#141414] block mt-0.5">
-                          {(scoringEvaluation.candidate.rate * 100).toFixed(1)}% годовых
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-[#686b70] block">Платёж в месяц:</span>
-                        <strong className="text-base text-[#EF3124] block mt-0.5">
-                          {formatRubles(Math.round(scoringEvaluation.candidate.payment))}
-                        </strong>
-                      </div>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-[#efddd8] flex items-center justify-between text-xs text-[#686b70]">
-                      <span>Коэффициент покрытия долга (DSCR): <b>{scoringEvaluation.candidate.coverage.toFixed(2)}x</b> (норматив ≥ 1.5x)</span>
-                      <span className="text-[#176b45] font-semibold flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Проходит по нормативу
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Score Components Breakdown Table */}
-                {scoringEvaluation.components.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-[#e6e8ea]">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#686b70] mb-3">
-                      Разбивка кредитного балла по факторам
-                    </h3>
-                    <div className="divide-y divide-[#e6e8ea] text-xs">
-                      {scoringEvaluation.components.map((comp) => (
-                        <div key={comp.key} className="py-2.5 flex items-center justify-between">
-                          <div>
-                            <span className="font-semibold text-[#141414] block">{comp.label}</span>
-                            <span className="text-[11px] text-[#686b70]">
-                              {typeof comp.value === 'number'
-                                ? comp.value.toFixed(2)
-                                : String(comp.value || '—')} • Правило {comp.rule}
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-bold text-[#141414]">
-                              {comp.points} / {comp.max}
-                            </span>
-                            <span className="text-[11px] text-[#686b70] block">баллов</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Specialist Checklist: "Что уточнит специалист" */}
+              {/* Specialist findings warning box */}
               {riskFindings.length > 0 && (
-                <div className="alfa-panel border-amber-300 bg-[#fffdf7]">
-                  <div className="flex items-center gap-2 mb-3">
-                    <ShieldAlert className="w-5 h-5 text-[#885215]" />
-                    <h3 className="text-sm font-bold text-[#885215] uppercase tracking-wider">
-                      Что уточнит специалист при рассмотрении ({riskFindings.length})
-                    </h3>
-                  </div>
-                  <ul className="space-y-2 text-xs text-[#78350f]">
+                <div className="message warn" style={{ marginTop: '24px' }}>
+                  <b>Что уточнит специалист</b>
+                  <ul className="mt-2 pl-4 list-disc space-y-1">
                     {riskFindings.map((finding, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="text-amber-500 font-bold">•</span>
-                        <span>{finding}</span>
-                      </li>
+                      <li key={idx}>{finding}</li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {/* Data Summary Blocks */}
-              <div className="space-y-4">
-                {wizardSteps
-                  .filter((s) => s.key !== 'review')
-                  .map((step) => (
-                    <div key={step.key} className="alfa-panel p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold text-sm text-[#141414]">{step.short}</h3>
-                        <button
-                          type="button"
-                          onClick={() => jumpToStep(wizardSteps.findIndex((x) => x.key === step.key))}
-                          className="alfa-text-btn"
-                        >
-                          Изменить
-                        </button>
-                      </div>
+              {/* Согласия по заявке */}
+              <div className="alfa-panel border border-slate-200 dark:border-slate-800 bg-[#fafbfc] dark:bg-slate-900/60 p-4 rounded-2xl space-y-3" style={{ marginTop: '20px' }}>
+                <div>
+                  <h4 className="text-sm font-bold text-[#141414] dark:text-white flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    Согласия по заявке
+                  </h4>
+                  <p className="text-xs text-[#686b70] dark:text-slate-400 mt-0.5">
+                    Оформляются как три отдельных действия (одна общая галочка их не заменяет):
+                  </p>
+                </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#686b70]">
-                        {step.key === 'profile' && (
-                          <>
-                            <div>
-                              <span>Предприниматель:</span>
-                              <strong className="text-[#141414] block mt-0.5">{clientProfile.full_name}</strong>
-                            </div>
-                            <div>
-                              <span>ИНН:</span>
-                              <strong className="text-[#141414] block mt-0.5">{clientProfile.inn}</strong>
-                            </div>
-                            <div>
-                              <span>Актуальность данных:</span>
-                              <strong className="text-[#141414] block mt-0.5">
-                                {answers.profileCurrent === 'yes' ? 'Сведения актуальны' : 'Заявлены изменения'}
-                              </strong>
-                            </div>
-                          </>
-                        )}
-
-                        {step.key === 'passport' && (
-                          <>
-                            <div>
-                              <span>Паспортные данные:</span>
-                              <strong className="text-[#141414] block mt-0.5">
-                                {answers.passportCurrent === 'yes' ? 'Подтверждены' : 'Введены новые'}
-                              </strong>
-                            </div>
-                            <div>
-                              <span>Серия и номер:</span>
-                              <strong className="text-[#141414] block mt-0.5">
-                                {answers.passportCurrent === 'yes'
-                                  ? `${clientPassport?.series || ''} •••${clientPassport?.number.slice(-3) || ''}`
-                                  : `${answers.passportSeries || ''} ${answers.passportNumber || ''}`}
-                              </strong>
-                            </div>
-                          </>
-                        )}
-
-                        {step.key === 'request' && (
-                          <>
-                            <div>
-                              <span>Состояние бизнеса:</span>
-                              <strong className="text-[#141414] block mt-0.5">
-                                {isOperating ? 'Действующий' : isPaused ? 'Приостановлен' : 'Новый'}
-                              </strong>
-                            </div>
-                            <div>
-                              <span>Цель:</span>
-                              <strong className="text-[#141414] block mt-0.5">
-                                {isEquipment ? 'Покупка оборудования' : 'Оборотные средства'}
-                              </strong>
-                            </div>
-                            <div>
-                              <span>Сумма:</span>
-                              <strong className="text-[#141414] block mt-0.5">
-                                {formatRubles(Number(answers.amount) || 0)}
-                              </strong>
-                            </div>
-                            <div>
-                              <span>Срок:</span>
-                              <strong className="text-[#141414] block mt-0.5">
-                                {answers.termUnspecified ? 'Помочь подобрать' : `${answers.term} мес.`}
-                              </strong>
-                            </div>
-                          </>
-                        )}
-
-                        {step.key === 'details' && (
-                          <>
-                            {isEquipment ? (
-                              <>
-                                <div>
-                                  <span>Оборудование:</span>
-                                  <strong className="text-[#141414] block mt-0.5">{answers.equipment || 'Не указано'}</strong>
-                                </div>
-                                <div>
-                                  <span>Стоимость:</span>
-                                  <strong className="text-[#141414] block mt-0.5">
-                                    {answers.equipmentCostUnspecified ? 'Пока неизвестна' : formatRubles(Number(answers.equipmentCost) || 0)}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span>Собственный взнос:</span>
-                                  <strong className="text-[#141414] block mt-0.5">{formatRubles(Number(answers.ownFunds) || 0)}</strong>
-                                </div>
-                                <div>
-                                  <span>Поставщик:</span>
-                                  <strong className="text-[#141414] block mt-0.5">
-                                    {supplierResult.data ? supplierResult.data.name : (answers.supplierInn || 'Не выбран')}
-                                  </strong>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div>
-                                  <span>Назначение расходов:</span>
-                                  <strong className="text-[#141414] block mt-0.5">{answers.expenseDescription || 'Не указано'}</strong>
-                                </div>
-                                <div>
-                                  <span>Залог:</span>
-                                  <strong className="text-[#141414] block mt-0.5">
-                                    {answers.collateral === 'yes' ? 'Предоставляется' : 'Без залога'}
-                                  </strong>
-                                </div>
-                              </>
-                            )}
-                          </>
-                        )}
-
-                        {step.key === 'finances' && (
-                          <>
-                            <div>
-                              <span>Личные расходы:</span>
-                              <strong className="text-[#141414] block mt-0.5">{formatRubles(Number(answers.personalExpenses) || 0)} / мес.</strong>
-                            </div>
-                            {isNew ? (
-                              <div>
-                                <span>Личный доход:</span>
-                                <strong className="text-[#141414] block mt-0.5">{formatRubles(Number(answers.personalIncome) || 0)} / мес.</strong>
-                              </div>
-                            ) : (
-                              <div>
-                                <span>Полнота выручки:</span>
-                                <strong className="text-[#141414] block mt-0.5">
-                                  {(answers.receiptCoverage || []).includes('all') ? 'Все поступления учтены' : 'Есть другие банки'}
-                                </strong>
-                              </div>
-                            )}
-                          </>
-                        )}
-
-                        {step.key === 'documents' && (
-                          <div className="col-span-2">
-                            <span>Прикрепленные файлы:</span>
-                            <strong className="text-[#141414] block mt-0.5">
-                              {Object.values(uploadedFiles).flat().length > 0
-                                ? Object.values(uploadedFiles)
-                                    .flat()
-                                    .map((f) => f.name)
-                                    .join(', ')
-                                : 'Файлы не загружены (будут предоставлены позже)'}
-                            </strong>
-                          </div>
-                        )}
-                      </div>
+                <div className="space-y-2 text-xs">
+                  {/* 1. ПДн */}
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                    <div>
+                      <span className="font-semibold text-[#141414] dark:text-white block">
+                        1. Обработка персональных данных
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {answers.personalDataConsent ? '✓ Предоставлено' : 'Не предоставлено'}
+                      </span>
                     </div>
-                  ))}
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveConsentType('pdn')}
+                      className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 underline font-medium shrink-0"
+                    >
+                      Текст согласия ↗
+                    </button>
+                  </div>
 
-              {/* Confirmation Checkbox */}
-              <div className="alfa-panel">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={answers.reviewConfirmed || false}
-                    onChange={(e) => setAnswers({ ...answers, reviewConfirmed: e.target.checked })}
-                    className="mt-1 rounded text-[#EF3124] focus:ring-[#EF3124]"
-                  />
-                  <span className="text-sm font-semibold text-[#141414]">
-                    Проверил сведения. Понимаю, что ошибки и неполные данные могут повлиять на рассмотрение
-                    и условия финансирования.
-                  </span>
-                </label>
-                {validationErrors.reviewConfirmed && (
-                  <p className="text-xs text-[#EF3124] mt-2 font-medium">
-                    {validationErrors.reviewConfirmed}
+                  {/* 2. БКИ */}
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                    <div>
+                      <span className="font-semibold text-[#141414] dark:text-white block">
+                        2. Запрос кредитной истории (БКИ)
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {answers.bkiConsent ? '✓ Действует' : 'Не предоставлено'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveConsentType('bki')}
+                      className="text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400 underline font-medium shrink-0"
+                    >
+                      Текст согласия ↗
+                    </button>
+                  </div>
+
+                  {/* 3. Лизинг */}
+                  {isEquipment && (answers.leasing === 'yes' || answers.leasing === 'explain') ? (
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="font-semibold text-[#141414] dark:text-white block">
+                          3. Передача в ООО «Альфа-Лизинг»
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          {answers.leasingPartnerConsent ? '✓ Подтверждено' : 'Не подтверждено'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveConsentType('leasing')}
+                        className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 underline font-medium shrink-0"
+                      >
+                        Текст согласия ↗
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-slate-400">
+                      <span>3. Передача в Альфа-Лизинг: не требуется (лизинг не выбран)</span>
+                      <span>—</span>
+                    </div>
+                  )}
+                </div>
+
+                {validationErrors.personalDataConsent && (
+                  <p className="text-xs text-[#EF3124] font-medium flex items-center gap-1">
+                    <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                    {validationErrors.personalDataConsent}
                   </p>
                 )}
-                <p className="text-xs text-[#686b70] mt-3">
-                  В прототипе хакатона обращение будет зарегистрировано и мгновенно появится на рабочем месте банка.
-                </p>
+                {validationErrors.bkiConsent && (
+                  <p className="text-xs text-[#EF3124] font-medium flex items-center gap-1">
+                    <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                    {validationErrors.bkiConsent}
+                  </p>
+                )}
+                {validationErrors.leasingPartnerConsent && (
+                  <p className="text-xs text-[#EF3124] font-medium flex items-center gap-1">
+                    <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                    {validationErrors.leasingPartnerConsent}
+                  </p>
+                )}
               </div>
+
+              {/* Review Confirmation Checkbox */}
+              <label className="checkbox-line" style={{ marginTop: '25px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={answers.reviewConfirmed || false}
+                  onChange={(e) => {
+                    setAnswers((prev) => ({ ...prev, reviewConfirmed: e.target.checked }));
+                    if (e.target.checked) {
+                      setValidationErrors((errs) => {
+                        const next = { ...errs };
+                        delete next.reviewConfirmed;
+                        return next;
+                      });
+                    }
+                  }}
+                  className="rounded text-[#EF3124] focus:ring-[#EF3124]"
+                />
+                <span className="text-sm font-semibold text-[#141414]">
+                  Проверил сведения. Понимаю, что ошибки и неполные данные могут повлиять на рассмотрение и условия финансирования.
+                </span>
+              </label>
+
+              {validationErrors.reviewConfirmed && (
+                <p className="error-text">{validationErrors.reviewConfirmed}</p>
+              )}
+
+              <p className="hint">
+                В прототипе обращение появится в режиме банка на этом устройстве. Передачи реальному банку нет.
+              </p>
+            </div>
+          )}
+
+          {/* Error Banner */}
+          {submitError && (
+            <div className="mb-4 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-900 text-sm flex items-center gap-2.5">
+              <ShieldAlert className="w-5 h-5 text-[#EF3124] shrink-0" />
+              <span className="font-medium">{submitError}</span>
+            </div>
+          )}
+
+          {/* Draft Saved Success Notification */}
+          {draftSavedMessage && (
+            <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-sm flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span className="font-medium">{draftSavedMessage}</span>
             </div>
           )}
 
           {/* Bottom Action Navigation Buttons */}
-          <div className="mt-8 pt-6 border-t border-[#e6e8ea] flex items-center justify-between">
+          <div className="nav-buttons">
             {currentStepIdx > 0 ? (
               <button
                 type="button"
                 onClick={handlePrev}
-                className="alfa-btn-secondary"
+                className="secondary"
               >
-                <ChevronLeft className="w-4 h-4" />
-                Назад
+                ← Назад
               </button>
             ) : (
               <div />
             )}
 
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={isSavingDraft || isSubmitting}
+                onClick={handleSaveDraft}
+                className="secondary flex items-center gap-2"
+                title="Сохранить текущие сведения анкеты как черновик в БД"
+              >
+                <Save className="w-4 h-4" />
+                {isSavingDraft ? 'Сохранение...' : currentDraftId ? 'Обновить черновик' : 'Сохранить черновик'}
+              </button>
+
               {currentStep.key === 'review' ? (
                 <button
                   type="button"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isSavingDraft}
                   onClick={handleSubmitApplication}
-                  className="alfa-btn-primary"
+                  className="primary"
                 >
                   <Send className="w-4 h-4" />
-                  {isSubmitting ? 'Отправка...' : 'Отправить обращение в банк'}
+                  {isSubmitting ? 'Отправка...' : 'Передать на рассмотрение →'}
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="alfa-btn-primary"
+                  className="primary"
                 >
-                  Далее
-                  <ChevronRight className="w-4 h-4" />
+                  Продолжить →
                 </button>
               )}
             </div>
           </div>
         </main>
       </div>
+
+      {/* Модальное окно просмотра и подтверждения согласий */}
+      <ConsentModal
+        isOpen={activeConsentType !== null}
+        onClose={() => setActiveConsentType(null)}
+        type={activeConsentType || 'pdn'}
+        onAccept={() => handleAcceptConsent(activeConsentType)}
+        isAccepted={
+          activeConsentType === 'pdn'
+            ? Boolean(answers.personalDataConsent)
+            : activeConsentType === 'bki'
+            ? Boolean(answers.bkiConsent)
+            : activeConsentType === 'leasing'
+            ? Boolean(answers.leasingPartnerConsent)
+            : false
+        }
+        partnerName={answers.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)'}
+        applicantName={clientProfile.full_name || 'Индивидуальный предприниматель'}
+        inn={clientProfile.inn || selectedInn || 'не указан'}
+      />
     </div>
   );
 };

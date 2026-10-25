@@ -103,18 +103,6 @@ public static class AuthModuleExtensions
 
         return services;
     }
-
-    /// <summary>
-    /// Автоматическое заполнение базы дефолтными пользователями (ИП client1..5, аналитик)
-    /// </summary>
-    public static IApplicationBuilder UseAuthModuleSeed(this IApplicationBuilder app)
-    {
-        using var scope = app.ApplicationServices.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        AuthDbContext.SeedDefaultUsers(db, hasher);
-        return app;
-    }
     
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {

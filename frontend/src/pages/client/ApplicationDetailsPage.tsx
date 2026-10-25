@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { CreditApplication, BusinessType } from '../../types/application';
 import { clientApi } from '../../api/clientApi';
 import { Card } from '../../components/common/Card';
-import { Input } from '../../components/common/Input';
-import { Select } from '../../components/common/Select';
 import { Button } from '../../components/common/Button';
 import { Alert } from '../../components/common/Alert';
 import { ApplicationStatusBadge } from '../../components/badges/ApplicationStatusBadge';
@@ -15,6 +13,8 @@ import { OfferCard } from '../../components/application/OfferCard';
 import { NeedInfoResponseModal } from '../../components/application/NeedInfoResponseModal';
 import { TransitionHistoryModal } from '../../components/application/TransitionHistoryModal';
 import { FileUpload } from '../../components/common/FileUpload';
+import { ConsentModal, ConsentType } from '../../components/application/ConsentModal';
+import { NewApplicationWizardPage } from './NewApplicationWizardPage';
 import { formatRubles, formatDateTime, formatInn } from '../../utils/formatters';
 import {
   ArrowLeft,
@@ -25,8 +25,7 @@ import {
   XCircle,
   FileText,
   Building2,
-  Edit3,
-  Save,
+  ShieldCheck,
   Check,
 } from 'lucide-react';
 
@@ -39,18 +38,10 @@ export const ApplicationDetailsPage: React.FC = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isSavedNotice, setIsSavedNotice] = useState(false);
 
-  // Edit draft state
-  const [isEditingDraft, setIsEditingDraft] = useState(false);
-  const [editAmount, setEditAmount] = useState<number>(0);
-  const [editTerm, setEditTerm] = useState<number>(12);
-  const [editPurpose, setEditPurpose] = useState('');
-  const [editRevenue, setEditRevenue] = useState<number>(0);
-  const [editExpenses, setEditExpenses] = useState<number>(0);
-  const [editBusinessType, setEditBusinessType] = useState<BusinessType>('operating');
-
   // Modals
   const [isNeedInfoModalOpen, setIsNeedInfoModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [activeConsentType, setActiveConsentType] = useState<ConsentType | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -70,79 +61,10 @@ export const ApplicationDetailsPage: React.FC = () => {
         history: data.history || [],
       };
       setApplication(normalized);
-
-      // Initialize edit fields
-      setEditAmount(data.requestedAmount || 1000000);
-      setEditTerm(data.requestedTermMonths || 12);
-      setEditPurpose(data.purpose || '');
-      setEditRevenue(data.monthlyRevenue || 0);
-      setEditExpenses(data.monthlyExpenses || 0);
-      setEditBusinessType(data.businessType || 'operating');
-
-      if (data.status === 'draft') {
-        setIsEditingDraft(true);
-      }
     } catch (err) {
       console.error('Failed to load application:', err);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // T02: Save Draft changes
-  const handleSaveDraft = async () => {
-    if (!application) return;
-    setIsActionLoading(true);
-    try {
-      const updated = await clientApi.updateDraft(application.id, {
-        requestedAmount: Number(editAmount),
-        requestedTermMonths: Number(editTerm),
-        purpose: editPurpose,
-        monthlyRevenue: Number(editRevenue),
-        monthlyExpenses: Number(editExpenses),
-        businessType: editBusinessType,
-      });
-
-      const normalized: CreditApplication = {
-        ...updated,
-        companyName: updated.companyName || application.companyName,
-        documents: updated.documents || application.documents || [],
-        history: updated.history || application.history || [],
-      };
-      setApplication(normalized);
-      setIsSavedNotice(true);
-      setTimeout(() => setIsSavedNotice(false), 3000);
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  // T03: Submit draft to checking
-  const handleSubmitDraft = async () => {
-    if (!application) return;
-    setIsActionLoading(true);
-    try {
-      // First save any unsaved draft edits
-      await clientApi.updateDraft(application.id, {
-        requestedAmount: Number(editAmount),
-        requestedTermMonths: Number(editTerm),
-        purpose: editPurpose,
-        monthlyRevenue: Number(editRevenue),
-        monthlyExpenses: Number(editExpenses),
-        businessType: editBusinessType,
-      });
-
-      const updated = await clientApi.submitApplication(application.id);
-      const normalized: CreditApplication = {
-        ...updated,
-        companyName: updated.companyName || application.companyName,
-        documents: updated.documents || application.documents || [],
-        history: updated.history || application.history || [],
-      };
-      setApplication(normalized);
-      setIsEditingDraft(false);
-    } finally {
-      setIsActionLoading(false);
     }
   };
 
@@ -290,38 +212,6 @@ export const ApplicationDetailsPage: React.FC = () => {
       )}
 
       {/* Special State Banners */}
-      {/* Draft State */}
-      {application.status === 'draft' && (
-        <Alert
-          type="info"
-          title="Заявка находится в статусе черновика (T01/T02)"
-          action={
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleSaveDraft}
-                isLoading={isActionLoading}
-                leftIcon={<Save className="w-4 h-4" />}
-              >
-                Сохранить черновик (T02)
-              </Button>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={handleSubmitDraft}
-                isLoading={isActionLoading}
-                leftIcon={<Send className="w-4 h-4" />}
-              >
-                Отправить заявку в банк (T03)
-              </Button>
-            </div>
-          }
-        >
-          Вы можете отредактировать финансовые параметры, прикрепить документы и отправить заявку на экспресс-скоринг.
-        </Alert>
-      )}
-
       {/* T05 Waiting Check (503 Service Unavailable) */}
       {application.status === 'waiting_check' && (
         <Alert
@@ -367,6 +257,16 @@ export const ApplicationDetailsPage: React.FC = () => {
         </Alert>
       )}
 
+      {/* T07 In Review by Specialist */}
+      {application.status === 'review' && (
+        <Alert
+          type="info"
+          title="Заявка на рассмотрении у специалиста банка"
+        >
+          Скоринг и предварительные проверки завершены. Кредитный специалист проверяет результаты расчёта и готовит персональные условия кредитования. Как только сотрудник одобрит условия, оферта появится в вашем кабинете.
+        </Alert>
+      )}
+
       {/* T08 / T12 Offer Card */}
       {application.status === 'offer' && application.offer && (
         <OfferCard
@@ -393,109 +293,10 @@ export const ApplicationDetailsPage: React.FC = () => {
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 Параметры кредита
-                {application.status === 'draft' && (
-                  <span className="text-xs px-2 py-0.5 rounded bg-alfa-50 dark:bg-alfa-950/50 text-alfa-600 dark:text-alfa-400 font-normal">
-                    Режим редактирования черновика
-                  </span>
-                )}
               </h3>
-
-              {application.status === 'draft' && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingDraft((prev) => !prev)}
-                  className="text-xs font-semibold text-alfa-600 dark:text-alfa-400 hover:text-alfa-700 flex items-center gap-1"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  {isEditingDraft ? 'Свернуть форму' : 'Редактировать'}
-                </button>
-              )}
             </div>
 
-            {application.status === 'draft' && isEditingDraft ? (
-              /* Interactive Draft Edit Form */
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Запрашиваемая сумма (₽)"
-                    type="number"
-                    step="50000"
-                    value={editAmount}
-                    onChange={(e) => setEditAmount(Number(e.target.value))}
-                    helperText={`Сумма: ${formatRubles(editAmount)}`}
-                  />
-
-                  <Select
-                    label="Срок кредита"
-                    value={editTerm}
-                    onChange={(e) => setEditTerm(Number(e.target.value))}
-                    options={[
-                      { value: 12, label: '12 месяцев (1 год)' },
-                      { value: 18, label: '18 месяцев (1.5 года)' },
-                      { value: 24, label: '24 месяца (2 года)' },
-                      { value: 36, label: '36 месяцев (3 года)' },
-                      { value: 48, label: '48 месяцев (4 года)' },
-                    ]}
-                  />
-                </div>
-
-                <Input
-                  label="Цель кредитования"
-                  value={editPurpose}
-                  onChange={(e) => setEditPurpose(e.target.value)}
-                  placeholder="Например: покупка оборудования, аренда, оборотные средства"
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Среднемесячная выручка (₽)"
-                    type="number"
-                    step="10000"
-                    value={editRevenue}
-                    onChange={(e) => setEditRevenue(Number(e.target.value))}
-                  />
-
-                  <Input
-                    label="Среднемесячные расходы (₽)"
-                    type="number"
-                    step="10000"
-                    value={editExpenses}
-                    onChange={(e) => setEditExpenses(Number(e.target.value))}
-                  />
-                </div>
-
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs flex items-center justify-between text-slate-600 dark:text-slate-300">
-                  <span>Расчетный чистый поток:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white text-sm">
-                    {formatRubles(editRevenue - editExpenses)} / мес
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSaveDraft}
-                    isLoading={isActionLoading}
-                    leftIcon={<Save className="w-4 h-4" />}
-                  >
-                    Сохранить изменения (T02)
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleSubmitDraft}
-                    isLoading={isActionLoading}
-                    leftIcon={<Send className="w-4 h-4" />}
-                  >
-                    Отправить в банк (T03)
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              /* Read-only details view */
-              <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
                   <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
                     <span className="text-slate-400 dark:text-slate-500 block mb-1">Сумма кредита</span>
                     <span className="text-base font-extrabold text-slate-900 dark:text-white">
@@ -578,8 +379,6 @@ export const ApplicationDetailsPage: React.FC = () => {
                   <span className="font-semibold text-slate-700 dark:text-slate-300">Цель финансирования: </span>
                   <span className="text-slate-600 dark:text-slate-400">{application.purpose || 'Не указана'}</span>
                 </div>
-              </>
-            )}
           </Card>
 
           {/* Scoring Card (only if scoring exists) */}
@@ -620,6 +419,78 @@ export const ApplicationDetailsPage: React.FC = () => {
               existingDocuments={documents}
             />
           </Card>
+
+          {/* Согласия клиента */}
+          <Card>
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldCheck className="w-4 h-4 text-alfa-500" />
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Согласия по заявке</h4>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {/* Согласие на обработку ПДн */}
+              <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-slate-800 dark:text-slate-200">Обработка персональных данных</span>
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">ПДн</span>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Предоставлено (ПЭП)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveConsentType('pdn')}
+                    className="text-[11px] text-blue-600 hover:text-blue-700 dark:text-blue-400 underline font-medium"
+                  >
+                    Подробнее ↗
+                  </button>
+                </div>
+              </div>
+
+              {/* Согласие на БКИ */}
+              <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-slate-800 dark:text-slate-200">Запрос кредитной истории</span>
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300">БКИ</span>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Действует (6 мес.)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveConsentType('bki')}
+                    className="text-[11px] text-amber-600 hover:text-amber-700 dark:text-amber-400 underline font-medium"
+                  >
+                    Подробнее ↗
+                  </button>
+                </div>
+              </div>
+
+              {/* Согласие на лизинг (если применимо) */}
+              {(application.purposeCode === 'equipment' || (application.purpose && application.purpose.toLowerCase().includes('оборудован')) || application.clientAnswers?.leasing === 'yes') && (
+                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-slate-800 dark:text-slate-200">Передача в Альфа-Лизинг</span>
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300">Лизинг</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Подтверждено
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveConsentType('leasing')}
+                      className="text-[11px] text-purple-600 hover:text-purple-700 dark:text-purple-400 underline font-medium"
+                    >
+                      Подробнее ↗
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
 
@@ -641,6 +512,17 @@ export const ApplicationDetailsPage: React.FC = () => {
           history={history}
         />
       )}
+
+      {/* Модальное окно просмотра текста согласия */}
+      <ConsentModal
+        isOpen={activeConsentType !== null}
+        onClose={() => setActiveConsentType(null)}
+        type={activeConsentType || 'pdn'}
+        isAccepted={true}
+        partnerName={application.leasingPartnerName || application.clientAnswers?.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)'}
+        applicantName={companyTitle}
+        inn={application.inn}
+      />
     </div>
   );
 };

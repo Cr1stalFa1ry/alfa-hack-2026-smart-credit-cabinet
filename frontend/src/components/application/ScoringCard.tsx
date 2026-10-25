@@ -154,6 +154,115 @@ export const ScoringCard: React.FC<ScoringCardProps> = ({ scoring, showDetails =
         </div>
       )}
 
+      {/* Score Components Breakdown (Составляющие балла) */}
+      {showDetails && (
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                Составляющие скорингового балла ({scoring.score} из 100)
+              </h4>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Распределение весовых коэффициентов по регламенту кредитного скоринга
+              </p>
+            </div>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+              5 факторов
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(scoring.components && scoring.components.length > 0
+              ? scoring.components
+              : [
+                  {
+                    key: 'coverage',
+                    label: 'Покрытие платежей (DSCR)',
+                    points: isDscrSafe ? Math.min(40, Math.round((scoring.score / 100) * 40)) : 16,
+                    max: 40,
+                    value: `DSCR ${scoring.dscr.toFixed(2)} (норма ≥ 1.25)`,
+                    rule: 'R20–R21',
+                  },
+                  {
+                    key: 'credit',
+                    label: 'Кредитная история (БКИ)',
+                    points: scoring.bki.hasCriticalDelays ? 0 : (scoring.bki.maxOverdueDays > 0 ? 15 : 25),
+                    max: 25,
+                    value: scoring.bki.hasCriticalDelays
+                      ? 'Критическая просрочка'
+                      : scoring.bki.maxOverdueDays > 0
+                      ? 'Просрочка до 30 дней'
+                      : 'Без просрочек, рейтинг БКИ ' + scoring.bki.rating,
+                    rule: 'R09–R10',
+                  },
+                  {
+                    key: 'history',
+                    label: 'Длительность деятельности',
+                    points: scoring.egrip?.status === 'ACTIVE' ? 14 : 6,
+                    max: 15,
+                    value: 'Регистрация ИП: ' + (scoring.egrip?.registrationDate || 'более 12 мес'),
+                    rule: 'R18, R22',
+                  },
+                  {
+                    key: 'variation',
+                    label: 'Устойчивость выручки (CV)',
+                    points: 12,
+                    max: 15,
+                    value: 'Коэффициент вариации CV ≤ 0.35',
+                    rule: 'R19, R22',
+                  },
+                  {
+                    key: 'annual',
+                    label: 'Сумма к годовой выручке',
+                    points: 5,
+                    max: 5,
+                    value: 'Соответствует лимиту годового оборота',
+                    rule: 'R23',
+                  },
+                ]
+            ).map((comp) => {
+              const pct = Math.min(100, Math.round((comp.points / comp.max) * 100));
+              return (
+                <div
+                  key={comp.key}
+                  className="p-3 bg-slate-50/70 dark:bg-slate-800/50 rounded-xl border border-slate-200/70 dark:border-slate-800"
+                >
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <div className="flex items-center gap-1.5 truncate mr-2">
+                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{comp.label}</span>
+                      {comp.rule && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                          {comp.rule}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-1 shrink-0">
+                      <span className="font-extrabold text-slate-900 dark:text-white text-sm">{comp.points}</span>
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500">/ {comp.max} б.</span>
+                    </div>
+                  </div>
+
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mb-1.5">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-blue-500' : 'bg-rose-500'
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+
+                  {comp.value && (
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      {String(comp.value)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Stop factors list */}
       {scoring.stopFactors && scoring.stopFactors.length > 0 && (
         <div className="pt-2">

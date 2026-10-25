@@ -5,7 +5,8 @@ import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Textarea } from '../common/Textarea';
 import { Modal } from '../common/Modal';
-import { Check, X, HelpCircle, RefreshCw, Ban } from 'lucide-react';
+import { formatRubles, formatPercent, calculateMonthlyPayment } from '../../utils/formatters';
+import { Check, X, HelpCircle, RefreshCw, Ban, Sparkles, Calculator } from 'lucide-react';
 
 interface AnalystActionPanelProps {
   application: CreditApplication;
@@ -27,12 +28,25 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
   const [activeModal, setActiveModal] = useState<'approve' | 'decline' | 'need_info' | 'recheck' | 'close' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form states
-  const [approveAmount, setApproveAmount] = useState(application.requestedAmount);
-  const [approveTerm, setApproveTerm] = useState(application.requestedTermMonths);
-  const [approveRate, setApproveRate] = useState(14.9);
+  // Form states with fallback to calculated scoring recommendation if present
+  const defaultAmount = application.currentOffer?.approvedAmount || application.recommendedOffer?.approvedAmount || application.offer?.approvedAmount || application.requestedAmount;
+  const defaultTerm = application.currentOffer?.termMonths || application.recommendedOffer?.approvedTermMonths || application.offer?.approvedTermMonths || application.requestedTermMonths;
+  const defaultRate = application.currentOffer?.annualRatePercent || application.recommendedOffer?.annualInterestRate || application.offer?.annualInterestRate || 18.0;
+
+  const [approveAmount, setApproveAmount] = useState(defaultAmount);
+  const [approveTerm, setApproveTerm] = useState(defaultTerm);
+  const [approveRate, setApproveRate] = useState(defaultRate);
   const [comment, setComment] = useState('');
   const [reasonCode, setReasonCode] = useState('HIGH_RISK_SCORE');
+
+  React.useEffect(() => {
+    setApproveAmount(application.currentOffer?.approvedAmount || application.recommendedOffer?.approvedAmount || application.offer?.approvedAmount || application.requestedAmount);
+    setApproveTerm(application.currentOffer?.termMonths || application.recommendedOffer?.approvedTermMonths || application.offer?.approvedTermMonths || application.requestedTermMonths);
+    setApproveRate(application.currentOffer?.annualRatePercent || application.recommendedOffer?.annualInterestRate || application.offer?.annualInterestRate || 18.0);
+  }, [application]);
+
+  const currentMonthlyPayment = calculateMonthlyPayment(approveAmount, approveRate, approveTerm);
+  const totalRepayment = currentMonthlyPayment * Number(approveTerm || 0);
 
   const handleApproveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,21 +208,61 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
             onChange={(e) => setApproveAmount(Number(e.target.value))}
             required
           />
-          <Input
-            label="Срок кредитования (месяцев)"
-            type="number"
-            value={approveTerm}
-            onChange={(e) => setApproveTerm(Number(e.target.value))}
-            required
-          />
-          <Input
-            label="Годовая процентная ставка (%)"
-            type="number"
-            step="0.1"
-            value={approveRate}
-            onChange={(e) => setApproveRate(Number(e.target.value))}
-            required
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Срок кредитования (мес)"
+              type="number"
+              value={approveTerm}
+              onChange={(e) => setApproveTerm(Number(e.target.value))}
+              required
+            />
+            <Input
+              label="Ставка (% годовых)"
+              type="number"
+              step="0.1"
+              value={approveRate}
+              onChange={(e) => setApproveRate(Number(e.target.value))}
+              required
+            />
+          </div>
+
+          {/* Dynamic calculated payment and terms box */}
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
+                <Calculator className="w-3.5 h-3.5 text-alfa-500" />
+                Расчётный платёж (аннуитет):
+              </span>
+              <span className="font-extrabold text-slate-900 dark:text-white text-base">
+                {formatRubles(currentMonthlyPayment)} <span className="text-xs font-normal text-slate-400">/ мес</span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 pt-1 border-t border-slate-200/50 dark:border-slate-700/50">
+              <span>Всего к возврату за {approveTerm} мес.:</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                {formatRubles(totalRepayment)}
+              </span>
+            </div>
+            {application.offer && (
+              <div className="pt-1.5 mt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px]">
+                <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1 font-medium">
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" /> Рекомендация: {formatRubles(application.offer.approvedAmount)} • {application.offer.approvedTermMonths} мес • {formatPercent(application.offer.annualInterestRate)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApproveAmount(application.offer!.approvedAmount);
+                    setApproveTerm(application.offer!.approvedTermMonths);
+                    setApproveRate(application.offer!.annualInterestRate);
+                  }}
+                  className="text-alfa-600 dark:text-alfa-400 hover:underline font-bold shrink-0 ml-2"
+                >
+                  Применить
+                </button>
+              </div>
+            )}
+          </div>
+
           <Textarea
             label="Комментарий андеррайтера (для аудита)"
             placeholder="Обоснование решения, учтенные факторы..."
@@ -242,6 +296,30 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
             onChange={(e) => setComment(e.target.value)}
             required
           />
+
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
+              Быстрые шаблоны дозапроса сведений:
+            </span>
+            <div className="flex flex-col gap-1.5">
+              {[
+                'Предоставьте выписку по расчетному счету за последние 6 месяцев для подтверждения оборотов',
+                'Приложите договор аренды коммерческого помещения или свидетельство о собственности',
+                'Предоставьте спецификацию или счёт на оплату оборудования от выбранного поставщика',
+                'Поясните расхождение между заявленной выручкой и данными налоговой отчётности',
+              ].map((templateText, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setComment(templateText)}
+                  className="text-left text-xs p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                >
+                  • {templateText}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <Button variant="ghost" type="button" onClick={() => setActiveModal(null)}>
               Отмена

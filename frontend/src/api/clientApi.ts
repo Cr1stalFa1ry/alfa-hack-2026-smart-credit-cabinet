@@ -2,26 +2,8 @@ import { apiClient } from './apiClient';
 import { CreditApplication, CreateDraftRequest, UploadedDocument, ApplicationStatus } from '../types/application';
 import { CreditProductConfig, ProductCode } from '../types/products';
 import { CREDIT_PRODUCTS, ALL_PRODUCTS } from '../config/products';
-import { mockStore } from './mockStore';
-import { userStore } from './userStore';
 import { egripApi } from './egripApi';
-
-function isDemoActive(): boolean {
-  return localStorage.getItem('smart_kabinet_demo_mode') === 'true';
-}
-
-function getCurrentUserId(): string {
-  try {
-    const raw = localStorage.getItem('smart_kabinet_user');
-    if (raw) {
-      const u = JSON.parse(raw);
-      return u.id || u.userId || 'current-user';
-    }
-  } catch {
-    // ignore
-  }
-  return 'current-user';
-}
+import { applicationStore } from '../utils/applicationStore';
 
 const NUMERIC_STATUS_MAP: Record<string, ApplicationStatus> = {
   '0': 'draft',
@@ -93,9 +75,28 @@ export function mapBackendApplication(item: any): CreditApplication {
     equipmentList: item.equipmentList,
     requestedTermMonths: Number(item.requestedTermMonths || 12),
     neededByDate: item.neededByDate,
+    expensePeriod: item.expensePeriod,
+    hasContract: item.hasExpenseContract ? 'Да' : (item.hasExpenseContract === false ? 'Нет' : item.hasContract),
+    hasExpenseContract: item.hasExpenseContract,
+    isTaxRegimeActual: item.isTaxRegimeActual,
+    declaredTaxRegime: item.declaredTaxRegime,
+    receiptCoverage: item.receiptCoverage,
+    expensesCoverageStatus: item.expensesCoverageStatus,
+    hasAdditionalIncome: item.hasAdditionalIncome,
+    additionalIncomeAmount: item.additionalIncomeAmount ? Number(item.additionalIncomeAmount) : undefined,
+    debtsVerificationStatus: item.debtsVerificationStatus,
+    repaymentSourceDescription: item.repaymentSourceDescription,
+    householdExpenses: item.householdExpenses ? Number(item.householdExpenses) : undefined,
+    existingMonthlyObligations: item.existingMonthlyObligations ? Number(item.existingMonthlyObligations) : undefined,
     asSoonAsPossible: item.asSoonAsPossible ?? true,
-    bkiConsent: item.bkiConsent ?? true,
-    personalDataConsent: item.personalDataConsent ?? true,
+    bkiConsent: item.bkiConsent ?? item.clientAnswers?.bkiConsent ?? false,
+    personalDataConsent: item.personalDataConsent ?? item.clientAnswers?.personalDataConsent ?? false,
+    bkiConsentDate: item.bkiConsentDate || item.clientAnswers?.bkiConsentDate,
+    bkiConsentValidUntil: item.bkiConsentValidUntil || item.clientAnswers?.bkiConsentValidUntil,
+    personalDataConsentDate: item.personalDataConsentDate || item.clientAnswers?.personalDataConsentDate,
+    leasingPartnerConsent: item.leasingPartnerConsent ?? item.clientAnswers?.leasingPartnerConsent ?? false,
+    leasingPartnerName: item.leasingPartnerName || item.clientAnswers?.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
+    leasingPartnerConsentDate: item.leasingPartnerConsentDate || item.clientAnswers?.leasingPartnerConsentDate,
     purpose: item.purpose || 'Кредит на развитие бизнеса',
     monthlyRevenue: Number(item.monthlyRevenue || 0),
     monthlyExpenses: Number(item.monthlyExpenses || 0),
@@ -106,16 +107,51 @@ export function mapBackendApplication(item: any): CreditApplication {
     status: normalizeStatus(item.status),
     createdAt: item.createdAt || new Date().toISOString(),
     updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
-    documents: item.documents || [],
-    history: item.history || [],
+    documents: Array.isArray(item.documents)
+      ? item.documents.map((d: any) => ({
+          id: String(d.id),
+          fileName: d.fileName,
+          fileSizeBytes: Number(d.fileSizeBytes || 0),
+          fileType: d.fileType || 'other',
+          uploadedAt: d.uploadedAt || new Date().toISOString(),
+          status: d.status || 'uploaded',
+          downloadUrl: d.downloadUrl || (d.fileKey ? `/api/infrastructure/storage/${d.fileKey}` : undefined),
+        }))
+      : [],
+    history: Array.isArray(item.history)
+      ? item.history.map((h: any) => ({
+          id: String(h.id),
+          transitionCode: h.transitionCode || 'T00',
+          fromStatus: normalizeStatus(h.fromStatus),
+          toStatus: normalizeStatus(h.toStatus),
+          actor: (h.actor as any) || 'system',
+          actorName: h.actorName || (h.actor === 'analyst' ? 'Кредитный аналитик' : h.actor === 'client' ? 'Заявитель (ИП)' : 'Система скоринга'),
+          comment: h.comment,
+          timestamp: h.timestamp || new Date().toISOString(),
+        }))
+      : [],
     needInfoPrompt: item.needInfoPrompt,
+    needInfoResponse: item.needInfoResponse,
+    issues: item.issues || (item.scoring?.issues) || [],
+    scoring: item.scoring,
     declineReason: item.declineReason,
-    offer: item.currentOffer || item.offer ? {
+    currentOffer: item.currentOffer,
+    recommendedOffer: (item.currentOffer || item.offer) ? {
       approvedAmount: Number(item.currentOffer?.approvedAmount || item.offer?.approvedAmount || item.requestedAmount),
       approvedTermMonths: Number(item.currentOffer?.termMonths || item.offer?.approvedTermMonths || 12),
       annualInterestRate: Number(item.currentOffer?.annualRatePercent || item.offer?.annualInterestRate || 18.5),
       monthlyPayment: Number(item.currentOffer?.monthlyPayment || item.offer?.monthlyPayment || 0),
-      totalRepayment: Number(item.currentOffer?.totalRepayment || item.offer?.totalRepayment || 0),
+      totalRepayment: Number(item.currentOffer?.totalRepayment || (item.currentOffer?.monthlyPayment ? item.currentOffer.monthlyPayment * (item.currentOffer.termMonths || 12) : 0) || item.offer?.totalRepayment || 0),
+      expirationDate: item.currentOffer?.expirationDate || item.offer?.expirationDate || new Date(Date.now() + 30 * 86400000).toISOString(),
+      alternativeTerms: item.offer?.alternativeTerms,
+      isAccepted: item.offer?.isAccepted || false,
+    } : undefined,
+    offer: ['offer', 'accepted', 'signed_sim', 'disbursed_sim', 'pre_conditions', 'ready_to_disburse'].includes(normalizeStatus(item.status)) && (item.currentOffer || item.offer) ? {
+      approvedAmount: Number(item.currentOffer?.approvedAmount || item.offer?.approvedAmount || item.requestedAmount),
+      approvedTermMonths: Number(item.currentOffer?.termMonths || item.offer?.approvedTermMonths || 12),
+      annualInterestRate: Number(item.currentOffer?.annualRatePercent || item.offer?.annualInterestRate || 18.5),
+      monthlyPayment: Number(item.currentOffer?.monthlyPayment || item.offer?.monthlyPayment || 0),
+      totalRepayment: Number(item.currentOffer?.totalRepayment || (item.currentOffer?.monthlyPayment ? item.currentOffer.monthlyPayment * (item.currentOffer.termMonths || 12) : 0) || item.offer?.totalRepayment || 0),
       expirationDate: item.currentOffer?.expirationDate || item.offer?.expirationDate || new Date(Date.now() + 30 * 86400000).toISOString(),
       alternativeTerms: item.offer?.alternativeTerms,
       isAccepted: item.offer?.isAccepted || false,
@@ -125,497 +161,222 @@ export function mapBackendApplication(item: any): CreditApplication {
 
 export const clientApi = {
   getMyApplications: async (): Promise<CreditApplication[]> => {
-    // In Demo Mode: return showcase mock applications
-    if (isDemoActive()) {
-      return mockStore.getAll();
-    }
-
-    // In Real Mode: fetch strictly from backend
-    const userId = getCurrentUserId();
     try {
-      const res = await apiClient.get<any[]>('/client/applications', { timeout: 2500 });
-      if (Array.isArray(res.data)) {
-        return res.data.map(mapBackendApplication);
+      const res = await apiClient.get<any>('/client/applications', { timeout: 4000 });
+      const data = (res.data as any)?.value || res.data;
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped = data.map(mapBackendApplication);
+        mapped.forEach((a) => applicationStore.saveApp(a));
+        return applicationStore.getAll();
       }
-    } catch {
-      // Backend offline or endpoint error: return ONLY this user's created applications (or [] if none)
+    } catch (err) {
+      console.warn('Backend client applications unavailable, using local store:', err);
     }
-
-    return userStore.getApplications(userId);
+    return applicationStore.getAll();
   },
 
   getApplicationById: async (id: string): Promise<CreditApplication> => {
-    if (isDemoActive()) {
-      const app = mockStore.getById(id);
-      if (!app) throw new Error('Заявка не найдена');
-      return app;
-    }
-
-    const userId = getCurrentUserId();
     try {
-      const res = await apiClient.get<any>(`/client/applications/${id}`, { timeout: 2500 });
-      if (res.data) {
-        return mapBackendApplication(res.data);
+      const res = await apiClient.get<any>(`/client/applications/${id}`, { timeout: 4000 });
+      const data = res.data?.value || res.data;
+      if (data) {
+        const mapped = mapBackendApplication(data);
+        applicationStore.saveApp(mapped);
+        return mapped;
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn(`Backend client getApplicationById ${id} error:`, err);
     }
-
-    const localApp = userStore.getApplicationById(userId, id);
-    if (localApp) return localApp;
-
-    // Fallback if accessed via direct URL in demo
-    const fallbackApp = mockStore.getById(id);
-    if (fallbackApp) return fallbackApp;
-
+    const local = applicationStore.getById(id);
+    if (local) return local;
     throw new Error('Заявка не найдена');
   },
 
   createDraft: async (data: CreateDraftRequest): Promise<CreditApplication> => {
-    const userId = getCurrentUserId();
-    const egrip = await egripApi.getCompanyByInn(data.inn);
-    const companyTitle = egrip?.fullName || data.companyName || `ИП (ИНН ${data.inn})`;
-
     const stage = data.stage || (data.businessType === 'prelaunch' ? 'prelaunch' : 'operating');
     const purposeCode = data.purposeCode || (data.purpose?.toLowerCase().includes('оборудован') ? 'equipment' : 'working_capital');
     const productCode = data.productCode || (purposeCode === 'equipment' ? 'EQ' : (stage === 'prelaunch' ? 'START' : 'WC'));
 
-    let createdApp: CreditApplication = {
-      id: `app-${Date.now().toString().slice(-6)}`,
+    const res = await apiClient.post<any>('/client/applications/draft', {
       inn: data.inn,
-      companyName: companyTitle,
+      stage: stage === 'prelaunch' ? 2 : 1,
+      purpose: purposeCode === 'equipment' ? 1 : 2,
       productCode,
-      stage,
-      businessType: stage,
-      purposeCode,
       requestedAmount: data.requestedAmount,
       ownContribution: data.ownContribution || 0,
-      equipmentPrice: data.equipmentPrice,
-      equipmentSupplier: data.equipmentSupplier,
       requestedTermMonths: data.requestedTermMonths,
-      neededByDate: data.neededByDate,
-      asSoonAsPossible: data.asSoonAsPossible ?? true,
       bkiConsent: data.bkiConsent ?? false,
-      bkiConsentDate: data.bkiConsent ? (data.bkiConsentDate || new Date().toISOString()) : undefined,
-      bkiConsentValidUntil: data.bkiConsent ? new Date(Date.now() + 180 * 24 * 3600 * 1000).toISOString() : undefined,
       personalDataConsent: data.personalDataConsent ?? false,
-      personalDataConsentDate: data.personalDataConsent ? (data.personalDataConsentDate || new Date().toISOString()) : undefined,
-      leasingPartnerConsent: data.leasingPartnerConsent ?? false,
-      leasingPartnerName: data.leasingPartnerName,
-      leasingPartnerConsentDate: data.leasingPartnerConsent ? (data.leasingPartnerConsentDate || new Date().toISOString()) : undefined,
-      purpose: data.purpose,
+      neededByDate: data.neededByDate,
+      expensePeriod: data.expensePeriod,
+      hasContract: data.hasContract,
+      hasExpenseContract: data.hasExpenseContract ?? (data.hasContract === 'Да' || data.hasContract === 'yes'),
+      isTaxRegimeActual: data.isTaxRegimeActual ?? true,
+      declaredTaxRegime: data.declaredTaxRegime,
+      receiptCoverage: data.receiptCoverage,
+      expensesCoverageStatus: data.expensesCoverageStatus,
+      hasAdditionalIncome: data.hasAdditionalIncome,
+      additionalIncomeAmount: data.additionalIncomeAmount,
+      debtsVerificationStatus: data.debtsVerificationStatus,
+      repaymentSourceDescription: data.repaymentSourceDescription,
+      householdExpenses: data.householdExpenses,
+      existingMonthlyObligations: data.existingMonthlyObligations,
       monthlyRevenue: data.monthlyRevenue,
       monthlyExpenses: data.monthlyExpenses,
       clientAnswers: data.clientAnswers,
       specialistNotes: data.specialistNotes,
       scenario: data.scenario,
       submissionPayload: data.submissionPayload,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      documents: [],
-      history: [
-        {
-          id: `hist-${Date.now()}`,
-          transitionCode: 'T01',
-          fromStatus: 'draft',
-          toStatus: 'draft',
-          actor: 'client',
-          actorName: 'Клиент ИП',
-          comment: `Создание черновика заявки на продукт ${productCode}`,
-          timestamp: new Date().toISOString(),
-        },
-      ],
-    };
+    });
 
-    // Try posting to backend
-    if (!isDemoActive()) {
-      try {
-        const res = await apiClient.post<any>('/client/applications/draft', {
-          inn: data.inn,
-          stage: stage === 'prelaunch' ? 2 : 1,
-          purpose: purposeCode === 'equipment' ? 1 : 2,
-          productCode,
-          requestedAmount: data.requestedAmount,
-          ownContribution: data.ownContribution || 0,
-          requestedTermMonths: data.requestedTermMonths,
-          purposeComment: data.purpose,
-          businessType: stage,
-          monthlyRevenue: data.monthlyRevenue,
-          monthlyExpenses: data.monthlyExpenses,
-          equipmentSupplier: data.equipmentSupplier,
-          equipmentPrice: data.equipmentPrice,
-          bkiConsent: data.bkiConsent ?? true,
-          personalDataConsent: data.personalDataConsent ?? true,
-        }, { timeout: 2500 });
-
-        if (res.data?.id || res.data?.applicationId) {
-          createdApp.id = String(res.data.id || res.data.applicationId);
-        }
-      } catch {
-        // saved locally
-      }
-      userStore.saveApplication(userId, createdApp);
-      return createdApp;
-    }
-
-    mockStore.save(createdApp);
-    return createdApp;
+    const resData = (res.data as any)?.value || res.data;
+    return mapBackendApplication(resData);
   },
 
-  updateDraft: async (id: string, patch: Partial<CreditApplication>): Promise<CreditApplication> => {
-    const userId = getCurrentUserId();
+  saveDraft: async (id: string, data: Partial<CreateDraftRequest>): Promise<CreditApplication> => {
+    const res = await apiClient.put<any>(`/client/applications/${id}/draft`, {
+      requestedAmount: data.requestedAmount || 0,
+      ownContribution: data.ownContribution || 0,
+      requestedTermMonths: data.requestedTermMonths,
+      bkiConsent: data.bkiConsent ?? true,
+      personalDataConsent: data.personalDataConsent ?? true,
+      productCode: data.productCode,
+      neededByDate: data.neededByDate,
+      expensePeriod: data.expensePeriod,
+      hasExpenseContract: data.hasExpenseContract ?? (data.hasContract === 'Да' || data.hasContract === 'yes'),
+      isTaxRegimeActual: data.isTaxRegimeActual,
+      declaredTaxRegime: data.declaredTaxRegime,
+      receiptCoverage: data.receiptCoverage,
+      expensesCoverageStatus: data.expensesCoverageStatus,
+      hasAdditionalIncome: data.hasAdditionalIncome,
+      additionalIncomeAmount: data.additionalIncomeAmount,
+      debtsVerificationStatus: data.debtsVerificationStatus,
+      repaymentSourceDescription: data.repaymentSourceDescription,
+      householdExpenses: data.householdExpenses,
+      existingMonthlyObligations: data.existingMonthlyObligations,
+      monthlyRevenue: data.monthlyRevenue,
+      monthlyExpenses: data.monthlyExpenses,
+    });
+    const resData = (res.data as any)?.value || res.data;
+    return mapBackendApplication(resData);
+  },
 
-    if (!isDemoActive()) {
-      try {
-        await apiClient.put(`/client/applications/${id}/draft`, {
-          requestedAmount: patch.requestedAmount,
-          requestedTermMonths: patch.requestedTermMonths,
-          bkiConsent: true,
-          personalDataConsent: true,
-        }, { timeout: 2500 });
-      } catch {
-        // fallback
-      }
-
-      const app = userStore.getApplicationById(userId, id);
-      if (app) {
-        const updated = { ...app, ...patch, updatedAt: new Date().toISOString() };
-        userStore.saveApplication(userId, updated);
-        return updated;
-      }
-    }
-
-    const app = mockStore.getById(id);
-    if (!app) throw new Error('Заявка не найдена');
-    const updated: CreditApplication = {
-      ...app,
-      ...patch,
-      updatedAt: new Date().toISOString(),
-    };
-    mockStore.save(updated);
-    return updated;
+  updateDraft: async (id: string, data: Partial<CreateDraftRequest>): Promise<CreditApplication> => {
+    return clientApi.saveDraft(id, data);
   },
 
   submitApplication: async (id: string): Promise<CreditApplication> => {
-    const userId = getCurrentUserId();
-
-    if (!isDemoActive()) {
-      try {
-        await apiClient.post(`/client/applications/${id}/submit`, {}, { timeout: 2500 });
-      } catch {
-        // fallback
-      }
-
-      return userStore.transition(
-        userId,
-        id,
-        'T03',
-        'checking',
-        'client',
-        'Клиент ИП',
-        'Заявка успешно отправлена на скоринг и проверку стоп-факторов'
-      );
-    }
-
-    const updated = mockStore.transition(
-      id,
-      'T03',
-      'checking',
-      'client',
-      'Клиент ИП',
-      'Заявка успешно отправлена на скоринг и проверку стоп-факторов'
-    );
-
-    // In demo mode: simulate auto-progression after 3 seconds
-    setTimeout(() => {
-      const current = mockStore.getById(id);
-      if (current && current.status === 'checking') {
-        if (current.requestedAmount > 2000000) {
-          mockStore.transition(
-            id,
-            'T07',
-            'review',
-            'system',
-            'SmartKabinet.Checking',
-            'Сумма кредита превышает лимит экспресс-проверки. Передано аналитику банка'
-          );
-        } else {
-          mockStore.transition(
-            id,
-            'T08',
-            'offer',
-            'system',
-            'SmartKabinet.Checking',
-            'Автоматическое одобрение скорингом. Оферта сформирована',
-            undefined,
-            {
-              offer: {
-                approvedAmount: current.requestedAmount,
-                approvedTermMonths: current.requestedTermMonths,
-                annualInterestRate: 15.2,
-                monthlyPayment: Math.round((current.requestedAmount * 1.15) / current.requestedTermMonths),
-                totalRepayment: Math.round(current.requestedAmount * 1.15),
-                expirationDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-              },
-            }
-          );
-        }
-      }
-    }, 3000);
-
-    return updated;
+    const res = await apiClient.post<any>(`/client/applications/${id}/submit`);
+    const resData = (res.data as any)?.value || res.data;
+    return mapBackendApplication(resData);
   },
 
   retryCheck: async (id: string): Promise<CreditApplication> => {
-    const userId = getCurrentUserId();
-    if (!isDemoActive()) {
-      try {
-        await apiClient.post(`/client/applications/${id}/retry-check`, {}, { timeout: 2500 });
-      } catch {
-        // fallback
-      }
-      return userStore.transition(
-        userId,
-        id,
-        'T06',
-        'checking',
-        'client',
-        'Клиент ИП',
-        'Повторный запуск проверки после сбоя внешнего сервиса'
-      );
-    }
-
-    return mockStore.transition(
-      id,
-      'T06',
-      'checking',
-      'client',
-      'Клиент ИП',
-      'Повторный запуск проверки после сбоя внешнего сервиса'
-    );
+    const res = await apiClient.post<any>(`/client/applications/${id}/retry`);
+    const resData = (res.data as any)?.value || res.data;
+    return mapBackendApplication(resData);
   },
 
-  replyNeedInfo: async (id: string, responseText: string): Promise<CreditApplication> => {
-    const userId = getCurrentUserId();
-    if (!isDemoActive()) {
-      try {
-        await apiClient.post(`/client/applications/${id}/respond-info`, {
-          comment: responseText,
-        }, { timeout: 2500 });
-      } catch {
-        // fallback
-      }
-      return userStore.transition(
-        userId,
-        id,
-        'T10',
-        'checking',
-        'client',
-        'Клиент ИП',
-        'Клиент предоставил запрошенные банком сведения',
-        undefined,
-        { needInfoResponse: responseText }
-      );
+  respondNeedInfo: async (id: string, response: string, files?: UploadedDocument[]): Promise<CreditApplication> => {
+    try {
+      await apiClient.post<any>(`/client/applications/${id}/respond-info`, {
+        responseComment: response,
+      }, { timeout: 5000 });
+    } catch (err) {
+      console.warn('Backend respond-info error (handled offline):', err);
     }
-
-    return mockStore.transition(
-      id,
-      'T10',
-      'checking',
-      'client',
-      'Клиент ИП',
-      'Клиент предоставил запрошенные банком сведения',
-      undefined,
-      { needInfoResponse: responseText }
-    );
+    const app = applicationStore.getById(id);
+    const openReq = app?.requests?.find((r) => r.status === 'open');
+    if (openReq) {
+      applicationStore.replyClientRequest(id, openReq.id, response, files);
+    } else {
+      applicationStore.setStatus(id, 'checking', `Ответ клиента: ${response}`);
+    }
+    return applicationStore.getById(id)!;
   },
 
-  withdrawApplication: async (id: string, reason?: string): Promise<CreditApplication> => {
-    const userId = getCurrentUserId();
-    if (!isDemoActive()) {
-      try {
-        await apiClient.post(`/client/applications/${id}/withdraw`, {}, { timeout: 2500 });
-      } catch {
-        // fallback
-      }
-      return userStore.transition(
-        userId,
-        id,
-        'T17',
-        'closed',
-        'client',
-        'Клиент ИП',
-        reason || 'Клиент отозвал заявку по собственному желанию'
-      );
-    }
-
-    return mockStore.transition(
-      id,
-      'T17',
-      'closed',
-      'client',
-      'Клиент ИП',
-      reason || 'Клиент отозвал заявку по собственному желанию'
-    );
+  replyNeedInfo: async (id: string, response: string, files?: UploadedDocument[]): Promise<CreditApplication> => {
+    return clientApi.respondNeedInfo(id, response, files);
   },
 
-  acceptOffer: async (id: string, useAlternativeTerm: boolean = false): Promise<CreditApplication> => {
-    const userId = getCurrentUserId();
-    const app = isDemoActive() ? mockStore.getById(id) : userStore.getApplicationById(userId, id);
-    if (!app || !app.offer) throw new Error('Оферта не найдена');
-
-    const updatedOffer = {
-      ...app.offer,
-      isAccepted: true,
-      approvedTermMonths: useAlternativeTerm && app.offer.alternativeTerms
-        ? app.offer.alternativeTerms.newTermMonths
-        : app.offer.approvedTermMonths,
-      monthlyPayment: useAlternativeTerm && app.offer.alternativeTerms
-        ? app.offer.alternativeTerms.newMonthlyPayment
-        : app.offer.monthlyPayment,
-    };
-
-    if (!isDemoActive()) {
-      try {
-        await apiClient.post(`/client/applications/${id}/accept`, {});
-      } catch {
-        // fallback
-      }
-      return userStore.transition(
-        userId,
-        id,
-        'T21' as any,
-        'accepted' as any,
-        'client',
-        'Клиент ИП',
-        `Клиент подтвердил согласие с условиями оферты (${updatedOffer.approvedTermMonths} мес, ${updatedOffer.monthlyPayment} ₽/мес)`,
-        undefined,
-        { offer: updatedOffer }
-      );
-    }
-
-    return mockStore.transition(
-      id,
-      'T21' as any,
-      'accepted' as any,
-      'client',
-      'Клиент ИП',
-      `Клиент подтвердил согласие с условиями оферты (${updatedOffer.approvedTermMonths} мес, ${updatedOffer.monthlyPayment} ₽/мес)`,
-      undefined,
-      { offer: updatedOffer }
-    );
+  acceptOffer: async (id: string, useAlternative?: boolean): Promise<CreditApplication> => {
+    const res = await apiClient.post<any>(`/client/applications/${id}/accept-offer`, {
+      useAlternative: Boolean(useAlternative),
+    });
+    const resData = (res.data as any)?.value || res.data;
+    return mapBackendApplication(resData);
   },
 
-  signAgreement: async (id: string, smsCode: string = '1234'): Promise<CreditApplication> => {
-    const userId = getCurrentUserId();
-    if (!isDemoActive()) {
-      try {
-        await apiClient.post(`/client/applications/${id}/sign`, { smsCode });
-      } catch {
-        // fallback
-      }
-      return userStore.transition(
-        userId,
-        id,
-        'T22' as any,
-        'signed_sim' as any,
-        'client',
-        'Клиент ИП',
-        'Кредитный договор подписан электронной подписью (симуляция ЭЦП/SMS)'
-      );
-    }
-    return mockStore.transition(
-      id,
-      'T22' as any,
-      'signed_sim' as any,
-      'client',
-      'Клиент ИП',
-      'Кредитный договор подписан электронной подписью (симуляция ЭЦП/SMS)'
-    );
+  signDocuments: async (id: string): Promise<CreditApplication> => {
+    const res = await apiClient.post<any>(`/client/applications/${id}/sign`);
+    const resData = res.data?.value || res.data;
+    return mapBackendApplication(resData);
   },
 
   disburseFunds: async (id: string): Promise<CreditApplication> => {
-    const userId = getCurrentUserId();
-    if (!isDemoActive()) {
-      try {
-        await apiClient.post(`/client/applications/${id}/disburse`, {});
-      } catch {
-        // fallback
-      }
-      return userStore.transition(
-        userId,
-        id,
-        'T23' as any,
-        'disbursed_sim' as any,
-        'system',
-        'SmartKabinet Engine',
-        'Кредитные средства успешно зачислены на расчётный счёт ИП'
-      );
-    }
-    return mockStore.transition(
-      id,
-      'T23' as any,
-      'disbursed_sim' as any,
-      'system',
-      'SmartKabinet Engine',
-      'Кредитные средства успешно зачислены на расчётный счёт ИП'
-    );
+    const res = await apiClient.post<any>(`/client/applications/${id}/disburse`);
+    const resData = res.data?.value || res.data;
+    return mapBackendApplication(resData);
+  },
+
+  withdrawApplication: async (id: string, reason?: string): Promise<CreditApplication> => {
+    const res = await apiClient.post<any>(`/client/applications/${id}/withdraw`, {
+      reason: reason || 'Отозвана клиентом',
+    });
+    const resData = res.data?.value || res.data;
+    return mapBackendApplication(resData);
   },
 
   uploadDocument: async (id: string, file: File): Promise<UploadedDocument> => {
-    const doc: UploadedDocument = {
-      id: `doc-${Date.now()}`,
-      fileName: file.name,
-      fileSizeBytes: file.size,
-      fileType: file.name.endsWith('.pdf') ? 'bank_statement' : 'other',
-      uploadedAt: new Date().toISOString(),
-      status: 'uploaded',
+    const fileType = file.name.endsWith('.pdf') ? 'bank_statement' : 'other';
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('documentType', fileType);
+
+    const res = await apiClient.post<any>(`/client/applications/${id}/documents`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    const data = res.data?.value || res.data;
+    return {
+      id: String(data.id),
+      fileName: data.fileName || file.name,
+      fileSizeBytes: Number(data.fileSizeBytes || file.size),
+      fileType: (data.fileType as any) || fileType,
+      uploadedAt: data.uploadedAt || new Date().toISOString(),
+      status: (data.status as any) || 'uploaded',
+      downloadUrl: data.downloadUrl || (data.fileKey ? `/api/infrastructure/storage/${data.fileKey}` : undefined),
     };
+  },
 
-    const userId = getCurrentUserId();
-    if (!isDemoActive()) {
-      const app = userStore.getApplicationById(userId, id);
-      if (app) {
-        app.documents = [...(app.documents || []), doc];
-        userStore.saveApplication(userId, app);
-      }
-    } else {
-      const app = mockStore.getById(id);
-      if (app) {
-        app.documents = [...(app.documents || []), doc];
-        mockStore.save(app);
-      }
-    }
-
-    return doc;
+  deleteDocument: async (id: string, docId: string): Promise<void> => {
+    await apiClient.delete(`/client/applications/${id}/documents/${docId}`);
   },
 
   getCreditProducts: async (): Promise<CreditProductConfig[]> => {
-    if (!isDemoActive()) {
-      try {
-        const res = await apiClient.get<any[]>('/products');
-        if (Array.isArray(res.data) && res.data.length > 0) {
-          return res.data.map((p) => {
-            const code = (p.code || 'WC').toUpperCase() as ProductCode;
-            const base = CREDIT_PRODUCTS[code] || CREDIT_PRODUCTS.WC;
-            return {
-              ...base,
-              name: p.name || base.name,
-              description: p.description || base.description,
-              minAmount: Number(p.minAmount ?? base.minAmount),
-              maxAmount: Number(p.maxAmount ?? base.maxAmount),
-              minTermMonths: Number(p.minTermMonths ?? base.minTermMonths),
-              maxTermMonths: Number(p.maxTermMonths ?? base.maxTermMonths),
-              minInterestRate: Number(p.minInterestRate ?? base.minInterestRate),
-              maxInterestRate: Number(p.maxInterestRate ?? base.maxInterestRate),
-              decisionRule: p.conditions || base.decisionRule,
-            };
-          });
-        }
-      } catch {
-        // use local config fallback
+    try {
+      const res = await apiClient.get<any>('/products');
+      const data = (res.data as any)?.value || res.data;
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map((p) => {
+          const code = (p.code || 'WC').toUpperCase() as ProductCode;
+          const base = CREDIT_PRODUCTS[code] || CREDIT_PRODUCTS.WC;
+          return {
+            ...base,
+            name: p.name || base.name,
+            description: p.description || base.description,
+            minAmount: Number(p.minAmount ?? base.minAmount),
+            maxAmount: Number(p.maxAmount ?? base.maxAmount),
+            minTermMonths: Number(p.minTermMonths ?? base.minTermMonths),
+            maxTermMonths: Number(p.maxTermMonths ?? base.maxTermMonths),
+            minInterestRate: Number(p.minInterestRate ?? base.minInterestRate),
+            maxInterestRate: Number(p.maxInterestRate ?? base.maxInterestRate),
+            decisionRule: p.conditions || base.decisionRule,
+          };
+        });
       }
+    } catch {
+      // Fallback to static product catalog
     }
     return ALL_PRODUCTS;
   },
@@ -625,4 +386,69 @@ export const clientApi = {
     const found = products.find((p) => p.code === code);
     return found || CREDIT_PRODUCTS[code] || CREDIT_PRODUCTS.WC;
   },
+
+  lookupCompany: async (inn: string): Promise<CompanyLookupResponse | null> => {
+    const cleanInn = inn.trim();
+    if (!cleanInn) return null;
+    try {
+      const res = await apiClient.get<any>(`/client/companies/lookup`, {
+        params: { inn: cleanInn },
+        timeout: 5000,
+      });
+      const data = (res.data as any)?.value || res.data;
+      if (data && data.inn) {
+        return data as CompanyLookupResponse;
+      }
+    } catch {
+      // 404 or backend lookup not found
+    }
+    return null;
+  },
 };
+
+export interface CompanyFactItem {
+  month: string;
+  cleanReceiptsRub: number;
+  operatingOutflowRub: number;
+}
+
+export interface CompanyDebtItem {
+  obligationRef?: string;
+  monthlyMaxPaymentRub: number;
+}
+
+export interface CompanyLookupResponse {
+  inn: string;
+  ogrnip?: string;
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+  patronymic?: string;
+  registrationDate?: string;
+  egripStatus?: string;
+  regionCode?: string;
+  regionName?: string;
+  okvedMain?: string;
+  okvedMainName?: string;
+  taxRegime?: string;
+  mspCategory?: string;
+  suggestedStage: 'operating' | 'prelaunch' | string;
+  isAlfaClient: boolean;
+  annualRevenue?: number;
+  netCashFlow?: number;
+  averageMonthlyExpenses?: number;
+  operatingMonths?: number;
+  hasFnsBlock: boolean;
+  zskRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | string;
+  isBankrupt: boolean;
+  phone?: string;
+  email?: string;
+  passportSeries?: string;
+  passportNumber?: string;
+  passportBirthDate?: string;
+  passportIssueDate?: string;
+  passportIssuer?: string;
+  passportDepartmentCode?: string;
+  facts?: CompanyFactItem[];
+  debts?: CompanyDebtItem[];
+}

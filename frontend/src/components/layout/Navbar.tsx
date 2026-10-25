@@ -1,12 +1,10 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { LogOut, User, Sun, Moon } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, role, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -17,7 +15,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-[#e6e8ea] dark:border-slate-800 transition-colors duration-200">
-      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 h-[88px] flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[88px] flex items-center justify-between gap-4">
         {/* Brand with authentic Alfa logo mark */}
         <div className="flex items-center gap-6">
           <Link
@@ -39,25 +37,8 @@ export const Navbar: React.FC = () => {
           </Link>
         </div>
 
-        {/* Right: Demo status & user menu */}
+        {/* Right: User menu */}
         <div className="flex items-center gap-4">
-          <span className="demo-pill hidden md:inline-flex">
-            <i></i> Прототип хакатона
-          </span>
-
-          {/* Theme switcher */}
-          <button
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-slate-600" />
-            )}
-          </button>
-
           <div className="hidden lg:flex flex-col text-right">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[170px]">
               {user?.fullName || user?.username}

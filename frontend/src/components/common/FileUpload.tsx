@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { UploadCloud, File, CheckCircle } from 'lucide-react';
+import { UploadCloud, File, CheckCircle, Download } from 'lucide-react';
 import { UploadedDocument } from '../../types/application';
 
 interface FileUploadProps {
@@ -102,6 +102,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     </span>
                   ) : (
                     <span className="text-slate-400 dark:text-slate-500">Загружен</span>
+                  )}
+                  {doc.downloadUrl && (
+                    <a
+                      href={doc.downloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={doc.fileName}
+                      className="p-1 rounded text-slate-500 hover:text-red-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      title="Скачать документ"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Download className="w-4 h-4" />
+                    </a>
                   )}
                 </div>
               </div>

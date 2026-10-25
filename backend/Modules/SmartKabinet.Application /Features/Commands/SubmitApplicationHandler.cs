@@ -76,7 +76,15 @@ public class SubmitApplicationHandler(ApplicationDbContext dbContext, IMessageBu
             app.ProjectedMonthlyRevenue,
             app.FinancialReserve,
             app.PersonalIncome,
-            app.ProductCode
+            app.ProductCode,
+            app.MonthlyRevenue,
+            app.MonthlyExpenses,
+            app.HouseholdExpenses,
+            app.ExistingMonthlyObligations,
+            app.DebtsVerificationStatus,
+            app.ExpensesCoverageStatus,
+            app.HasAdditionalIncome,
+            app.AdditionalIncomeAmount
         ));
 
         return Result.Success();

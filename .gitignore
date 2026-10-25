@@ -18,3 +18,5 @@ keys/
 # Local cache & nuget temp
 **/.nuget/
 **/.local/
+__pycache__/
+*.pyc

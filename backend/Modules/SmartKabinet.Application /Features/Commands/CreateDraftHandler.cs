@@ -41,6 +41,22 @@ public class CreateDraftHandler(ApplicationDbContext dbContext) : ICreateDraft
             PersonalDataConsent = command.PersonalDataConsent,
             EquipmentSupplier = command.EquipmentSupplier,
             EquipmentPrice = command.EquipmentPrice,
+            NeededByDate = command.NeededByDate,
+            ExpensePeriod = command.ExpensePeriod,
+            HasExpenseContract = command.HasExpenseContract,
+            IsTaxRegimeActual = command.IsTaxRegimeActual,
+            DeclaredTaxRegime = command.DeclaredTaxRegime,
+            ReceiptCoverage = command.ReceiptCoverage ?? new(),
+            ExpensesCoverageStatus = command.ExpensesCoverageStatus,
+            HasAdditionalIncome = command.HasAdditionalIncome,
+            AdditionalIncomeAmount = command.AdditionalIncomeAmount,
+            PersonalIncome = command.AdditionalIncomeAmount,
+            DebtsVerificationStatus = command.DebtsVerificationStatus,
+            RepaymentSourceDescription = command.RepaymentSourceDescription,
+            MonthlyRevenue = command.MonthlyRevenue,
+            MonthlyExpenses = command.MonthlyExpenses,
+            HouseholdExpenses = command.HouseholdExpenses,
+            ExistingMonthlyObligations = command.ExistingMonthlyObligations,
             CreatedAt = DateTimeOffset.UtcNow
         };
 

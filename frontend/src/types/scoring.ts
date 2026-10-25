@@ -36,6 +36,16 @@ export interface FnsReport {
   lastReportingSubmitted: boolean;
 }
 
+export interface ScoringComponent {
+  key: string;
+  label: string;
+  points: number;
+  max: number;
+  value?: any;
+  rule?: string;
+  description?: string;
+}
+
 export interface ScoringResult {
   score: number; // 0 - 100
   riskLevel: RiskLevel;
@@ -47,4 +57,7 @@ export interface ScoringResult {
   bki: BkiReport;
   fns: FnsReport;
   calculatedAt: string;
+  components?: ScoringComponent[];
+  issues?: string[];
+  risks?: string[];
 }

@@ -6,8 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartKabinet.Intergrations.AlfaBank.Features;
 using SmartKabinet.Intergrations.AlfaBank.Persistence;
-using SmartKabinet.Intergrations.AlfaBank.Services;
-using SmartKabinet.Intergrations.AlfaBank.Simulators;
 using SmartKabinet.Intergrations.Ml.Models;
 using SmartKabinet.Intergrations.Ml.Services;
 using SmartKabinet.Intergrations.Synthetic.Services;
@@ -19,9 +17,7 @@ public static class IntegrationsModuleExtensions
     public static IServiceCollection AddIntegrationsModule(this IServiceCollection services, IConfiguration configuration)
     {
         // 1. Подключение PostgreSQL SyntheticDbContext
-        var connectionString = configuration.GetConnectionString("SyntheticDb") 
-                               ?? configuration.GetConnectionString("DefaultConnection")
-                               ?? "Host=localhost;Port=5432;Database=smart_kabinet_synthetic_db;Username=postgres;Password=postgres";
+        var connectionString = configuration.GetConnectionString("SyntheticDb");
 
         services.AddDbContext<SyntheticDbContext>(options =>
         {
@@ -30,8 +26,6 @@ public static class IntegrationsModuleExtensions
 
         // 2. Handlers и клиенты
         services.AddScoped<GetCustomerByInnHandler>();
-        services.AddScoped<SynthesizeCustomerHandler>();
-        services.AddScoped<IAlfaBankCustomerDataClient, AlfaBankSyntheticSimulator>();
         services.AddScoped<ICompanyLookupService, CompanyLookupService>();
         services.AddScoped<IEquipmentCatalogService, EquipmentCatalogService>();
 
@@ -39,24 +33,6 @@ public static class IntegrationsModuleExtensions
         services.AddHttpClient<IMlServiceClient, MlServiceClient>();
 
         return services;
-    }
-
-    /// <summary>
-    /// Автоматическое сидирование синтетических клиентов Альфа-Банка в PostgreSQL
-    /// </summary>
-    public static async Task<IApplicationBuilder> UseSyntheticDataSeedAsync(this IApplicationBuilder app)
-    {
-        using var scope = app.ApplicationServices.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SyntheticDbContext>();
-
-        // Если используется реальный Postgres, гарантируем создание таблиц
-        if (db.Database.IsRelational())
-        {
-            await db.Database.EnsureCreatedAsync();
-        }
-
-        await SyntheticDbContext.SeedPostgresDefaultDataAsync(db);
-        return app;
     }
 
     /// <summary>
@@ -141,23 +117,6 @@ public static class IntegrationsModuleExtensions
         app.MapGet("/integrations/egrip/{inn}", GetEgripHandler)
             .AllowAnonymous()
             .ExcludeFromDescription();
-
-        // POST /api/integrations/synthesize-customer
-        group.MapPost("/synthesize-customer", async (
-            SynthesizeCustomerRequest request,
-            SynthesizeCustomerHandler handler,
-            CancellationToken ct) =>
-        {
-            var result = await handler.HandleAsync(request, ct);
-            if (!result.Success)
-            {
-                return Results.BadRequest(new { error = result.ErrorCode, message = result.ErrorMessage });
-            }
-
-            return Results.Ok(result);
-        })
-        .WithName("SynthesizeCustomer")
-        .WithSummary("Синтез / добавление нового клиента Альфа-Банка в PostgreSQL");
 
         // ML Service Endpoints
         var mlGroup = app.MapGroup("/api/integrations/ml").WithTags("ML Service Integrations (FastAPI)");

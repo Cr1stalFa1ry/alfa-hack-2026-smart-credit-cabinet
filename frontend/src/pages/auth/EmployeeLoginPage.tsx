@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components/common/Card';
 import { Input } from '../../components/common/Input';
-import { ShieldCheck, ArrowRight, Lock, User, Sun, Moon, Eye, EyeOff, Building2, ArrowLeft } from 'lucide-react';
+import { Button } from '../../components/common/Button';
+import { ArrowRight, Lock, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 export const EmployeeLoginPage: React.FC = () => {
   const { login } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [username, setUsername] = useState('');
@@ -27,7 +26,7 @@ export const EmployeeLoginPage: React.FC = () => {
       if (loggedUser.role === 'BankEmployee') {
         navigate('/analyst/queue');
       } else {
-        // In case a client logs in on employee page, still route safely
+        // Если зашёл клиент — перенаправляем в его кабинет
         navigate('/client/dashboard');
       }
     } catch {
@@ -38,53 +37,40 @@ export const EmployeeLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors duration-200 relative text-slate-100">
-      {/* Theme toggle */}
-      <div className="absolute top-4 right-4">
-        <button
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
-          className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition-colors"
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
-        </button>
-      </div>
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 items-center justify-center text-white shadow-xl shadow-purple-600/30 mb-4 border border-purple-400/20">
-          <ShieldCheck className="w-7 h-7" />
-        </div>
-        <h2 className="text-2xl font-black text-white tracking-tight flex items-center justify-center gap-2">
-          Альфа<span className="text-purple-400">Бизнес</span>
-          <span className="text-xs px-2 py-0.5 rounded-md bg-purple-950/80 text-purple-300 border border-purple-700/50 uppercase tracking-wider font-bold">
-            Служебный вход
+    <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200/50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors duration-200 relative">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-2">
+        <div className="brandmark-container inline-flex items-center gap-4 justify-center">
+          <span className="brandmark-lg">
+            А<span></span>
           </span>
-        </h2>
-        <p className="mt-1.5 text-sm text-slate-400 font-medium">
-          Автоматизированное рабочее место кредитного андеррайтера
-        </p>
+          <div className="text-left">
+            <span className="font-black text-[25px] tracking-tight text-[#141414] dark:text-white leading-tight block">
+              Альфа
+            </span>
+            <span className="brand-sub text-xs text-[#505358] dark:text-slate-300 font-medium block mt-0.5">
+              Умный кредитный кабинет
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
-        <Card className="shadow-2xl p-6 sm:p-8 space-y-6 bg-slate-800/90 border-slate-700/80 backdrop-blur-sm">
+        <Card className="shadow-xl p-6 sm:p-8 space-y-6">
           <div>
-            <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-purple-400" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-alfa-500" />
               Вход для сотрудников банка
             </h3>
-            <p className="text-xs text-slate-400">
-              Введите корпоративные учётные данные для доступа к очереди заявок
-            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Логин сотрудника"
+              label="Логин"
               type="text"
-              leftIcon={<User className="w-4 h-4 text-slate-400" />}
+              leftIcon={<User className="w-4 h-4" />}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="analyst"
+              placeholder="Введите логин"
               required
             />
 
@@ -92,16 +78,16 @@ export const EmployeeLoginPage: React.FC = () => {
               <Input
                 label="Пароль"
                 type={showPassword ? 'text' : 'password'}
-                leftIcon={<Lock className="w-4 h-4 text-slate-400" />}
+                leftIcon={<Lock className="w-4 h-4" />}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="analyst123"
+                placeholder="Введите пароль"
                 required
                 rightIcon={
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="p-1 text-slate-400 hover:text-white pointer-events-auto"
+                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 pointer-events-auto"
                     title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -111,40 +97,25 @@ export const EmployeeLoginPage: React.FC = () => {
             </div>
 
             {error && (
-              <div className="p-3 bg-rose-950/60 border border-rose-800 rounded-xl text-xs text-rose-300 font-medium">
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded-xl text-xs text-rose-700 dark:text-rose-300 font-medium">
                 {error}
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full mt-2 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold text-sm shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              variant="primary"
+              size="lg"
+              className="w-full mt-2"
+              isLoading={isLoading}
+              rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              <ShieldCheck className="w-4 h-4" />
-              {isLoading ? 'Авторизация...' : 'Войти в рабочий профиль'}
-              {!isLoading && <ArrowRight className="w-4 h-4" />}
-            </button>
+              Войти в систему
+            </Button>
           </form>
 
-          {/* Security Notice: No open registration */}
-          <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-700/60 text-[11px] text-slate-400 space-y-1">
-            <div className="font-semibold text-slate-300 flex items-center gap-1.5">
-              <span>🔒</span> Внутренняя система Альфа-Банка
-            </div>
-            <p className="leading-relaxed">
-              Регистрация учётных записей сотрудников выполняется исключительно администратором безопасности банка через панель управления.
-            </p>
-          </div>
-
-          <div className="text-center pt-1 border-t border-slate-700/60">
-            <Link
-              to="/login"
-              className="text-xs text-slate-400 hover:text-purple-400 transition-colors inline-flex items-center gap-1.5"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Вернуться на страницу для клиентов
-            </Link>
+          <div className="text-center text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+            Служебный доступ предназначен исключительно для сотрудников банка
           </div>
         </Card>
       </div>

@@ -21,6 +21,14 @@ public class SyntheticDbContext : DbContext
     public DbSet<SyntheticEquipmentEntity> EquipmentCatalog => Set<SyntheticEquipmentEntity>();
     public DbSet<SyntheticSupplierEntity> Suppliers => Set<SyntheticSupplierEntity>();
 
+    public DbSet<SyntheticCustomerProfileEntity> CustomerProfiles => Set<SyntheticCustomerProfileEntity>();
+    public DbSet<SyntheticPassportProfileEntity> PassportProfiles => Set<SyntheticPassportProfileEntity>();
+    public DbSet<SyntheticMonthlyFactEntity> MonthlyFacts => Set<SyntheticMonthlyFactEntity>();
+    public DbSet<SyntheticObligationEntity> Obligations => Set<SyntheticObligationEntity>();
+    public DbSet<SyntheticOtherIncomeEntity> OtherIncomes => Set<SyntheticOtherIncomeEntity>();
+    public DbSet<SyntheticPropertyEntity> Properties => Set<SyntheticPropertyEntity>();
+    public DbSet<SyntheticPropertyRightEntity> PropertyRights => Set<SyntheticPropertyRightEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -143,6 +151,53 @@ public class SyntheticDbContext : DbContext
             entity.Property(e => e.DirectorInn).HasMaxLength(12);
         });
 
+        modelBuilder.Entity<SyntheticCustomerProfileEntity>(entity =>
+        {
+            entity.ToTable("customer_profiles", "synthetic");
+            entity.HasKey(c => c.ApplicationId);
+            entity.HasIndex(c => c.Inn);
+        });
+
+        modelBuilder.Entity<SyntheticPassportProfileEntity>(entity =>
+        {
+            entity.ToTable("passport_profiles", "synthetic");
+            entity.HasKey(p => p.ApplicantInn);
+        });
+
+        modelBuilder.Entity<SyntheticMonthlyFactEntity>(entity =>
+        {
+            entity.ToTable("monthly_facts", "synthetic");
+            entity.HasKey(f => f.Id);
+            entity.HasIndex(f => f.ApplicationId);
+        });
+
+        modelBuilder.Entity<SyntheticObligationEntity>(entity =>
+        {
+            entity.ToTable("obligations", "synthetic");
+            entity.HasKey(o => o.Id);
+            entity.HasIndex(o => o.ApplicationId);
+        });
+
+        modelBuilder.Entity<SyntheticOtherIncomeEntity>(entity =>
+        {
+            entity.ToTable("other_income", "synthetic");
+            entity.HasKey(i => i.Id);
+            entity.HasIndex(i => i.ApplicationId);
+        });
+
+        modelBuilder.Entity<SyntheticPropertyEntity>(entity =>
+        {
+            entity.ToTable("property_registry", "synthetic");
+            entity.HasKey(p => p.PropertyId);
+        });
+
+        modelBuilder.Entity<SyntheticPropertyRightEntity>(entity =>
+        {
+            entity.ToTable("property_rights", "synthetic");
+            entity.HasKey(r => r.RightId);
+            entity.HasIndex(r => r.OwnerInn);
+        });
+
         // Автоматический snake_case маппинг колонок для схемы synthetic
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
@@ -150,6 +205,12 @@ public class SyntheticDbContext : DbContext
             {
                 foreach (var property in entity.GetProperties())
                 {
+                    if (property.Name == "MaxOverdueDays12m")
+                    {
+                        property.SetColumnName("max_overdue_days_12m");
+                        continue;
+                    }
+
                     var name = property.Name;
                     var snakeCase = System.Text.RegularExpressions.Regex.Replace(name, "([a-z0-9])([A-Z])", "$1_$2").ToLower();
                     property.SetColumnName(snakeCase);
