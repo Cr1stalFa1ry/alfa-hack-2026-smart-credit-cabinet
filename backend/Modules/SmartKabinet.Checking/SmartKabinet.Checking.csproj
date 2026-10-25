@@ -11,7 +11,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\SmartKabinet.Application \SmartKabinet.Application.csproj" />
         <ProjectReference Include="..\SmartKabinet.Intergrations\SmartKabinet.Intergrations.csproj" />
     </ItemGroup>
 

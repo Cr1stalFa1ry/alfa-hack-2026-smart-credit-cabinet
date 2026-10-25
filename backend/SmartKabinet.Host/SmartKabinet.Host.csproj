@@ -10,7 +10,6 @@
         <ProjectReference Include="..\Modules\SmartKabinet.Auth\SmartKabinet.Auth.csproj" />
         <ProjectReference Include="..\Modules\SmartKabinet.Client\SmartKabinet.Client.csproj" />
         <ProjectReference Include="..\Modules\SmartKabinet.BankEmployee\SmartKabinet.BankEmployee.csproj" />
-        <ProjectReference Include="..\Modules\SmartKabinet.Application \SmartKabinet.Application.csproj" />
         <ProjectReference Include="..\Modules\SmartKabinet.Checking\SmartKabinet.Checking.csproj" />
         <ProjectReference Include="..\Modules\SmartKabinet.Intergrations\SmartKabinet.Intergrations.csproj" />
         <ProjectReference Include="..\Modules\SmartKabinet.Infrastructure\SmartKabinet.Infrastructure.csproj" />
