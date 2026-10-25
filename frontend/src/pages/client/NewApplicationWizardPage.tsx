@@ -161,8 +161,6 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
   const [dossierFound, setDossierFound] = useState<boolean | null>(null);
   const [lookupData, setLookupData] = useState<CompanyLookupResponse | null>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(() => draftIdParam || null);
-  const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
-  const [draftSavedMessage, setDraftSavedMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const isInitializedRef = useRef<boolean>(false);
   const isAutoCreatingDraftRef = useRef<boolean>(false);
@@ -1193,8 +1191,82 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
     return Object.keys(errs).length === 0;
   };
 
+  // ----------------------------------------------------
+  // Сборка полезной нагрузки для черновика / заявки
+  // ----------------------------------------------------
+  const buildDraftPayload = () => {
+    return {
+      inn: clientProfile.inn,
+      companyName: clientProfile.full_name,
+      requestedAmount: Number(answers.amount) || 1000000,
+      requestedTermMonths: answers.termUnspecified ? 12 : Number(answers.term) || 12,
+      purposeCode: isEquipment ? 'equipment' : 'working_capital',
+      stage: isOperating ? 'operating' : 'prelaunch',
+      businessType: isOperating ? 'operating' : 'prelaunch',
+      ownContribution: Number(answers.ownFunds) || 0,
+      equipmentPrice: Number(answers.equipmentCost) || undefined,
+      equipmentSupplier: answers.supplierInn,
+      purpose: answers.expenseDescription || (isEquipment ? answers.equipment : 'Кредитование бизнеса'),
+      neededByDate: answers.paymentDate || answers.neededByDate || undefined,
+      expensePeriod: answers.expensePeriod,
+      hasContract: answers.hasContract,
+      hasExpenseContract: answers.hasContract === 'Да' ? true : (answers.hasContract === 'Нет' ? false : undefined),
+      monthlyRevenue: clientFacts.length
+        ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.clean_receipts_rub), 0) / clientFacts.length)
+        : undefined,
+      monthlyExpenses: clientFacts.length
+        ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.operating_outflow_rub), 0) / clientFacts.length)
+        : undefined,
+      householdExpenses: Number(answers.personalExpenses) || 0,
+      existingMonthlyObligations: (clientDebts || []).reduce((acc, d) => acc + Number(d.monthly_max_payment_rub || 0), 0) +
+        (answers.extraDebts || []).reduce((acc: number, x: any) => acc + Number(x.payment || 0), 0),
+      isTaxRegimeActual: answers.taxCurrent === 'yes',
+      declaredTaxRegime: answers.taxCurrent === 'change' ? (answers.taxRegimes?.join(',') || answers.taxOther) : clientProfile.tax_regime,
+      receiptCoverage: answers.receiptCoverage || [],
+      expensesCoverageStatus: answers.expensesComplete,
+      hasAdditionalIncome: answers.additionalIncome === 'Да',
+      additionalIncomeAmount: answers.additionalIncome === 'Да' ? Number(answers.personalIncome) || 0 : undefined,
+      debtsVerificationStatus: answers.debtsComplete,
+      repaymentSourceDescription: answers.repaymentDescription,
+      personalDataConsent: Boolean(answers.personalDataConsent),
+      personalDataConsentDate: answers.personalDataConsentDate || (answers.personalDataConsent ? new Date().toISOString() : undefined),
+      bkiConsent: Boolean(answers.bkiConsent),
+      bkiConsentDate: answers.bkiConsentDate || (answers.bkiConsent ? new Date().toISOString() : undefined),
+      bkiConsentValidUntil: answers.bkiConsentValidUntil,
+      leasingPartnerConsent: Boolean(answers.leasingPartnerConsent),
+      leasingPartnerName: answers.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
+      leasingPartnerConsentDate: answers.leasingPartnerConsentDate || (answers.leasingPartnerConsent ? new Date().toISOString() : undefined),
+      clientAnswers: answers,
+      scenario: isNew ? 'new_business' : isPaused ? 'paused' : 'operating',
+      submissionPayload: {
+        scoringResult: scoringEvaluation,
+        riskFlags: riskFindings,
+        uploadedFilesSummary: uploadedFiles,
+        deferredDocs,
+      },
+    };
+  };
+
+  // ----------------------------------------------------
+  // Автоматическое сохранение черновика при переходах между шагами
+  // ----------------------------------------------------
+  const autoSaveDraft = async () => {
+    const targetId = currentDraftId || draftIdParam;
+    if (!targetId) return;
+    try {
+      const payload = buildDraftPayload();
+      await clientApi.saveDraft(targetId, payload as any);
+      try {
+        localStorage.setItem(`draft_answers_${targetId}`, JSON.stringify(answers));
+      } catch {}
+    } catch (err) {
+      console.warn('Автосохранение черновика не удалось:', err);
+    }
+  };
+
   const handleNext = () => {
     if (validateCurrentStep()) {
+      autoSaveDraft();
       if (currentStepIdx < wizardSteps.length - 1) {
         setCurrentStepIdx((prev) => prev + 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1204,6 +1276,7 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
 
   const handlePrev = () => {
     if (currentStepIdx > 0) {
+      autoSaveDraft();
       setCurrentStepIdx((prev) => prev - 1);
       setValidationErrors({});
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1211,6 +1284,7 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
   };
 
   const jumpToStep = (index: number) => {
+    autoSaveDraft();
     setCurrentStepIdx(index);
     setValidationErrors({});
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1449,112 +1523,6 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
         )}
       </div>
     );
-  };
-
-  // ----------------------------------------------------
-  // Сборка полезной нагрузки для черновика / заявки
-  // ----------------------------------------------------
-  const buildDraftPayload = () => {
-    return {
-      inn: clientProfile.inn,
-      companyName: clientProfile.full_name,
-      requestedAmount: Number(answers.amount) || 1000000,
-      requestedTermMonths: answers.termUnspecified ? 12 : Number(answers.term) || 12,
-      purposeCode: isEquipment ? 'equipment' : 'working_capital',
-      stage: isOperating ? 'operating' : 'prelaunch',
-      businessType: isOperating ? 'operating' : 'prelaunch',
-      ownContribution: Number(answers.ownFunds) || 0,
-      equipmentPrice: Number(answers.equipmentCost) || undefined,
-      equipmentSupplier: answers.supplierInn,
-      purpose: answers.expenseDescription || (isEquipment ? answers.equipment : 'Кредитование бизнеса'),
-      neededByDate: answers.paymentDate || answers.neededByDate || undefined,
-      expensePeriod: answers.expensePeriod,
-      hasContract: answers.hasContract,
-      hasExpenseContract: answers.hasContract === 'Да' ? true : (answers.hasContract === 'Нет' ? false : undefined),
-      monthlyRevenue: clientFacts.length
-        ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.clean_receipts_rub), 0) / clientFacts.length)
-        : undefined,
-      monthlyExpenses: clientFacts.length
-        ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.operating_outflow_rub), 0) / clientFacts.length)
-        : undefined,
-      householdExpenses: Number(answers.personalExpenses) || 0,
-      existingMonthlyObligations: (clientDebts || []).reduce((acc, d) => acc + Number(d.monthly_max_payment_rub || 0), 0) +
-        (answers.extraDebts || []).reduce((acc: number, x: any) => acc + Number(x.payment || 0), 0),
-      isTaxRegimeActual: answers.taxCurrent === 'yes',
-      declaredTaxRegime: answers.taxCurrent === 'change' ? (answers.taxRegimes?.join(',') || answers.taxOther) : clientProfile.tax_regime,
-      receiptCoverage: answers.receiptCoverage || [],
-      expensesCoverageStatus: answers.expensesComplete,
-      hasAdditionalIncome: answers.additionalIncome === 'Да',
-      additionalIncomeAmount: answers.additionalIncome === 'Да' ? Number(answers.personalIncome) || 0 : undefined,
-      debtsVerificationStatus: answers.debtsComplete,
-      repaymentSourceDescription: answers.repaymentDescription,
-      personalDataConsent: Boolean(answers.personalDataConsent),
-      personalDataConsentDate: answers.personalDataConsentDate || (answers.personalDataConsent ? new Date().toISOString() : undefined),
-      bkiConsent: Boolean(answers.bkiConsent),
-      bkiConsentDate: answers.bkiConsentDate || (answers.bkiConsent ? new Date().toISOString() : undefined),
-      bkiConsentValidUntil: answers.bkiConsentValidUntil,
-      leasingPartnerConsent: Boolean(answers.leasingPartnerConsent),
-      leasingPartnerName: answers.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
-      leasingPartnerConsentDate: answers.leasingPartnerConsentDate || (answers.leasingPartnerConsent ? new Date().toISOString() : undefined),
-      clientAnswers: answers,
-      scenario: isNew ? 'new_business' : isPaused ? 'paused' : 'operating',
-      submissionPayload: {
-        scoringResult: scoringEvaluation,
-        riskFlags: riskFindings,
-        uploadedFilesSummary: uploadedFiles,
-        deferredDocs,
-      },
-    };
-  };
-
-  // ----------------------------------------------------
-  // Сохранение черновика заявки в БД (T01 / T02)
-  // ----------------------------------------------------
-  const handleSaveDraft = async () => {
-    setIsSavingDraft(true);
-    setSubmitError(null);
-    setDraftSavedMessage(null);
-    const isUpdating = Boolean(currentDraftId);
-    try {
-      const payload = buildDraftPayload();
-      let targetId = currentDraftId;
-      if (!targetId) {
-        const created = await clientApi.createDraft(payload as any);
-        targetId = created.id;
-        setCurrentDraftId(created.id);
-        try {
-          localStorage.setItem(`draft_answers_${created.id}`, JSON.stringify(answers));
-        } catch {}
-        navigate(`/client/applications/${created.id}`, { replace: true });
-        setDraftSavedMessage('Черновик сохранен');
-      } else {
-        await clientApi.saveDraft(targetId, payload as any);
-        try {
-          localStorage.setItem(`draft_answers_${targetId}`, JSON.stringify(answers));
-        } catch {}
-        setDraftSavedMessage('Черновик обновлен');
-      }
-
-      // Загружаем выбранные файлы в S3 хранилище
-      const allFilesList = Object.values(uploadedFiles).flat();
-      for (const item of allFilesList) {
-        if (item.file) {
-          try {
-            await clientApi.uploadDocument(targetId, item.file);
-          } catch (e) {
-            console.warn('Document upload on draft save fallback:', e);
-          }
-        }
-      }
-
-      setTimeout(() => setDraftSavedMessage(null), 4000);
-    } catch (err: any) {
-      console.error('Ошибка сохранения черновика:', err);
-      setSubmitError(isUpdating ? 'Черновик не обновлен' : 'Черновик не сохранен');
-      setTimeout(() => setSubmitError(null), 5000);
-    } finally {
-      setIsSavingDraft(false);
-    }
   };
 
   // ----------------------------------------------------
@@ -3530,14 +3498,6 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
             </div>
           )}
 
-          {/* Draft Saved Success Notification */}
-          {draftSavedMessage && (
-            <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-sm flex items-center gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              <span className="font-medium">{draftSavedMessage}</span>
-            </div>
-          )}
-
           {/* Bottom Action Navigation Buttons */}
           <div className="nav-buttons">
             {currentStepIdx > 0 ? (
@@ -3553,21 +3513,10 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
             )}
 
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                disabled={isSavingDraft || isSubmitting}
-                onClick={handleSaveDraft}
-                className="secondary flex items-center gap-2"
-                title="Сохранить текущие сведения анкеты как черновик в БД"
-              >
-                <Save className="w-4 h-4" />
-                {isSavingDraft ? 'Сохранение...' : currentDraftId ? 'Обновить черновик' : 'Сохранить черновик'}
-              </button>
-
               {currentStep.key === 'review' ? (
                 <button
                   type="button"
-                  disabled={isSubmitting || isSavingDraft}
+                  disabled={isSubmitting}
                   onClick={handleSubmitApplication}
                   className="primary"
                 >

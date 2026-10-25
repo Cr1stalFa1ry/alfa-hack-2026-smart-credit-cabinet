@@ -283,9 +283,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       <span>{formatSize(doc.fileSizeBytes)}</span>
                       {doc.uploadedAt && <span>• {formatDocDate(doc.uploadedAt)}</span>}
-                      <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="w-3 h-3" /> Прикреплен
-                      </span>
                     </div>
                   </div>
                 </div>
