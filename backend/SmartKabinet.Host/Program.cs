@@ -12,6 +12,7 @@ using SmartKabinet.BankEmployee.Infrastructure.Persistence;
 using SmartKabinet.Checking;
 using SmartKabinet.Client;
 using SmartKabinet.Client.Infrastructure.Persistence;
+using SmartKabinet.Host.Middleware;
 using SmartKabinet.Infrastructure;
 using SmartKabinet.Intergrations;
 using SmartKabinet.Intergrations.AlfaBank.Persistence;
@@ -91,6 +92,8 @@ app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Маппинг эндпоинтов модулей
 app.MapAuthEndpoints();

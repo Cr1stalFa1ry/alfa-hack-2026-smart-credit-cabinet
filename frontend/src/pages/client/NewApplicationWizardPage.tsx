@@ -1207,7 +1207,9 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
       equipmentPrice: Number(answers.equipmentCost) || undefined,
       equipmentSupplier: answers.supplierInn,
       purpose: answers.expenseDescription || (isEquipment ? answers.equipment : 'Кредитование бизнеса'),
-      neededByDate: answers.paymentDate || answers.neededByDate || undefined,
+      neededByDate: answers.paymentDate
+        ? (answers.paymentDate.includes('T') ? answers.paymentDate : `${answers.paymentDate}T00:00:00.000Z`)
+        : (answers.neededByDate ? new Date(answers.neededByDate).toISOString() : undefined),
       expensePeriod: answers.expensePeriod,
       hasContract: answers.hasContract,
       hasExpenseContract: answers.hasContract === 'Да' ? true : (answers.hasContract === 'Нет' ? false : undefined),
