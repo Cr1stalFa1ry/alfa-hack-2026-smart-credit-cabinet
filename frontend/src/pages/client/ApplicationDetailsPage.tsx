@@ -11,11 +11,11 @@ import { StateMachineStepper } from '../../components/application/StateMachineSt
 import { ScoringCard } from '../../components/application/ScoringCard';
 import { OfferCard } from '../../components/application/OfferCard';
 import { NeedInfoResponseModal } from '../../components/application/NeedInfoResponseModal';
-import { TransitionHistoryModal } from '../../components/application/TransitionHistoryModal';
 import { FileUpload } from '../../components/common/FileUpload';
 import { ConsentModal, ConsentType } from '../../components/application/ConsentModal';
 import { NewApplicationWizardPage } from './NewApplicationWizardPage';
 import { formatRubles, formatDateTime, formatInn } from '../../utils/formatters';
+import { STATUS_MAP, TRANSITION_DESCRIPTIONS } from '../../utils/statusHelpers';
 import {
   ArrowLeft,
   History,
@@ -27,6 +27,10 @@ import {
   Building2,
   ShieldCheck,
   Check,
+  User,
+  Cpu,
+  ShieldAlert,
+  ArrowRight,
 } from 'lucide-react';
 
 export const ApplicationDetailsPage: React.FC = () => {
@@ -40,8 +44,30 @@ export const ApplicationDetailsPage: React.FC = () => {
 
   // Modals
   const [isNeedInfoModalOpen, setIsNeedInfoModalOpen] = useState(false);
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [activeConsentType, setActiveConsentType] = useState<ConsentType | null>(null);
+
+  const getActorBadge = (actor: string, name?: string) => {
+    switch (actor) {
+      case 'client':
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md">
+            <User className="w-3 h-3" /> {name || 'Клиент ИП'}
+          </span>
+        );
+      case 'analyst':
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-md">
+            <ShieldAlert className="w-3 h-3" /> {name || 'Аналитик'}
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+            <Cpu className="w-3 h-3" /> {name || 'SmartKabinet Engine'}
+          </span>
+        );
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -209,17 +235,6 @@ export const ApplicationDetailsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {history.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsHistoryModalOpen(true)}
-              leftIcon={<History className="w-4 h-4 text-slate-500 dark:text-slate-400" />}
-            >
-              История переходов ({history.length})
-            </Button>
-          )}
-
           {['draft', 'checking', 'waiting_check', 'need_info', 'review', 'offer'].includes(application.status) && (
             <Button
               variant="ghost"
@@ -415,6 +430,101 @@ export const ApplicationDetailsPage: React.FC = () => {
                 </div>
           </Card>
 
+          {/* Card: История переходов заявки (полноценное окно под Параметры кредита) */}
+          <Card>
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-[#EF3124] flex items-center justify-center">
+                  <History className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    История переходов
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                      {history.length}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Хронология этапов рассмотрения, проверок и решений по заявке
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {history.length === 0 ? (
+              <div className="p-6 text-center text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                Пока нет записей в истории переходов
+              </div>
+            ) : (
+              <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+                {history.map((record, index) => {
+                  const fromMeta = STATUS_MAP[record.fromStatus] || STATUS_MAP.draft;
+                  const toMeta = STATUS_MAP[record.toStatus] || STATUS_MAP.draft;
+                  const isLatest = index === history.length - 1;
+
+                  return (
+                    <div key={record.id} className="relative">
+                      {/* Timeline dot */}
+                      <div
+                        className={`absolute -left-[27px] top-2 w-3.5 h-3.5 rounded-full ring-4 ring-white dark:ring-slate-900 ${
+                          isLatest ? 'bg-[#EF3124] shadow-sm shadow-[#EF3124]/50' : 'bg-slate-300 dark:bg-slate-600'
+                        }`}
+                      />
+
+                      <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 rounded-xl p-3.5 space-y-2 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-1.5 font-bold">
+                            <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 font-mono text-[11px]">
+                              {record.transitionCode}
+                            </span>
+                            <span className="text-slate-800 dark:text-slate-200">
+                              {TRANSITION_DESCRIPTIONS[record.transitionCode] || record.transitionCode}
+                            </span>
+                            {isLatest && (
+                              <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                Текущий этап
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                            {formatDateTime(record.timestamp)}
+                          </span>
+                        </div>
+
+                        {/* Transition flow */}
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          <span className={`px-2 py-0.5 rounded-full border text-[11px] ${fromMeta.badgeClass}`}>
+                            {fromMeta.label}
+                          </span>
+                          <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                          <span className={`px-2 py-0.5 rounded-full border text-[11px] ${toMeta.badgeClass}`}>
+                            {toMeta.label}
+                          </span>
+                          <div className="ml-auto">{getActorBadge(record.actor, record.actorName)}</div>
+                        </div>
+
+                        {record.comment && (
+                          <p className="text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 italic">
+                            «{record.comment}»
+                          </p>
+                        )}
+
+                        {record.reasonCode && (
+                          <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                            Код причины:{' '}
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">
+                              {record.reasonCode}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
           {/* Scoring Card (only if scoring exists) */}
           {application.scoring && <ScoringCard scoring={application.scoring} />}
         </div>
@@ -538,15 +648,6 @@ export const ApplicationDetailsPage: React.FC = () => {
         onFileUpload={handleFileUpload}
         uploadedDocuments={documents}
       />
-
-      {/* Transition History Modal (Audit Log) */}
-      {history.length > 0 && (
-        <TransitionHistoryModal
-          isOpen={isHistoryModalOpen}
-          onClose={() => setIsHistoryModalOpen(false)}
-          history={history}
-        />
-      )}
 
       {/* Модальное окно просмотра текста согласия */}
       <ConsentModal
