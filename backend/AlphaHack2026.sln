@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartKabinet.Host", "SmartKabinet.Host\SmartKabinet.Host.csproj", "{08B8B8AA-6237-420E-9228-482F8BBBA176}"
 EndProject
@@ -12,7 +12,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartKabinet.Client", "Modu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartKabinet.BankEmployee", "Modules\SmartKabinet.BankEmployee\SmartKabinet.BankEmployee.csproj", "{505103FA-8EA8-4D50-8934-1019DAB891F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartKabinet.Application", "Modules\SmartKabinet.Application \SmartKabinet.Application.csproj", "{F3B6F240-9BF2-48FE-91DC-38A43ABFCF67}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartKabinet.Application", "Modules\SmartKabinet.Application\SmartKabinet.Application.csproj", "{F3B6F240-9BF2-48FE-91DC-38A43ABFCF67}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartKabinet.Checking", "Modules\SmartKabinet.Checking\SmartKabinet.Checking.csproj", "{B2037AEA-9ACE-44CA-BCF9-F035AEC9C7E1}"
 EndProject

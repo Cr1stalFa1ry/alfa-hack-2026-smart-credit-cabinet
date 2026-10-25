@@ -74,13 +74,40 @@ export interface UploadedDocument {
   fileSizeBytes: number;
   fileType: 'bank_statement' | 'tax_declaration' | 'contract' | 'other';
   uploadedAt: string;
-  status: 'uploaded' | 'verified' | 'rejected';
+  status: 'uploaded' | 'verified' | 'rejected' | 'superseded';
+  downloadUrl?: string;
+  fileKey?: string;
+  review?: 'pending' | 'verified' | 'rejected' | 'superseded';
+  reviewedAt?: string;
+  reviewNote?: string;
+  group?: string;
+  evidenceGroup?: string;
+  replacementForGroup?: string;
+  supersededBy?: string;
+  size?: number;
+  mime?: string;
+}
+
+export interface ClientRequestItem {
+  id: string;
+  title: string;
+  reason: string;
+  documentType?: string;
+  period?: string;
+  documentPurpose?: string;
+  status: 'open' | 'responded' | 'closed';
+  createdAt: string;
+  respondedAt?: string;
+  response?: string;
+  draftResponse?: string;
+  files?: UploadedDocument[];
 }
 
 export interface CreditApplication {
   id: string;
   inn: string;
   companyName: string;
+  clientName?: string;
   productCode?: ProductCode; // 'EQ' | 'WC' | 'START'
   stage?: BusinessStage;
   businessType: BusinessType;
@@ -94,6 +121,19 @@ export interface CreditApplication {
   requestedTermMonths: number;
   neededByDate?: string;
   asSoonAsPossible?: boolean;
+  expensePeriod?: string;
+  hasContract?: string;
+  hasExpenseContract?: boolean;
+  isTaxRegimeActual?: boolean;
+  declaredTaxRegime?: string;
+  receiptCoverage?: string[];
+  expensesCoverageStatus?: string;
+  hasAdditionalIncome?: boolean;
+  additionalIncomeAmount?: number;
+  debtsVerificationStatus?: string;
+  repaymentSourceDescription?: string;
+  householdExpenses?: number;
+  existingMonthlyObligations?: number;
   bkiConsent?: boolean;
   bkiConsentDate?: string;
   bkiConsentValidUntil?: string;
@@ -108,16 +148,60 @@ export interface CreditApplication {
   createdAt: string;
   updatedAt: string;
   documents: UploadedDocument[];
+  files?: Record<string, UploadedDocument[]>;
   needInfoPrompt?: string;
   needInfoResponse?: string;
   declineReason?: string;
+  reasonCodes?: string[];
   offer?: CreditOffer;
+  recommendedOffer?: CreditOffer;
+  currentOffer?: any;
+  manualOffer?: {
+    amount: number | string;
+    term: number | string;
+    rate: number | string;
+    payment: number | string;
+    description: string;
+    analysisFingerprint?: number | string;
+    rulesVersion?: string;
+  };
   scoring?: ScoringResult;
+  mlExplanation?: string;
+  mlExplanationSource?: string;
   history: StateTransitionRecord[];
+  events?: Array<{
+    at: string;
+    actor: string;
+    public: boolean;
+    text: string;
+  }>;
+  requests?: ClientRequestItem[];
+  checks?: {
+    identity?: 'pending' | 'verified' | 'issue';
+    finances?: 'pending' | 'verified' | 'issue';
+    supplier?: 'pending' | 'verified' | 'issue';
+    property?: 'pending' | 'verified' | 'issue';
+    [key: string]: 'pending' | 'verified' | 'issue' | undefined;
+  };
+  scoringOverrides?: {
+    debtPayment?: string | null;
+    extraExpenses?: string | null;
+    debtReconciled?: boolean;
+    extraExpensesConfirmed?: boolean;
+    ownFundsConfirmed?: boolean;
+    taxConfirmed?: boolean;
+    note?: string;
+    at?: string;
+    actor?: string;
+  };
+  offerReviewFingerprint?: number | string | null;
+  analysis?: any;
+  analysisHistory?: any[];
   clientAnswers?: Record<string, any>;
   specialistNotes?: string[];
   scenario?: string;
   submissionPayload?: any;
+  issues?: string[];
 }
 
 export interface CreateDraftRequest {
@@ -134,6 +218,19 @@ export interface CreateDraftRequest {
   requestedTermMonths: number;
   neededByDate?: string;
   asSoonAsPossible?: boolean;
+  expensePeriod?: string;
+  hasContract?: string;
+  hasExpenseContract?: boolean;
+  isTaxRegimeActual?: boolean;
+  declaredTaxRegime?: string;
+  receiptCoverage?: string[];
+  expensesCoverageStatus?: string;
+  hasAdditionalIncome?: boolean;
+  additionalIncomeAmount?: number;
+  debtsVerificationStatus?: string;
+  repaymentSourceDescription?: string;
+  householdExpenses?: number;
+  existingMonthlyObligations?: number;
   bkiConsent?: boolean;
   bkiConsentDate?: string;
   personalDataConsent?: boolean;
@@ -148,4 +245,5 @@ export interface CreateDraftRequest {
   specialistNotes?: string[];
   scenario?: string;
   submissionPayload?: any;
+  issues?: string[];
 }

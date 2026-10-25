@@ -83,32 +83,50 @@ if app_id:
     # Пауза для выполнения Scoring Engine через Wolverine Event Pipeline
     time.sleep(2.0)
 
-# 9. Get Application Decision & Offer
+# 9. Scoring Engine Result: Application transferred to Bank Analyst (review) without auto-offer to client
 if app_id:
     s, b = req(f"/api/client/applications/{app_id}", token=client_token)
     app_status = b.get("status")
     decision = b.get("decision")
     offer = b.get("offer")
+    # Client should NOT have received the offer yet (it is pending analyst review)
+    results.append(("9. Scoring Result -> Review (T07)", s == 200 and app_status in ["review", "checking"] and offer is None, f"Status: {app_status}, Client Offer: {offer}"))
+
+# 10. Bank Analyst Queue & Dossier: Analyst sees scoring recommendation
+if app_id:
+    s_queue, b_queue = req("/api/employee/applications/queue", token=analyst_token)
+    s_det, b_det = req(f"/api/employee/applications/{app_id}", token=analyst_token)
+    rec_offer = b_det.get("currentOffer")
+    has_rec = rec_offer is not None
+    rec_info = f"Rec: {rec_offer.get('approvedAmount')} ₽, Rate: {rec_offer.get('annualRatePercent')}%, Pay: {rec_offer.get('monthlyPayment')} ₽" if has_rec else "No rec"
+    results.append(("10. Analyst Sees Scoring Rec", s_det == 200 and has_rec, f"Status: {b_det.get('status')}, {rec_info}"))
+
+# 11. Bank Analyst Approves Offer (T12)
+if app_id:
+    s_appr, b_appr = req(f"/api/employee/applications/{app_id}/approve", method="POST", data={"comment": "Одобрено аналитиком после проверки скоринга"}, token=analyst_token)
+    results.append(("11. Analyst T12 Approve Offer", s_appr == 200 and b_appr.get("status") == "offer", f"Status: {b_appr.get('status')}, Decision: {b_appr.get('decision')}"))
+
+# 12. Client Now Receives Offer
+if app_id:
+    s, b = req(f"/api/client/applications/{app_id}", token=client_token)
+    app_status = b.get("status")
+    offer = b.get("offer")
     has_offer = offer is not None
     offer_info = f"Amount: {offer.get('approvedAmount')} ₽, Rate: {offer.get('annualRatePercent')}%, Pay: {offer.get('monthlyPayment')} ₽" if has_offer else "No offer"
-    results.append(("9. Scoring Engine Decision (S1)", s == 200 and app_status in ["offer", "checking"], f"Status: {app_status}, Decision: {decision}, {offer_info}"))
+    results.append(("12. Client Receives Approved Offer", s == 200 and app_status == "offer" and has_offer, f"Status: {app_status}, {offer_info}"))
 
-# 10. Get Application Explanation (ML / Fallback)
+# 13. Get Application Explanation (ML / Fallback)
 if app_id:
     s, b = req(f"/api/client/applications/{app_id}/explanation", token=client_token)
-    results.append(("10. Application Explanation (ML/LLM)", s == 200, f"Source: {b.get('source')}, Explanation: {b.get('explanation')[:45]}..."))
+    results.append(("13. Application Explanation (ML/LLM)", s == 200, f"Source: {b.get('source')}, Explanation: {b.get('explanation')[:45]}..."))
 
-# 11. List Client Applications
+# 14. List Client Applications
 s, b = req("/api/client/applications", token=client_token)
-results.append(("11. List Client Applications", s == 200 and isinstance(b, list), f"Total applications: {len(b)}"))
+results.append(("14. List Client Applications", s == 200 and isinstance(b, list), f"Total applications: {len(b)}"))
 
-# 12. Bank Employee Queue
-s, b = req("/api/employee/applications/queue", token=analyst_token)
-results.append(("12. Bank Analyst Review Queue", s == 200 and isinstance(b, list), f"Queue items: {len(b)}"))
-
-# 13. ML Direct Integration
+# 15. ML Direct Integration
 s, b = req("/api/integrations/ml/explain", method="POST", data={"reasonCode": "DSCR_LOW"})
-results.append(("13. ML Direct Reason Explanation", s == 200, f"Source: {b.get('source')}, Text: {b.get('text', '')[:45]}..."))
+results.append(("15. ML Direct Reason Explanation", s == 200, f"Source: {b.get('source')}, Text: {b.get('text', '')[:45]}..."))
 
 print("\n" + "=" * 65)
 print("           ПЛАТФОРМА: ОТЧЕТ О ВЕРИФИКАЦИИ РАБОТОСПОСОБНОСТИ")

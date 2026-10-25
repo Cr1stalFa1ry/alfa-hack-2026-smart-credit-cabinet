@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { CreditOffer } from '../../types/application';
-import { Card } from '../common/Card';
-import { Button } from '../common/Button';
 import { formatRubles, formatPercent, formatDate } from '../../utils/formatters';
-import { CheckCircle2, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface OfferCardProps {
   offer: CreditOffer;
@@ -13,112 +11,101 @@ interface OfferCardProps {
 
 export const OfferCard: React.FC<OfferCardProps> = ({ offer, onAccept, isLoading = false }) => {
   const [selectedTerm, setSelectedTerm] = useState<'standard' | 'alternative'>('standard');
-
   const isAccepted = offer.isAccepted;
 
   return (
-    <Card variant="alfa" className="relative overflow-hidden">
-      <div className="flex items-center gap-2 text-alfa-600 dark:text-alfa-400 font-bold text-xs uppercase tracking-wider mb-2">
-        <Sparkles className="w-4 h-4" />
-        Персональное кредитное предложение Альфа-Банка
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 mb-6">
-        <div>
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">
-            {formatRubles(offer.approvedAmount)}
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Ставка {formatPercent(offer.annualInterestRate)} годовых • Без скрытых комиссий
-          </p>
-        </div>
-
+    <div className="p-6 sm:p-[30px] border border-[#efddd8] rounded-[22px] bg-[#fff8f6] text-[#141414]">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <span className="text-[11px] tracking-[0.12em] uppercase text-[#EF3124] font-bold">
+          Персональное кредитное предложение Альфа-Банка
+        </span>
         {offer.expirationDate && (
-          <span className="text-xs text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-800/80 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+          <span className="inline-block rounded-[7px] bg-white border border-[#efddd8] px-[9px] py-[4px] text-[11px] text-[#686b70]">
             Действует до {formatDate(offer.expirationDate)}
           </span>
         )}
       </div>
 
-      {/* Choice of terms: Standard vs Alternative (+6m) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Standard term */}
-        <div
+      <div className="mb-6">
+        <h2 className="text-[32px] sm:text-[38px] font-bold tracking-[-0.045em] leading-[1.08] text-[#141414] mb-2">
+          {formatRubles(offer.approvedAmount)}
+        </h2>
+        <p className="text-[14px] text-[#686b70] m-0">
+          Фиксированная ставка {formatPercent(offer.annualInterestRate)} годовых • Без скрытых комиссий
+        </p>
+      </div>
+
+      {/* Выбор варианта срока (.choice из макет.html) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-6">
+        <label
           onClick={() => !isAccepted && setSelectedTerm('standard')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${
+          className={`p-5 rounded-[14px] border cursor-pointer transition-colors block ${
             selectedTerm === 'standard'
-              ? 'bg-white dark:bg-slate-900 border-alfa-500 shadow-md ring-2 ring-alfa-200 dark:ring-alfa-900/60'
-              : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-900'
+              ? 'border-[#EF3124] bg-[#fff1ef]'
+              : 'border-[#e6e8ea] bg-white hover:border-[#D1D5D8]'
           }`}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Базовый вариант</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-              {offer.approvedTermMonths} месяцев
+            <span className="text-[12px] font-bold uppercase text-[#686b70]">Базовый вариант</span>
+            <span className="inline-block rounded-[7px] bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#141414] border border-[#e6e8ea]">
+              {offer.approvedTermMonths} мес.
             </span>
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white">
+          <strong className="text-[25px] font-bold tracking-[-0.04em] block text-[#141414]">
             {formatRubles(offer.monthlyPayment)}{' '}
-            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">/ мес</span>
-          </div>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-            Сумма выплат за весь срок: {formatRubles(offer.totalRepayment)}
-          </p>
-        </div>
+            <span className="text-[12px] font-normal text-[#686b70]">/ мес</span>
+          </strong>
+          <span className="text-[12px] text-[#686b70] block mt-2">
+            Всего к возврату: {formatRubles(offer.totalRepayment)}
+          </span>
+        </label>
 
-        {/* Alternative term (+6 months) as requested in backend.md */}
         {offer.alternativeTerms && (
-          <div
+          <label
             onClick={() => !isAccepted && setSelectedTerm('alternative')}
-            className={`p-4 rounded-xl border transition-all cursor-pointer ${
+            className={`p-5 rounded-[14px] border cursor-pointer transition-colors block ${
               selectedTerm === 'alternative'
-                ? 'bg-white dark:bg-slate-900 border-alfa-500 shadow-md ring-2 ring-alfa-200 dark:ring-alfa-900/60'
-                : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-900'
+                ? 'border-[#EF3124] bg-[#fff1ef]'
+                : 'border-[#e6e8ea] bg-white hover:border-[#D1D5D8]'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" /> Сниженный платёж
-              </span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                {offer.alternativeTerms.newTermMonths} месяцев (+{offer.alternativeTerms.additionalMonths} мес)
+              <span className="text-[12px] font-bold uppercase text-[#176b45]">Сниженный платёж</span>
+              <span className="inline-block rounded-[7px] bg-[#edf7f0] text-[#176b45] px-2.5 py-0.5 text-[11px] font-bold">
+                {offer.alternativeTerms.newTermMonths} мес. (+{offer.alternativeTerms.additionalMonths} мес.)
               </span>
             </div>
-            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+            <strong className="text-[25px] font-bold tracking-[-0.04em] block text-[#176b45]">
               {formatRubles(offer.alternativeTerms.newMonthlyPayment)}{' '}
-              <span className="text-xs font-normal text-slate-500 dark:text-slate-400">/ мес</span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              {offer.alternativeTerms.note}
-            </p>
-          </div>
+              <span className="text-[12px] font-normal text-[#686b70]">/ мес</span>
+            </strong>
+            <span className="text-[12px] text-[#686b70] block mt-2">{offer.alternativeTerms.note}</span>
+          </label>
         )}
       </div>
 
-      {/* Action footer */}
-      <div className="pt-4 border-t border-alfa-200/60 dark:border-alfa-900/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-          <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          Деньги зачисляются на ваш расчётный счёт в Альфа-Банке сразу после подтверждения
-        </div>
+      <div className="pt-5 border-t border-[#efddd8] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <span className="text-[12px] text-[#686b70]">
+          Средства зачисляются на расчётный счёт в Альфа-Банке сразу после акцепта оферты
+        </span>
 
         {isAccepted ? (
-          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-sm">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="inline-flex items-center gap-2 px-4 py-3 rounded-[12px] bg-[#edf7f0] text-[#176b45] font-bold text-[14px]">
+            <CheckCircle2 className="w-5 h-5" />
             Оферта принята • Кредит выдан
           </div>
         ) : (
-          <Button
-            size="lg"
-            variant="primary"
-            isLoading={isLoading}
+          <button
+            type="button"
+            disabled={isLoading}
             onClick={() => onAccept(selectedTerm === 'alternative')}
-            rightIcon={<ArrowRight className="w-4 h-4" />}
+            className="rounded-[12px] px-[21px] py-[14px] font-bold text-[14px] inline-flex items-center justify-center gap-2.5 bg-[#EF3124] hover:bg-[#cd2017] text-white transition-colors cursor-pointer disabled:opacity-45"
           >
-            Принять предложение и получить деньги
-          </Button>
+            <span>{isLoading ? 'Оформление...' : 'Принять предложение и получить деньги'}</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         )}
       </div>
-    </Card>
+    </div>
   );
 };

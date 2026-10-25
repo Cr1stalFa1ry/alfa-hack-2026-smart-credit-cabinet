@@ -5,7 +5,7 @@ WORKDIR /src
 COPY ["AlphaHack2026.sln", "./"]
 COPY ["SmartKabinet.Host/SmartKabinet.Host.csproj", "SmartKabinet.Host/"]
 COPY ["Shared/SmartKabinet.Shared/SmartKabinet.Shared.csproj", "Shared/SmartKabinet.Shared/"]
-COPY ["Modules/SmartKabinet.Application /SmartKabinet.Application.csproj", "Modules/SmartKabinet.Application /"]
+COPY ["Modules/SmartKabinet.Application/SmartKabinet.Application.csproj", "Modules/SmartKabinet.Application/"]
 COPY ["Modules/SmartKabinet.Auth/SmartKabinet.Auth.csproj", "Modules/SmartKabinet.Auth/"]
 COPY ["Modules/SmartKabinet.BankEmployee/SmartKabinet.BankEmployee.csproj", "Modules/SmartKabinet.BankEmployee/"]
 COPY ["Modules/SmartKabinet.Checking/SmartKabinet.Checking.csproj", "Modules/SmartKabinet.Checking/"]

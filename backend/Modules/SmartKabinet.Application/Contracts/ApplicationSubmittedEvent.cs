@@ -12,5 +12,13 @@ public record ApplicationSubmittedEvent(
     decimal? ProjectedMonthlyRevenue = null,
     decimal? FinancialReserve = null,
     decimal? PersonalIncome = null,
-    string ProductCode = ""
+    string ProductCode = "",
+    decimal? MonthlyRevenue = null,
+    decimal? MonthlyExpenses = null,
+    decimal? HouseholdExpenses = null,
+    decimal? ExistingMonthlyObligations = null,
+    string? DebtsVerificationStatus = null,
+    string? ExpensesCoverageStatus = null,
+    bool? HasAdditionalIncome = null,
+    decimal? AdditionalIncomeAmount = null
 );

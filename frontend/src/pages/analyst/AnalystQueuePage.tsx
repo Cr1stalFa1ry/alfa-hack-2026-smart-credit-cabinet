@@ -29,7 +29,9 @@ export const AnalystQueuePage: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await analystApi.getReviewQueue();
-      setApplications(data);
+      // Исключаем черновики: сотрудник банка работает только с отправленными заявками
+      const submittedOnly = data.filter((a) => a.status !== 'draft');
+      setApplications(submittedOnly);
     } finally {
       setIsLoading(false);
     }
@@ -41,6 +43,7 @@ export const AnalystQueuePage: React.FC = () => {
   const checkingCount = applications.filter((a) => a.status === 'checking').length;
 
   const filteredApplications = applications.filter((app) => {
+    if (app.status === 'draft') return false;
     const matchesFilter = filterStatus === 'all' || app.status === filterStatus;
     const company = app.companyName || `ИП (ИНН ${app.inn || ''})`;
     const inn = app.inn || '';
@@ -181,6 +184,13 @@ export const AnalystQueuePage: React.FC = () => {
                       <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {app.businessType === 'operating' ? 'Действующий' : 'Prelaunch'}
                       </span>
+                      {(app.businessType === 'prelaunch' || app.stage === 'prelaunch') && (
+                        <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                          {app.purposeCode === 'equipment' || (app.purpose && app.purpose.toLowerCase().includes('оборудован'))
+                            ? 'Специалист по лизингу'
+                            : 'Финансирование под залог'}
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>

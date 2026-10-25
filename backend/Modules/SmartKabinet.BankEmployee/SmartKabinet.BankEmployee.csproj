@@ -12,7 +12,10 @@
 
     <ItemGroup>
         <ProjectReference Include="..\SmartKabinet.Auth\SmartKabinet.Auth.csproj" />
+        <ProjectReference Include="..\SmartKabinet.Application\SmartKabinet.Application.csproj" />
+        <ProjectReference Include="..\SmartKabinet.Infrastructure\SmartKabinet.Infrastructure.csproj" />
         <ProjectReference Include="..\SmartKabinet.Intergrations\SmartKabinet.Intergrations.csproj" />
+        <ProjectReference Include="..\..\Shared\SmartKabinet.Shared\SmartKabinet.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>

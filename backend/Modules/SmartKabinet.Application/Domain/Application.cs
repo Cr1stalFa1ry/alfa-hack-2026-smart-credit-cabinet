@@ -29,8 +29,19 @@ public class Application
     public DateTime? HistoryStartDate { get; set; }
     public int? HistoryMonths { get; set; }
     public string? StatementFilePath { get; set; }
+    public decimal? MonthlyRevenue { get; set; }
+    public decimal? MonthlyExpenses { get; set; }
+    public decimal? HouseholdExpenses { get; set; }
     public decimal? ExistingMonthlyObligations { get; set; }
     public TaxRegime TaxRegime { get; set; } = TaxRegime.Undefined;
+    public bool? IsTaxRegimeActual { get; set; }
+    public string? DeclaredTaxRegime { get; set; }
+    public List<string> ReceiptCoverage { get; set; } = new();
+    public string? ExpensesCoverageStatus { get; set; }
+    public bool? HasAdditionalIncome { get; set; }
+    public decimal? AdditionalIncomeAmount { get; set; }
+    public string? DebtsVerificationStatus { get; set; }
+    public string? RepaymentSourceDescription { get; set; }
 
     // Данные для Equipment (Оборудование)
     public decimal? EquipmentPrice { get; set; }
@@ -47,6 +58,8 @@ public class Application
     public WorkingCapitalUse? UseOfFunds { get; set; }
     public bool? IsRepeatRequirement { get; set; }
     public string? SeasonalityComment { get; set; }
+    public string? ExpensePeriod { get; set; }
+    public bool? HasExpenseContract { get; set; }
 
     // Данные для Prelaunch (Новый бизнес)
     public DateTime? PlannedLaunchDate { get; set; }

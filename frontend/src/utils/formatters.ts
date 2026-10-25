@@ -50,3 +50,25 @@ export const formatPercent = (value: number | undefined): string => {
   if (value === undefined || value === null) return '0%';
   return `${value.toFixed(1)}%`;
 };
+
+/**
+ * Standard rational bank annuity payment calculation
+ * P = S * [ r * (1 + r)^n ] / [ (1 + r)^n - 1 ]
+ */
+export const calculateMonthlyPayment = (
+  amount: number | undefined | null,
+  annualRatePercent: number | undefined | null,
+  termMonths: number | undefined | null
+): number => {
+  const S = Number(amount || 0);
+  const n = Number(termMonths || 0);
+  const rate = Number(annualRatePercent || 0);
+
+  if (S <= 0 || n <= 0) return 0;
+  if (rate <= 0) return Math.round(S / n);
+
+  const monthlyRate = rate / 100 / 12;
+  const factor = Math.pow(1 + monthlyRate, n);
+  const payment = (S * monthlyRate * factor) / (factor - 1);
+  return Math.round(payment);
+};

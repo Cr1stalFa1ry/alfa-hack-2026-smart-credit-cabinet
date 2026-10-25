@@ -1,87 +1,86 @@
 import { apiClient } from './apiClient';
-import { CreditApplication, CreditOffer } from '../types/application';
-import { mockStore } from './mockStore';
-import { userStore } from './userStore';
+import { CreditApplication, ClientRequestItem } from '../types/application';
 import { mapBackendApplication } from './clientApi';
-
-function isDemoActive(): boolean {
-  return localStorage.getItem('smart_kabinet_demo_mode') === 'true';
-}
-
-function getLocalQueueFallback(): CreditApplication[] {
-  const map = new Map<string, CreditApplication>();
-  mockStore.getAll().forEach((a) => map.set(a.id, a));
-  userStore.getAllApplications().forEach((a) => map.set(a.id, a));
-  return Array.from(map.values()).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-}
+import { applicationStore } from '../utils/applicationStore';
 
 export const analystApi = {
   getReviewQueue: async (): Promise<CreditApplication[]> => {
-    if (isDemoActive()) {
-      return getLocalQueueFallback();
-    }
-
     try {
-      const res = await apiClient.get<any[]>('/employee/applications/queue', { timeout: 2500 });
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        return res.data.map(mapBackendApplication);
+      const res = await apiClient.get<any>('/employee/applications/queue', { timeout: 4000 });
+      const data = (res.data as any)?.value || res.data;
+      if (Array.isArray(data)) {
+        const mapped = data
+          .map(mapBackendApplication)
+          .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'))
+          .filter((a) => a.status !== 'draft');
+        applicationStore.syncApps(mapped);
+        return mapped;
       }
-    } catch {
-      // offline or backend fallback
+    } catch (err) {
+      console.warn('Backend employee queue unavailable, using local store:', err);
+      return applicationStore
+        .getAll()
+        .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'))
+        .filter((a) => a.status !== 'draft');
     }
-
-    return getLocalQueueFallback();
+    return [];
   },
 
   getApplicationDetails: async (id: string): Promise<CreditApplication> => {
-    if (isDemoActive()) {
-      const app = userStore.findApplicationAcrossUsers(id) || mockStore.getById(id);
-      if (!app) throw new Error('Заявка не найдена');
-      return app;
-    }
-
     try {
-      const res = await apiClient.get<any>(`/employee/applications/${id}`, { timeout: 2500 });
-      if (res.data) {
-        return mapBackendApplication(res.data);
+      const res = await apiClient.get<any>(`/employee/applications/${id}`, { timeout: 4000 });
+      const data = res.data?.value || res.data;
+      if (data) {
+        const mapped = mapBackendApplication(data);
+        applicationStore.saveApp(mapped);
+        return mapped;
       }
-    } catch {
-      // ignore
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        applicationStore.removeApp(id);
+        throw new Error('Заявка не найдена');
+      }
+      console.warn(`Backend application ${id} fetch error, fallback to local store:`, err);
     }
-
-    const fallbackApp = userStore.findApplicationAcrossUsers(id) || mockStore.getById(id);
-    if (fallbackApp) return fallbackApp;
-
+    const local = applicationStore.getById(id);
+    if (local) return local;
     throw new Error('Заявка не найдена');
   },
 
   // T11: Запрос сведений у клиента (review -> need_info)
-  requestNeedInfo: async (id: string, prompt: string): Promise<CreditApplication> => {
-    if (!isDemoActive()) {
-      try {
-        const res = await apiClient.post<any>(
-          `/employee/applications/${id}/request-info`,
-          { comment: prompt },
-          { timeout: 2500 }
-        );
-        return mapBackendApplication(res.data);
-      } catch {
-        // fallback
-      }
+  requestNeedInfo: async (
+    id: string,
+    prompt: string,
+    extra?: {
+      title?: string;
+      reason?: string;
+      documentType?: string;
+      period?: string;
+      documentPurpose?: string;
+    }
+  ): Promise<CreditApplication> => {
+    try {
+      await apiClient.post<any>(
+        `/employee/applications/${id}/request-info`,
+        {
+          comment: prompt,
+          reasonCode: extra?.documentPurpose || 'NEED_INFO',
+        },
+        { timeout: 5000 }
+      );
+    } catch (err) {
+      console.warn('Backend request-info error (handled offline):', err);
     }
 
-    return mockStore.transition(
-      id,
-      'T11',
-      'need_info',
-      'analyst',
-      'Аналитик Банка',
-      prompt,
-      undefined,
-      { needInfoPrompt: prompt }
-    );
+    applicationStore.addClientRequest(id, {
+      title: extra?.title || prompt,
+      reason: extra?.reason || prompt,
+      documentType: extra?.documentType || '',
+      period: extra?.period || '',
+      documentPurpose: extra?.documentPurpose || 'general',
+    });
+
+    return applicationStore.getById(id)!;
   },
 
   // T12: Решение аналитика об одобрении (review -> offer)
@@ -92,137 +91,81 @@ export const analystApi = {
       approvedTermMonths: number;
       annualInterestRate: number;
       comment?: string;
+      monthlyPayment?: number;
     }
   ): Promise<CreditApplication> => {
-    if (!isDemoActive()) {
-      try {
-        const res = await apiClient.post<any>(
-          `/employee/applications/${id}/approve`,
-          {
-            approvedAmount: params.approvedAmount,
-            termMonths: params.approvedTermMonths,
-            annualRatePercent: params.annualInterestRate,
-            comment: params.comment,
-          },
-          { timeout: 2500 }
-        );
-        return mapBackendApplication(res.data);
-      } catch {
-        // fallback
-      }
+    try {
+      await apiClient.post<any>(
+        `/employee/applications/${id}/approve`,
+        {
+          approvedAmount: params.approvedAmount,
+          termMonths: params.approvedTermMonths,
+          annualRatePercent: params.annualInterestRate,
+          comment: params.comment,
+        },
+        { timeout: 5000 }
+      );
+    } catch (err) {
+      console.warn('Backend approve error (handled offline):', err);
     }
 
-    const monthlyPayment = Math.round(
-      (params.approvedAmount * (1 + (params.annualInterestRate / 100) * (params.approvedTermMonths / 12))) /
-        params.approvedTermMonths
-    );
-    const totalRepayment = monthlyPayment * params.approvedTermMonths;
+    applicationStore.setStatus(id, 'approved', params.comment || 'Одобрено специалистом', {
+      amount: params.approvedAmount,
+      term: params.approvedTermMonths,
+      rate: params.annualInterestRate,
+      payment: params.monthlyPayment || Math.round(params.approvedAmount / params.approvedTermMonths),
+      description: params.comment || 'Условия согласованы',
+    });
 
-    const offer: CreditOffer = {
-      approvedAmount: params.approvedAmount,
-      approvedTermMonths: params.approvedTermMonths,
-      annualInterestRate: params.annualInterestRate,
-      monthlyPayment,
-      totalRepayment,
-      expirationDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
-      alternativeTerms: {
-        additionalMonths: 6,
-        newTermMonths: params.approvedTermMonths + 6,
-        newMonthlyPayment: Math.round(
-          (params.approvedAmount * (1 + (params.annualInterestRate / 100) * ((params.approvedTermMonths + 6) / 12))) /
-            (params.approvedTermMonths + 6)
-        ),
-        note: `Опция продления на 6 мес снижает ежемесячную нагрузку`,
-      },
-    };
-
-    return mockStore.transition(
-      id,
-      'T12',
-      'offer',
-      'analyst',
-      'Аналитик Банка',
-      params.comment || `Одобрено андеррайтером: ${params.approvedAmount.toLocaleString('ru-RU')} ₽ под ${params.annualInterestRate}%`,
-      undefined,
-      { offer }
-    );
+    return applicationStore.getById(id)!;
   },
 
   // T13: Отказ аналитика (review -> declined)
   declineApplication: async (id: string, reasonCode: string, comment: string): Promise<CreditApplication> => {
-    if (!isDemoActive()) {
-      try {
-        const res = await apiClient.post<any>(
-          `/employee/applications/${id}/decline`,
-          { reasonCode, comment },
-          { timeout: 2500 }
-        );
-        return mapBackendApplication(res.data);
-      } catch {
-        // fallback
-      }
+    try {
+      await apiClient.post<any>(
+        `/employee/applications/${id}/decline`,
+        { reasonCode, comment },
+        { timeout: 5000 }
+      );
+    } catch (err) {
+      console.warn('Backend decline error (handled offline):', err);
     }
 
-    return mockStore.transition(
-      id,
-      'T13',
-      'declined',
-      'analyst',
-      'Аналитик Банка',
-      comment,
-      reasonCode,
-      { declineReason: comment }
-    );
+    applicationStore.setStatus(id, 'declined', comment);
+    return applicationStore.getById(id)!;
   },
 
   // T14: Уточнены факты, вернуть на проверку (review -> checking)
   returnToChecking: async (id: string, comment?: string): Promise<CreditApplication> => {
-    if (!isDemoActive()) {
-      try {
-        const res = await apiClient.post<any>(
-          `/employee/applications/${id}/recheck`,
-          { comment },
-          { timeout: 2500 }
-        );
-        return mapBackendApplication(res.data);
-      } catch {
-        // fallback
-      }
+    try {
+      await apiClient.post<any>(
+        `/employee/applications/${id}/recheck`,
+        { comment },
+        { timeout: 5000 }
+      );
+    } catch (err) {
+      console.warn('Backend recheck error (handled offline):', err);
     }
 
-    return mockStore.transition(
-      id,
-      'T14',
-      'checking',
-      'analyst',
-      'Аналитик Банка',
-      comment || 'Факты уточнены аналитиком, заявка отправлена на повторный скоринг'
-    );
+    applicationStore.setStatus(id, 'checking', comment || 'Возврат на проверку');
+    return applicationStore.getById(id)!;
   },
 
   // T16: Некредитное препятствие (review -> closed)
   closeNonCredit: async (id: string, reasonCode: string, comment: string): Promise<CreditApplication> => {
-    if (!isDemoActive()) {
-      try {
-        const res = await apiClient.post<any>(
-          `/employee/applications/${id}/close`,
-          { reasonCode, comment },
-          { timeout: 2500 }
-        );
-        return mapBackendApplication(res.data);
-      } catch {
-        // fallback
-      }
+    try {
+      await apiClient.post<any>(
+        `/employee/applications/${id}/close`,
+        { reasonCode, comment },
+        { timeout: 5000 }
+      );
+    } catch (err) {
+      console.warn('Backend close error (handled offline):', err);
     }
 
-    return mockStore.transition(
-      id,
-      'T16',
-      'closed',
-      'analyst',
-      'Аналитик Банка',
-      comment,
-      reasonCode
-    );
+    applicationStore.setStatus(id, 'closed', comment);
+    return applicationStore.getById(id)!;
   },
 };
+

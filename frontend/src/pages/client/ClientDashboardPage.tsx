@@ -43,7 +43,7 @@ export const ClientDashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Кредитный кабинет заёмщика
+            Кредитный кабинет
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Управляйте кредитными заявками, отслеживайте статус и получайте решения онлайн
@@ -102,21 +102,13 @@ export const ClientDashboardPage: React.FC = () => {
         {isLoading ? (
           <div className="p-12 text-center text-slate-400 dark:text-slate-500">Загрузка заявок...</div>
         ) : applications.length === 0 ? (
-          <Card className="text-center py-12 space-y-4 border-dashed">
+          <Card className="text-center py-12 space-y-3 border-dashed">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
               <FileText className="w-6 h-6" />
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">Заявок пока нет</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-                Оформите экспресс-заявку: решение за несколько минут на основе умного скоринга
-              </p>
             </div>
-            <Link to="/client/new">
-              <Button variant="primary" size="sm">
-                Создать первую заявку
-              </Button>
-            </Link>
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4">

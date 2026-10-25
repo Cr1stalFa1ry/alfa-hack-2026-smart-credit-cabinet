@@ -8,6 +8,7 @@ using SmartKabinet.Auth.Infrastructure.Security;
 
 namespace SmartKabinet.Client.Features.Applications;
 
+public record AcceptOfferRequest(bool? UseAlternativeTerm = false);
 public record SignAgreementRequest(string? SmsCode = null);
 
 public static class SignAndDisburseEndpoints
@@ -17,6 +18,7 @@ public static class SignAndDisburseEndpoints
         // POST /api/client/applications/{id}/accept (T21: Принятие оферты заёмщиком)
         group.MapPost("/{id:guid}/accept", async (
             Guid id,
+            AcceptOfferRequest? request,
             IUserContext userContext,
             ApplicationDbContext appDb) =>
         {
@@ -33,34 +35,17 @@ public static class SignAndDisburseEndpoints
                 return Results.BadRequest(new { error = $"Принятие оферты доступно только из статуса offer (текущий: {app.Status})." });
             }
 
-            app.Status = ApplicationStatus.DisbursedSim;
+            var fromStatus = app.Status;
+            app.Status = ApplicationStatus.Accepted;
             app.UpdatedAt = DateTimeOffset.UtcNow;
 
             appDb.TransitionHistory.Add(new TransitionRecord
             {
                 ApplicationId = app.Id,
-                FromStatus = ApplicationStatus.Offer,
+                FromStatus = fromStatus,
                 ToStatus = ApplicationStatus.Accepted,
                 Actor = "client",
                 Comment = "Заёмщик принял условия кредитной оферты (T21)"
-            });
-
-            appDb.TransitionHistory.Add(new TransitionRecord
-            {
-                ApplicationId = app.Id,
-                FromStatus = ApplicationStatus.Accepted,
-                ToStatus = ApplicationStatus.SignedSim,
-                Actor = "client",
-                Comment = "Кредитный договор подписан электронной подписью (симуляция T22)"
-            });
-
-            appDb.TransitionHistory.Add(new TransitionRecord
-            {
-                ApplicationId = app.Id,
-                FromStatus = ApplicationStatus.SignedSim,
-                ToStatus = ApplicationStatus.DisbursedSim,
-                Actor = "system",
-                Comment = "Кредитные средства успешно зачислены на расчётный счёт ИП (моделируемая выдача T23)"
             });
 
             await appDb.SaveChangesAsync();
@@ -68,9 +53,12 @@ public static class SignAndDisburseEndpoints
             {
                 applicationId = app.Id,
                 status = app.Status.ToString().ToLowerInvariant(),
-                disbursedAmount = app.CurrentOffer?.ApprovedAmount ?? app.RequestedAmount,
-                disbursedAt = DateTime.UtcNow,
-                message = "Кредитная оферта принята, договор подписан и средства успешно зачислены на счёт ИП (симуляция T21–T23)."
+                approvedAmount = app.CurrentOffer?.ApprovedAmount ?? app.RequestedAmount,
+                approvedTermMonths = app.CurrentOffer?.TermMonths ?? app.RequestedTermMonths,
+                monthlyPayment = app.CurrentOffer?.MonthlyPayment,
+                annualRatePercent = app.CurrentOffer?.AnnualRatePercent,
+                acceptedAt = DateTime.UtcNow,
+                message = "Кредитная оферта принята заёмщиком (T21). Ожидается подписание договора."
             });
         })
         .RequireAuthorization(AuthPolicies.ClientOnly)

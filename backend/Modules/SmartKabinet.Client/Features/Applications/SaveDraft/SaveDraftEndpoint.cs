@@ -16,7 +16,22 @@ public record UpdateDraftRequest(
     bool PersonalDataConsent,
     string? StatementFilePath = null,
     decimal? FinancialReserve = null,
-    string? ProductCode = null
+    string? ProductCode = null,
+    DateTime? NeededByDate = null,
+    string? ExpensePeriod = null,
+    bool? HasExpenseContract = null,
+    bool? IsTaxRegimeActual = null,
+    string? DeclaredTaxRegime = null,
+    List<string>? ReceiptCoverage = null,
+    string? ExpensesCoverageStatus = null,
+    bool? HasAdditionalIncome = null,
+    decimal? AdditionalIncomeAmount = null,
+    string? DebtsVerificationStatus = null,
+    string? RepaymentSourceDescription = null,
+    decimal? MonthlyRevenue = null,
+    decimal? MonthlyExpenses = null,
+    decimal? HouseholdExpenses = null,
+    decimal? ExistingMonthlyObligations = null
 );
 
 public static class SaveDraftEndpoint
@@ -44,7 +59,22 @@ public static class SaveDraftEndpoint
                 request.PersonalDataConsent,
                 request.StatementFilePath,
                 request.FinancialReserve,
-                request.ProductCode);
+                request.ProductCode,
+                request.NeededByDate,
+                request.ExpensePeriod,
+                request.HasExpenseContract,
+                request.IsTaxRegimeActual,
+                request.DeclaredTaxRegime,
+                request.ReceiptCoverage,
+                request.ExpensesCoverageStatus,
+                request.HasAdditionalIncome,
+                request.AdditionalIncomeAmount,
+                request.DebtsVerificationStatus,
+                request.RepaymentSourceDescription,
+                request.MonthlyRevenue,
+                request.MonthlyExpenses,
+                request.HouseholdExpenses,
+                request.ExistingMonthlyObligations);
 
             var result = await service.SaveDraftAsync(cmd, ct);
             return result.ToHttpResult(() => Results.Ok(new { message = "Черновик успешно сохранён", applicationId = id, status = "draft" }));

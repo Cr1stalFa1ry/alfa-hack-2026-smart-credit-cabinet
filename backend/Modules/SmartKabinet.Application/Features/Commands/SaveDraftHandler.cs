@@ -46,17 +46,32 @@ public class SaveDraftHandler(ApplicationDbContext dbContext) : ISaveDraft
 
         if (cmd.StatementFilePath is not null) app.StatementFilePath = cmd.StatementFilePath;
         if (cmd.FinancialReserve.HasValue) app.FinancialReserve = cmd.FinancialReserve.Value;
+        if (cmd.NeededByDate.HasValue)
+        {
+            app.NeededByDate = cmd.NeededByDate.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(cmd.NeededByDate.Value, DateTimeKind.Utc)
+                : cmd.NeededByDate.Value.ToUniversalTime();
+        }
+        if (cmd.ExpensePeriod is not null) app.ExpensePeriod = cmd.ExpensePeriod;
+        if (cmd.HasExpenseContract.HasValue) app.HasExpenseContract = cmd.HasExpenseContract.Value;
+        if (cmd.IsTaxRegimeActual.HasValue) app.IsTaxRegimeActual = cmd.IsTaxRegimeActual.Value;
+        if (cmd.DeclaredTaxRegime is not null) app.DeclaredTaxRegime = cmd.DeclaredTaxRegime;
+        if (cmd.ReceiptCoverage is not null) app.ReceiptCoverage = cmd.ReceiptCoverage;
+        if (cmd.ExpensesCoverageStatus is not null) app.ExpensesCoverageStatus = cmd.ExpensesCoverageStatus;
+        if (cmd.HasAdditionalIncome.HasValue) app.HasAdditionalIncome = cmd.HasAdditionalIncome.Value;
+        if (cmd.AdditionalIncomeAmount.HasValue)
+        {
+            app.AdditionalIncomeAmount = cmd.AdditionalIncomeAmount.Value;
+            app.PersonalIncome = cmd.AdditionalIncomeAmount.Value;
+        }
+        if (cmd.DebtsVerificationStatus is not null) app.DebtsVerificationStatus = cmd.DebtsVerificationStatus;
+        if (cmd.RepaymentSourceDescription is not null) app.RepaymentSourceDescription = cmd.RepaymentSourceDescription;
+        if (cmd.MonthlyRevenue.HasValue) app.MonthlyRevenue = cmd.MonthlyRevenue.Value;
+        if (cmd.MonthlyExpenses.HasValue) app.MonthlyExpenses = cmd.MonthlyExpenses.Value;
+        if (cmd.HouseholdExpenses.HasValue) app.HouseholdExpenses = cmd.HouseholdExpenses.Value;
+        if (cmd.ExistingMonthlyObligations.HasValue) app.ExistingMonthlyObligations = cmd.ExistingMonthlyObligations.Value;
 
         app.UpdatedAt = DateTimeOffset.UtcNow;
-
-        dbContext.TransitionHistory.Add(new TransitionRecord
-        {
-            ApplicationId = app.Id,
-            FromStatus = ApplicationStatus.Draft,
-            ToStatus = ApplicationStatus.Draft,
-            Actor = "client",
-            Comment = "Сохранены изменения в черновике (T02)"
-        });
 
         await dbContext.SaveChangesAsync(ct);
         return Result.Success();

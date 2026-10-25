@@ -49,6 +49,7 @@ public class SubmitApplicationHandler(ApplicationDbContext dbContext, IMessageBu
             FromStatus = ApplicationStatus.Draft,
             ToStatus = ApplicationStatus.Submitted,
             Actor = "client",
+            ReasonCode = "T03",
             Comment = "Заявка отправлена клиентом на проверку (T03)"
         });
 
@@ -58,13 +59,14 @@ public class SubmitApplicationHandler(ApplicationDbContext dbContext, IMessageBu
             FromStatus = ApplicationStatus.Submitted,
             ToStatus = ApplicationStatus.Checking,
             Actor = "system",
+            ReasonCode = "T03",
             Comment = "Заявка передана на скоринг и проверку стоп-факторов"
         });
 
         await dbContext.SaveChangesAsync(ct);
 
-        // Публикация события проверки
-        await bus.PublishAsync(new ApplicationSubmittedEvent(
+        // Немедленный запуск проверки и скоринга
+        await bus.InvokeAsync(new ApplicationSubmittedEvent(
             app.Id,
             app.ClientId,
             app.Inn,
@@ -76,7 +78,15 @@ public class SubmitApplicationHandler(ApplicationDbContext dbContext, IMessageBu
             app.ProjectedMonthlyRevenue,
             app.FinancialReserve,
             app.PersonalIncome,
-            app.ProductCode
+            app.ProductCode,
+            app.MonthlyRevenue,
+            app.MonthlyExpenses,
+            app.HouseholdExpenses,
+            app.ExistingMonthlyObligations,
+            app.DebtsVerificationStatus,
+            app.ExpensesCoverageStatus,
+            app.HasAdditionalIncome,
+            app.AdditionalIncomeAmount
         ));
 
         return Result.Success();

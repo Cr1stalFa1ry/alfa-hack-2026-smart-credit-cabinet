@@ -20,9 +20,17 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
         }
 
         var clientTexts = ClientReasonHelper.GetClientTexts(app.ReasonCodes);
-        var offerDto = app.CurrentOffer is not null
+        var isOfferActiveForClient = app.CurrentOffer is not null && app.Status is 
+            ApplicationStatus.Offer or 
+            ApplicationStatus.Accepted or 
+            ApplicationStatus.PreConditions or 
+            ApplicationStatus.SignedSim or 
+            ApplicationStatus.ReadyTodisburse or 
+            ApplicationStatus.DisbursedSim;
+
+        var offerDto = isOfferActiveForClient
             ? new ApplicationOfferDto(
-                app.CurrentOffer.ApprovedAmount,
+                app.CurrentOffer!.ApprovedAmount,
                 app.CurrentOffer.TermMonths,
                 app.CurrentOffer.AnnualRatePercent,
                 app.CurrentOffer.MonthlyPayment,
@@ -33,6 +41,35 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
         var productCode = !string.IsNullOrWhiteSpace(app.ProductCode)
             ? app.ProductCode
             : CreditProductCodes.ResolveProductCode(app.Stage, app.Purpose);
+
+        var documents = await dbContext.ApplicationDocuments
+            .Where(d => d.ApplicationId == id)
+            .OrderBy(d => d.UploadedAt)
+            .Select(d => new ApplicationDocumentDto(
+                d.Id,
+                d.FileName,
+                d.FileKey,
+                d.FileType,
+                d.FileSizeBytes,
+                d.Status,
+                d.UploadedAt,
+                $"/api/infrastructure/storage/{d.FileKey}"
+            ))
+            .ToListAsync(ct);
+
+        var history = await dbContext.TransitionHistory
+            .Where(h => h.ApplicationId == id && !(h.FromStatus == ApplicationStatus.Draft && h.ToStatus == ApplicationStatus.Draft && (h.ReasonCode == "T02" || (h.Comment != null && h.Comment.Contains("T02")))))
+            .OrderBy(h => h.Timestamp)
+            .Select(h => new ApplicationTransitionHistoryDto(
+                h.Id,
+                h.ReasonCode ?? (h.Comment != null && h.Comment.Contains("T03") ? "T03" : h.Comment != null && h.Comment.Contains("T01") ? "T01" : "T00"),
+                h.FromStatus.ToString().ToLowerInvariant(),
+                h.ToStatus.ToString().ToLowerInvariant(),
+                h.Actor,
+                h.Comment,
+                h.Timestamp
+            ))
+            .ToListAsync(ct);
 
         return new ApplicationDto(
             app.Id,
@@ -48,7 +85,24 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
             clientTexts,
             offerDto,
             app.CreatedAt,
-            app.UpdatedAt
+            app.UpdatedAt,
+            documents,
+            history,
+            app.NeededByDate,
+            app.ExpensePeriod,
+            app.HasExpenseContract,
+            app.IsTaxRegimeActual,
+            app.DeclaredTaxRegime,
+            app.ReceiptCoverage,
+            app.ExpensesCoverageStatus,
+            app.HasAdditionalIncome,
+            app.AdditionalIncomeAmount,
+            app.DebtsVerificationStatus,
+            app.RepaymentSourceDescription,
+            app.MonthlyRevenue,
+            app.MonthlyExpenses,
+            app.HouseholdExpenses,
+            app.ExistingMonthlyObligations
         );
     }
 
@@ -71,7 +125,7 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
             app.RequestedAmount,
             app.RequestedTermMonths,
             ClientReasonHelper.GetClientTexts(app.ReasonCodes),
-            app.CurrentOffer is not null,
+            app.CurrentOffer is not null && app.Status is ApplicationStatus.Offer or ApplicationStatus.Accepted or ApplicationStatus.PreConditions or ApplicationStatus.SignedSim or ApplicationStatus.ReadyTodisburse or ApplicationStatus.DisbursedSim,
             app.CreatedAt
         )).ToList();
     }

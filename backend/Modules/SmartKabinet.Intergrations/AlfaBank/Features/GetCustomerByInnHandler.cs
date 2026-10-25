@@ -28,15 +28,7 @@ public class GetCustomerByInnHandler
         {
             return AlfaCustomerProfileResult.Error("INVALID_INN", "ИНН должен состоять из 12 цифр.");
         }
-
-        // Тест-кейс TC18: эмуляция сетевого сбоя 503
-        if (inn == "500100000066")
-        {
-            return AlfaCustomerProfileResult.Error(
-                "SOURCE_UNAVAILABLE", 
-                "Сервис АБС Альфа-Банка временно недоступен (503). Повторите проверку.");
-        }
-
+        
         var customer = await _dbContext.Customers
             .AsNoTracking()
             .Include(c => c.Accounts)
