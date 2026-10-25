@@ -145,6 +145,21 @@ export const ApplicationDetailsPage: React.FC = () => {
     );
   }
 
+  // Если это анкета-черновик — предоставляем форму заполнения анкеты (как на /client/new)
+  const isDraft =
+    (application.status as any) === 'draft' ||
+    String(application.status).toLowerCase() === 'draft' ||
+    String(application.status) === '0';
+
+  if (isDraft) {
+    return (
+      <NewApplicationWizardPage
+        draftId={application.id}
+        initialApplication={application}
+      />
+    );
+  }
+
   const documents = application.documents || [];
   const history = application.history || [];
   const companyTitle = application.companyName || `ИП (ИНН ${application.inn})`;

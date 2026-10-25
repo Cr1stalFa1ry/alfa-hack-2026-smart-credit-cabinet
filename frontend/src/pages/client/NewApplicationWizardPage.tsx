@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { clientApi, CompanyLookupResponse } from '../../api/clientApi';
+import { CreditApplication } from '../../types/application';
 import { useAuth } from '../../context/AuthContext';
 import {
   ALFA_DATA,
@@ -137,13 +138,17 @@ const buildInitialAnswersForClient = (app: Partial<DemoApplication> & { inn?: st
 
 export interface NewApplicationWizardPageProps {
   draftId?: string;
+  initialApplication?: CreditApplication;
 }
 
-export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> = ({ draftId: propDraftId }) => {
+export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> = ({
+  draftId: propDraftId,
+  initialApplication,
+}) => {
   const navigate = useNavigate();
   const { id: routeId } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const draftIdParam = propDraftId || routeId || searchParams.get('draftId') || null;
+  const draftIdParam = propDraftId || initialApplication?.id || routeId || searchParams.get('draftId') || null;
   const { user } = useAuth();
 
   // ----------------------------------------------------
@@ -212,7 +217,10 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
     const loadDraft = async () => {
       setIsLoadingDossier(true);
       try {
-        const app = await clientApi.getApplicationById(draftIdParam);
+        const app =
+          initialApplication && initialApplication.id === draftIdParam
+            ? initialApplication
+            : await clientApi.getApplicationById(draftIdParam);
         if (isCancelled) return;
 
         isInitializedRef.current = true;
