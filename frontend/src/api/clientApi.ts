@@ -244,6 +244,7 @@ export const clientApi = {
   },
 
   createDraft: async (data: CreateDraftRequest): Promise<CreditApplication> => {
+    const isPaused = data.scenario === 'paused' || (data.clientAnswers as any)?.business === 'paused';
     const stage = data.stage || (data.businessType === 'prelaunch' ? 'prelaunch' : 'operating');
     const purposeCode = data.purposeCode || (data.purpose?.toLowerCase().includes('оборудован') ? 'equipment' : 'working_capital');
     const productCode = data.productCode || (purposeCode === 'equipment' ? 'EQ' : (stage === 'prelaunch' ? 'START' : 'WC'));
@@ -256,7 +257,7 @@ export const clientApi = {
       requestedAmount: data.requestedAmount,
       ownContribution: data.ownContribution || 0,
       requestedTermMonths: data.requestedTermMonths,
-      bkiConsent: data.bkiConsent ?? false,
+      bkiConsent: isPaused ? true : (data.bkiConsent ?? false),
       personalDataConsent: data.personalDataConsent ?? false,
       neededByDate: data.neededByDate,
       expensePeriod: data.expensePeriod,
@@ -285,11 +286,12 @@ export const clientApi = {
   },
 
   saveDraft: async (id: string, data: Partial<CreateDraftRequest>): Promise<CreditApplication> => {
+    const isPaused = data.scenario === 'paused' || (data.clientAnswers as any)?.business === 'paused';
     const res = await apiClient.put<any>(`/client/applications/${id}/draft`, {
       requestedAmount: data.requestedAmount || 0,
       ownContribution: data.ownContribution || 0,
       requestedTermMonths: data.requestedTermMonths,
-      bkiConsent: data.bkiConsent ?? true,
+      bkiConsent: isPaused ? true : (data.bkiConsent ?? true),
       personalDataConsent: data.personalDataConsent ?? true,
       productCode: data.productCode,
       neededByDate: data.neededByDate,
