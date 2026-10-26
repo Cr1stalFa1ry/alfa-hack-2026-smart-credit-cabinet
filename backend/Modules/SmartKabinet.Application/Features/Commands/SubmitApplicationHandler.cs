@@ -30,9 +30,9 @@ public class SubmitApplicationHandler(ApplicationDbContext dbContext, IMessageBu
             return Error.Conflict("Application.InvalidStatus", $"Заявку в статусе {app.Status} нельзя подать повторно.");
         }
 
-        if (!app.BkiConsent || !app.PersonalDataConsent)
+        if (!app.PersonalDataConsent)
         {
-            return Error.Validation("Application.ConsentsRequired", "Необходимо предоставить согласия на обработку данных и запрос в БКИ.");
+            return Error.Validation("Application.ConsentsRequired", "Необходимо предоставить согласие на обработку данных.");
         }
 
         app.Status = ApplicationStatus.Checking;

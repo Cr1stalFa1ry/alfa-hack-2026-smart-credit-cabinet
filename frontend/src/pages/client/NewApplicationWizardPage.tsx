@@ -1076,7 +1076,9 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
         },
         {
           label: '2. Согласие на запрос в БКИ',
-          value: answers.bkiConsent
+          value: isPaused
+            ? 'Не требуется (бизнес приостановлен)'
+            : answers.bkiConsent
             ? `Действует ${answers.bkiConsentValidUntil ? `до ${new Date(answers.bkiConsentValidUntil).toLocaleDateString('ru-RU')}` : 'в течение 6 мес.'}`
             : 'Не предоставлено',
         },
@@ -1187,14 +1189,14 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
           errs.committedCosts = 'Укажите неизбежные ежемесячные расходы бизнеса';
         }
       }
-      if (!answers.bkiConsent) {
+      if (!isPaused && !answers.bkiConsent) {
         errs.bkiConsent = 'Перед запросом кредитной истории необходимо предоставить согласие на запрос в БКИ';
       }
     } else if (currentStep.key === 'review') {
       if (!answers.personalDataConsent) {
         errs.personalDataConsent = 'Не предоставлено согласие на обработку персональных данных';
       }
-      if (!answers.bkiConsent) {
+      if (!isPaused && !answers.bkiConsent) {
         errs.bkiConsent = 'Не предоставлено согласие на запрос в БКИ';
       }
       if (isEquipment && (answers.leasing === 'yes' || answers.leasing === 'explain') && !answers.leasingPartnerConsent) {
@@ -1250,9 +1252,9 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
       repaymentSourceDescription: answers.repaymentDescription,
       personalDataConsent: Boolean(answers.personalDataConsent),
       personalDataConsentDate: answers.personalDataConsentDate || (answers.personalDataConsent ? new Date().toISOString() : undefined),
-      bkiConsent: Boolean(answers.bkiConsent),
-      bkiConsentDate: answers.bkiConsentDate || (answers.bkiConsent ? new Date().toISOString() : undefined),
-      bkiConsentValidUntil: answers.bkiConsentValidUntil,
+      bkiConsent: isPaused ? false : Boolean(answers.bkiConsent),
+      bkiConsentDate: isPaused ? undefined : (answers.bkiConsentDate || (answers.bkiConsent ? new Date().toISOString() : undefined)),
+      bkiConsentValidUntil: isPaused ? undefined : answers.bkiConsentValidUntil,
       leasingPartnerConsent: Boolean(answers.leasingPartnerConsent),
       leasingPartnerName: answers.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
       leasingPartnerConsentDate: answers.leasingPartnerConsentDate || (answers.leasingPartnerConsent ? new Date().toISOString() : undefined),
@@ -3436,23 +3438,30 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
                   </div>
 
                   {/* 2. БКИ */}
-                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
-                    <div>
-                      <span className="font-semibold text-[#141414] dark:text-white block">
-                        2. Запрос кредитной истории (БКИ)
-                      </span>
-                      <span className="text-[11px] text-slate-500">
-                        {answers.bkiConsent ? '✓ Действует' : 'Не предоставлено'}
-                      </span>
+                  {!isPaused ? (
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="font-semibold text-[#141414] dark:text-white block">
+                          2. Запрос кредитной истории (БКИ)
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          {answers.bkiConsent ? '✓ Действует' : 'Не предоставлено'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveConsentType('bki')}
+                        className="text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400 underline font-medium shrink-0"
+                      >
+                        Текст согласия ↗
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveConsentType('bki')}
-                      className="text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400 underline font-medium shrink-0"
-                    >
-                      Текст согласия ↗
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-slate-400">
+                      <span>2. Запрос кредитной истории (БКИ): не требуется для приостановленного бизнеса</span>
+                      <span>—</span>
+                    </div>
+                  )}
 
                   {/* 3. Лизинг */}
                   {isEquipment && (answers.leasing === 'yes' || answers.leasing === 'explain') ? (
@@ -3487,7 +3496,7 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
                     {validationErrors.personalDataConsent}
                   </p>
                 )}
-                {validationErrors.bkiConsent && (
+                {!isPaused && validationErrors.bkiConsent && (
                   <p className="text-xs text-[#EF3124] font-medium flex items-center gap-1">
                     <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
                     {validationErrors.bkiConsent}
