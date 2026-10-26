@@ -31,15 +31,23 @@ public static class GetExplanationEndpoint
 
             if (app is null) return Results.NotFound(new { error = "Заявка не найдена." });
 
-            var primaryReason = app.CurrentOffer?.ReasonCode ?? app.ReasonCodes.FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(primaryReason))
+            string primaryReason;
+            if (app.Status is ApplicationStatus.Offer or ApplicationStatus.Accepted or ApplicationStatus.SignedSim or ApplicationStatus.ReadyTodisburse or ApplicationStatus.DisbursedSim)
             {
-                primaryReason = app.Status switch
-                {
-                    ApplicationStatus.Offer or ApplicationStatus.Accepted => app.CurrentOffer?.IsCounterOffer == true ? "OFFER_COUNTER" : "OFFER_ORIGINAL",
-                    ApplicationStatus.Declined => "SCORE_BELOW_MIN",
-                    _ => "DATA_REQUIRED"
-                };
+                primaryReason = app.CurrentOffer?.ReasonCode ?? (app.CurrentOffer?.IsCounterOffer == true ? "OFFER_COUNTER" : "OFFER_ORIGINAL");
+            }
+            else if (app.Status == ApplicationStatus.NeedInfo)
+            {
+                primaryReason = "DATA_REQUIRED";
+            }
+            else if (app.Status == ApplicationStatus.Declined)
+            {
+                primaryReason = app.ReasonCodes.FirstOrDefault() ?? "SCORE_BELOW_MIN";
+            }
+            else
+            {
+                // На рассмотрении у кредитного эксперта (Review / Checking / WaitingCheck)
+                primaryReason = "MANUAL_REVIEW_REQUIRED";
             }
 
             var details = new Dictionary<string, object>
