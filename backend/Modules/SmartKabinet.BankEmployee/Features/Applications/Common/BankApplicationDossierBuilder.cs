@@ -278,6 +278,17 @@ public class BankApplicationDossierBuilder(
             }
         }
 
+        var lastNeedInfo = transitions
+            .Where(t => t.ToStatus == SmartKabinet.Application.Domain.ApplicationStatus.NeedInfo)
+            .LastOrDefault();
+
+        var lastClientResponse = transitions
+            .Where(t => (t.FromStatus == SmartKabinet.Application.Domain.ApplicationStatus.NeedInfo || t.ToStatus == SmartKabinet.Application.Domain.ApplicationStatus.InfoReceived) && (t.Actor.ToLower() == "client" || t.Actor.ToLower() == "клиент"))
+            .LastOrDefault();
+
+        string? needInfoPrompt = lastNeedInfo?.Comment;
+        string? needInfoResponse = lastClientResponse?.Comment;
+
         return new BankApplicationDossierDto(
             app.Id,
             app.Id,
@@ -320,7 +331,9 @@ public class BankApplicationDossierBuilder(
             app.RepaymentSourceDescription,
             documents,
             mlExplanation,
-            mlExplanationSource
+            mlExplanationSource,
+            needInfoPrompt,
+            needInfoResponse
         );
     }
 }

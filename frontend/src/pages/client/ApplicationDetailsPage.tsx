@@ -293,27 +293,82 @@ export const ApplicationDetailsPage: React.FC = () => {
         </Alert>
       )}
 
-      {/* T04 / T11 Need Info */}
+      {/* T04 / T11 Need Info Active Inquiry */}
       {application.status === 'need_info' && (
-        <Alert
-          type="warning"
-          title="Банк запросил дополнительные сведения"
-          action={
+        <div className="p-6 rounded-2xl border-2 border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-orange-50/40 dark:from-amber-950/40 dark:to-slate-900 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-200/80 dark:border-amber-800/80">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-sm shrink-0">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>Запрос сведений от банка</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200">
+                    T11 • Требуется ответ
+                  </span>
+                </h3>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {application.needInfoActorName || 'Кредитный аналитик банка'} • {application.needInfoRequestedAt ? formatDateTime(application.needInfoRequestedAt) : 'Ожидает ваших разъяснений'}
+                </span>
+              </div>
+            </div>
+
             <Button
-              size="sm"
+              size="md"
               variant="primary"
               onClick={() => setIsNeedInfoModalOpen(true)}
               leftIcon={<MessageSquare className="w-4 h-4" />}
             >
               Предоставить сведения (T10)
             </Button>
-          }
-        >
-          <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
-            {application.needInfoPrompt || 'Пожалуйста, прикрепите подтверждающие документы или уточните данные.'}
-          </p>
-          Ответьте на запрос, чтобы заявка вернулась на проверку.
-        </Alert>
+          </div>
+
+          <div className="p-4 rounded-xl bg-white dark:bg-slate-800/90 border border-amber-200 dark:border-amber-800 shadow-inner">
+            <div className="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider mb-1">
+              Вопрос специалиста:
+            </div>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 whitespace-pre-wrap leading-relaxed">
+              {application.needInfoPrompt || 'Пожалуйста, прикрепите подтверждающие документы или уточните финансовые показатели.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-600 dark:text-slate-400 gap-2">
+            <span>
+              💡 Прикрепите выписку, договор или укажите пояснения в свободной форме. После отправки заявка вернётся на повторную проверку.
+            </span>
+            <span className="font-semibold text-amber-700 dark:text-amber-400 whitespace-nowrap">
+              Переход FSM: need_info → checking (T10)
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Communication history if inquiry has been responded to */}
+      {application.status !== 'need_info' && (application.needInfoPrompt || application.needInfoResponse) && (
+        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 text-xs text-slate-700 dark:text-slate-300 space-y-2">
+          <div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
+            <span className="flex items-center gap-1.5">
+              <MessageSquare className="w-4 h-4 text-slate-500" />
+              История дозапроса сведений (T11 / T10)
+            </span>
+            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+              ✓ Сведения предоставлены
+            </span>
+          </div>
+          {application.needInfoPrompt && (
+            <div className="pl-3 border-l-2 border-amber-400 py-0.5">
+              <span className="text-slate-500 block text-[11px]">Вопрос банка:</span>
+              <p className="font-medium text-slate-900 dark:text-slate-100">{application.needInfoPrompt}</p>
+            </div>
+          )}
+          {application.needInfoResponse && (
+            <div className="pl-3 border-l-2 border-emerald-500 py-0.5">
+              <span className="text-slate-500 block text-[11px]">Ответ заёмщика (ИП):</span>
+              <p className="font-medium text-slate-900 dark:text-slate-100">{application.needInfoResponse}</p>
+            </div>
+          )}
+        </div>
       )}
 
       {/* T07 In Review by Specialist */}

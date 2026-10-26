@@ -11,7 +11,8 @@ namespace SmartKabinet.Client.Features.Applications.RespondRequestedInfoApplicat
 public record RespondInfoRequest(
     string? StatementFilePath = null,
     decimal? FinancialReserve = null,
-    string? Comment = null
+    string? Comment = null,
+    string? ResponseComment = null
 );
 
 public static class RespondRequestedInfoApplicationEndpoint
@@ -29,12 +30,16 @@ public static class RespondRequestedInfoApplicationEndpoint
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
             if (!userContext.IsClient) return Results.Forbid();
 
+            var commentText = !string.IsNullOrWhiteSpace(request.Comment)
+                ? request.Comment
+                : request.ResponseComment;
+
             var cmd = new RespondInfoCommand(
                 id,
                 userContext.UserId.Value,
                 request.StatementFilePath,
                 request.FinancialReserve,
-                request.Comment);
+                commentText);
 
             var result = await service.RespondToInfoRequestAsync(cmd, ct);
 

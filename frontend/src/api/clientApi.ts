@@ -153,8 +153,10 @@ export function mapBackendApplication(item: any): CreditApplication {
             };
           })
       : [],
-    needInfoPrompt: item.needInfoPrompt,
-    needInfoResponse: item.needInfoResponse,
+    needInfoPrompt: item.needInfoPrompt || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.toStatus === 'need_info' || h.toStatus === 4 || h.reasonCode === 'T11' || h.reasonCode === 'T04') && h.comment).slice(-1)[0]?.comment : undefined),
+    needInfoResponse: item.needInfoResponse || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.fromStatus === 'need_info' || h.toStatus === 'info_received' || h.reasonCode === 'T10') && (h.actor === 'client' || !h.actor) && h.comment).slice(-1)[0]?.comment : undefined),
+    needInfoRequestedAt: item.needInfoRequestedAt || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.toStatus === 'need_info' || h.toStatus === 4 || h.reasonCode === 'T11' || h.reasonCode === 'T04')).slice(-1)[0]?.timestamp : undefined),
+    needInfoActorName: item.needInfoActorName || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.toStatus === 'need_info' || h.toStatus === 4 || h.reasonCode === 'T11' || h.reasonCode === 'T04')).slice(-1)[0]?.actorName : undefined),
     issues: item.issues || (item.scoring?.issues) || [],
     scoring: item.scoring,
     mlExplanation: item.mlExplanation,
@@ -313,8 +315,20 @@ export const clientApi = {
   respondNeedInfo: async (id: string, response: string, files?: UploadedDocument[]): Promise<CreditApplication> => {
     try {
       await apiClient.post<any>(`/client/applications/${id}/respond-info`, {
+        comment: response,
         responseComment: response,
       }, { timeout: 5000 });
+
+      // Попытка сразу получить актуализированную заявку из бэкенда
+      try {
+        const freshApp = await clientApi.getApplicationById(id);
+        if (freshApp) {
+          applicationStore.saveApp(freshApp);
+          return freshApp;
+        }
+      } catch {
+        // Fallback to local store update below
+      }
     } catch (err) {
       console.warn('Backend respond-info error (handled offline):', err);
     }

@@ -125,5 +125,7 @@ public record BankApplicationDossierDto(
     string? RepaymentSourceDescription = null,
     IReadOnlyList<ApplicationDocumentDto>? Documents = null,
     string? MlExplanation = null,
-    string? MlExplanationSource = null
+    string? MlExplanationSource = null,
+    string? NeedInfoPrompt = null,
+    string? NeedInfoResponse = null
 );

@@ -51,6 +51,16 @@ interface UploadedFileMeta {
   file?: File;
 }
 
+const extractValidPhone = (val?: string | null): string => {
+  if (!val) return '';
+  const trimmed = val.trim();
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length >= 10 && /^[+0-9\s\-()]+$/.test(trimmed)) {
+    return trimmed;
+  }
+  return '';
+};
+
 const buildInitialAnswersForClient = (app: Partial<DemoApplication> & { inn?: string; phone?: string; full_name?: string }) => {
   const isOperating = app.stage === 'operating';
   const hasActiveBki = app.bki_consent === 'да';
@@ -180,11 +190,12 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
       if (data && data.inn) {
         setLookupData(data);
         setDossierFound(true);
+        const demoApp = ALFA_DATA.applications.find((a) => a.inn === clean);
         setAnswers((prev) => ({
           ...prev,
           passportName: data.fullName || prev.passportName,
-          phone: data.phone || prev.phone,
-          email: data.email || prev.email,
+          phone: data.phone || demoApp?.phone || prev.phone,
+          email: data.email || demoApp?.email || prev.email,
           passportSeries: data.passportSeries || prev.passportSeries,
           passportNumber: data.passportNumber || prev.passportNumber,
           passportBirth: data.passportBirthDate || prev.passportBirth,
@@ -272,10 +283,12 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
 
         // 1. Создаем дефолтные ответы анкеты для профиля заявителя
         const innToUse = app.inn || user?.inn || '';
+        const demoApp = innToUse ? ALFA_DATA.applications.find((a) => a.inn === innToUse) : undefined;
         const defaultAnswers = buildInitialAnswersForClient({
           inn: innToUse,
           full_name: app.companyName || user?.fullName || (innToUse ? `ИП (ИНН ${innToUse})` : '—'),
-          phone: user?.username || '',
+          phone: demoApp?.phone || extractValidPhone(user?.username),
+          email: demoApp?.email || '',
           stage: app.stage || 'operating',
           purpose: app.purposeCode || 'working_capital',
           amount_rub: app.requestedAmount || 1000000,
@@ -360,6 +373,9 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
 
   const clientProfile = useMemo<DemoApplication>(() => {
     if (lookupData) {
+      const demoApp = ALFA_DATA.applications.find((a) => a.inn === lookupData.inn);
+      const resolvedPhone = lookupData.phone || demoApp?.phone || extractValidPhone(user?.username) || '';
+      const resolvedEmail = lookupData.email || demoApp?.email || '';
       return {
         application_id: `APP-${lookupData.inn.slice(-4)}`,
         full_name: lookupData.fullName || user?.fullName || `ИП (ИНН ${lookupData.inn})`,
@@ -368,8 +384,8 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
         registration_date: lookupData.registrationDate ? lookupData.registrationDate.split('T')[0] : '—',
         okved_main: lookupData.okvedMain ? `${lookupData.okvedMain} ${lookupData.okvedMainName || ''}`.trim() : '—',
         registry_status: lookupData.egripStatus || 'ACTIVE',
-        phone: lookupData.phone || user?.username || '',
-        email: lookupData.email || '',
+        phone: resolvedPhone,
+        email: resolvedEmail,
         stage: lookupData.suggestedStage || 'operating',
         purpose: 'working_capital',
         amount_rub: 1000000,
@@ -381,6 +397,7 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
       };
     }
 
+    const demoApp = selectedInn ? ALFA_DATA.applications.find((a) => a.inn === selectedInn) : undefined;
     return {
       application_id: selectedInn ? `APP-${selectedInn.slice(-4)}` : 'APP-0000',
       full_name: user?.fullName || (selectedInn ? `ИП (ИНН ${selectedInn})` : '—'),
@@ -389,8 +406,8 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
       registration_date: '—',
       okved_main: '—',
       registry_status: selectedInn ? 'NOT_FOUND' : '—',
-      phone: '',
-      email: '',
+      phone: demoApp?.phone || extractValidPhone(user?.username) || '',
+      email: demoApp?.email || '',
       stage: 'operating',
       purpose: 'working_capital',
       amount_rub: 1000000,
@@ -1783,11 +1800,11 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
                   </div>
                   <div className="alfa-fact">
                     <small>Телефон</small>
-                    <strong>{clientProfile.phone || '—'}</strong>
+                    <strong>{answers.phone || clientProfile.phone || '—'}</strong>
                   </div>
                   <div className="alfa-fact">
                     <small>Email</small>
-                    <strong>{clientProfile.email || '—'}</strong>
+                    <strong>{answers.email || clientProfile.email || '—'}</strong>
                   </div>
                 </div>
               </div>

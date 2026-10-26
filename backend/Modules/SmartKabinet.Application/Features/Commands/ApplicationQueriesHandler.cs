@@ -57,9 +57,13 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
             ))
             .ToListAsync(ct);
 
-        var history = await dbContext.TransitionHistory
-            .Where(h => h.ApplicationId == id && !(h.FromStatus == ApplicationStatus.Draft && h.ToStatus == ApplicationStatus.Draft && (h.ReasonCode == "T02" || (h.Comment != null && h.Comment.Contains("T02")))))
+        var rawTransitions = await dbContext.TransitionHistory
+            .Where(h => h.ApplicationId == id)
             .OrderBy(h => h.Timestamp)
+            .ToListAsync(ct);
+
+        var history = rawTransitions
+            .Where(h => !(h.FromStatus == ApplicationStatus.Draft && h.ToStatus == ApplicationStatus.Draft && (h.ReasonCode == "T02" || (h.Comment != null && h.Comment.Contains("T02")))))
             .Select(h => new ApplicationTransitionHistoryDto(
                 h.Id,
                 h.ReasonCode ?? (h.Comment != null && h.Comment.Contains("T03") ? "T03" : h.Comment != null && h.Comment.Contains("T01") ? "T01" : "T00"),
@@ -69,7 +73,25 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
                 h.Comment,
                 h.Timestamp
             ))
-            .ToListAsync(ct);
+            .ToList();
+
+        var lastNeedInfo = rawTransitions
+            .Where(t => t.ToStatus == ApplicationStatus.NeedInfo)
+            .LastOrDefault();
+
+        var lastClientResponse = rawTransitions
+            .Where(t => (t.FromStatus == ApplicationStatus.NeedInfo || t.ToStatus == ApplicationStatus.InfoReceived) && (t.Actor.ToLower() == "client" || t.Actor.ToLower() == "клиент"))
+            .LastOrDefault();
+
+        string? needInfoPrompt = lastNeedInfo?.Comment;
+        string? needInfoResponse = lastClientResponse?.Comment;
+        DateTimeOffset? needInfoRequestedAt = lastNeedInfo?.Timestamp;
+        string? needInfoActorName = lastNeedInfo?.Actor?.ToLowerInvariant() switch
+        {
+            "analyst" => "Кредитный аналитик банка",
+            "system" => "Система скоринга",
+            _ => lastNeedInfo?.Actor
+        };
 
         return new ApplicationDto(
             app.Id,
@@ -102,7 +124,11 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
             app.MonthlyRevenue,
             app.MonthlyExpenses,
             app.HouseholdExpenses,
-            app.ExistingMonthlyObligations
+            app.ExistingMonthlyObligations,
+            needInfoPrompt,
+            needInfoResponse,
+            needInfoRequestedAt,
+            needInfoActorName
         );
     }
 
@@ -113,6 +139,16 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
             .Where(a => a.ClientId == clientId)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync(ct);
+
+        var appIds = apps.Select(a => a.Id).ToList();
+        var needInfoTransitions = await dbContext.TransitionHistory
+            .Where(t => appIds.Contains(t.ApplicationId) && t.ToStatus == ApplicationStatus.NeedInfo)
+            .OrderBy(t => t.Timestamp)
+            .ToListAsync(ct);
+
+        var needInfoByAppId = needInfoTransitions
+            .GroupBy(t => t.ApplicationId)
+            .ToDictionary(g => g.Key, g => g.Last().Comment);
 
         return apps.Select(app => new ApplicationListItemDto(
             app.Id,
@@ -126,7 +162,8 @@ public class ApplicationQueriesHandler(ApplicationDbContext dbContext) : IGetApp
             app.RequestedTermMonths,
             ClientReasonHelper.GetClientTexts(app.ReasonCodes),
             app.CurrentOffer is not null && app.Status is ApplicationStatus.Offer or ApplicationStatus.Accepted or ApplicationStatus.PreConditions or ApplicationStatus.SignedSim or ApplicationStatus.ReadyTodisburse or ApplicationStatus.DisbursedSim,
-            app.CreatedAt
+            app.CreatedAt,
+            needInfoByAppId.GetValueOrDefault(app.Id)
         )).ToList();
     }
 }

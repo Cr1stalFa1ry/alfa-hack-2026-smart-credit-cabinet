@@ -151,6 +151,8 @@ export interface CreditApplication {
   files?: Record<string, UploadedDocument[]>;
   needInfoPrompt?: string;
   needInfoResponse?: string;
+  needInfoRequestedAt?: string;
+  needInfoActorName?: string;
   declineReason?: string;
   reasonCodes?: string[];
   offer?: CreditOffer;

@@ -17,7 +17,8 @@ public record ApplicationListItemDto(
     int? RequestedTermMonths,
     IReadOnlyList<string> ClientReasonTexts,
     bool HasOffer,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    string? NeedInfoPrompt = null
 );
 
 public record ApplicationDocumentDto(
@@ -72,5 +73,9 @@ public record ApplicationDto(
     decimal? MonthlyRevenue = null,
     decimal? MonthlyExpenses = null,
     decimal? HouseholdExpenses = null,
-    decimal? ExistingMonthlyObligations = null
+    decimal? ExistingMonthlyObligations = null,
+    string? NeedInfoPrompt = null,
+    string? NeedInfoResponse = null,
+    DateTimeOffset? NeedInfoRequestedAt = null,
+    string? NeedInfoActorName = null
 );
