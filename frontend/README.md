@@ -95,7 +95,7 @@ src/
 
 ## 🔗 Интеграция с Backend (.NET 10)
 
-* По умолчанию Vite проксирует запросы `/api/*` на `http://localhost:5000`.
+* По умолчанию Vite проксирует запросы `/api/*` на `http://localhost:5189`.
 * Поддерживается гибридный транспорт аутентификации:
   * Заголовок `Authorization: Bearer <JWT>`
   * HttpOnly Cookies (`withCredentials: true`)

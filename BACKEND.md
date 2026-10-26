@@ -171,9 +171,16 @@ flowchart TD
     EMP_BANK -->|"T16 Некредитное препятствие (closed)"| APP
     EMP_BANK -->|"T14 Уточнены факты (в checking)"| CHECKING
 
+    %% Согласование оферты и посткредитная цепочка (T21–T23)
+    CLIENT -->|"Запрос других условий (переход в review)"| APP
+    EMP_BANK -->|"T12 Предложить другой вариант (в offer)"| APP
+    CLIENT -->|"T21 Принять оферту (accepted)"| APP
+    CLIENT -->|"T22 Подписать договор ЭЦП (signed_sim)"| APP
+    APP -->|"T23 Зачисление кредита на счёт (disbursed_sim)"| CLIENT
+
     %% Обратная связь и финальные статусы
     APP -->|"Статусы, офферы и причины"| CLIENT
-    APP -->|"Завершение (declined, closed, offer)"| Finish(["Конец"])
+    APP -->|"Завершение (declined, closed, disbursed_sim)"| Finish(["Конец"])
 ```
 
 ### 6.2. Инварианты переходов:
