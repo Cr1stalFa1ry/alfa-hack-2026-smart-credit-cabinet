@@ -24,10 +24,14 @@ public static class ApplicationStateMachine
         (ApplicationStatus.NeedInfo, ApplicationStatus.Checking),
         // T11: Аналитик запрашивает сведения
         (ApplicationStatus.Review, ApplicationStatus.NeedInfo),
-        // T12: Одобрение аналитика
+        // T12: Одобрение аналитика / корректировка условий
         (ApplicationStatus.Review, ApplicationStatus.Offer),
-        // T13: Отказ аналитика
+        (ApplicationStatus.Offer, ApplicationStatus.Offer),
+        // Встречный запрос клиента на изменение условий оферты
+        (ApplicationStatus.Offer, ApplicationStatus.Review),
+        // T13: Отказ аналитика (в т.ч. отказ по оферте при несогласии)
         (ApplicationStatus.Review, ApplicationStatus.Declined),
+        (ApplicationStatus.Offer, ApplicationStatus.Declined),
         // T14: Уточнены факты аналитиком -> пересчет проверки
         (ApplicationStatus.Review, ApplicationStatus.Checking),
         // T16: Некредитное препятствие

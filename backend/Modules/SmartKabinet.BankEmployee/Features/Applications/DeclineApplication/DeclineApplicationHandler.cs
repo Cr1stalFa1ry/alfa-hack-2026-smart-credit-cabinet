@@ -23,9 +23,9 @@ public class DeclineApplicationHandler(
             return Error.NotFound("Application.NotFound", "Заявка не найдена.");
         }
 
-        if (app.Status != ApplicationStatus.Review)
+        if (app.Status != ApplicationStatus.Review && app.Status != ApplicationStatus.Offer)
         {
-            return Error.Validation("Application.InvalidStatus", "Отказ аналитика доступен только для заявок в статусе review.");
+            return Error.Validation("Application.InvalidStatus", "Отказ аналитика доступен для заявок в статусе review или offer.");
         }
 
         if (string.IsNullOrWhiteSpace(command.ReasonCode))
@@ -33,6 +33,7 @@ public class DeclineApplicationHandler(
             return Error.Validation("Application.ReasonCodeRequired", "Для отказа аналитика код причины обязателен.");
         }
 
+        var fromStatus = app.Status;
         app.Status = ApplicationStatus.Declined;
         app.Decision = CreditDecision.Declined;
         app.ReasonCodes = new List<string> { command.ReasonCode };
@@ -41,7 +42,7 @@ public class DeclineApplicationHandler(
         appDb.TransitionHistory.Add(new TransitionRecord
         {
             ApplicationId = app.Id,
-            FromStatus = ApplicationStatus.Review,
+            FromStatus = fromStatus,
             ToStatus = ApplicationStatus.Declined,
             Actor = "analyst",
             ReasonCode = command.ReasonCode,

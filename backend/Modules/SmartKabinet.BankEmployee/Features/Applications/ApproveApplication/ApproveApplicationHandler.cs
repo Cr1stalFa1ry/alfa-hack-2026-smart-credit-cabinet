@@ -23,11 +23,12 @@ public class ApproveApplicationHandler(
             return Error.NotFound("Application.NotFound", "Заявка не найдена.");
         }
 
-        if (app.Status != ApplicationStatus.Review)
+        if (app.Status != ApplicationStatus.Review && app.Status != ApplicationStatus.Offer)
         {
-            return Error.Validation("Application.InvalidStatus", "Одобрение аналитиком доступно только для заявок в статусе review.");
+            return Error.Validation("Application.InvalidStatus", "Одобрение аналитиком доступно только для заявок в статусе review или offer.");
         }
 
+        var fromStatus = app.Status;
         var amount = command.ApprovedAmount ?? app.CurrentOffer?.ApprovedAmount ?? app.RequestedAmount;
         var term = command.TermMonths ?? app.CurrentOffer?.TermMonths ?? app.RequestedTermMonths ?? 12;
         var rate = command.AnnualRatePercent ?? app.CurrentOffer?.AnnualRatePercent ?? 18m;
@@ -52,10 +53,10 @@ public class ApproveApplicationHandler(
         appDb.TransitionHistory.Add(new TransitionRecord
         {
             ApplicationId = app.Id,
-            FromStatus = ApplicationStatus.Review,
+            FromStatus = fromStatus,
             ToStatus = ApplicationStatus.Offer,
             Actor = "analyst",
-            Comment = command.Comment ?? "Одобрено аналитиком (T12)"
+            Comment = command.Comment ?? (fromStatus == ApplicationStatus.Offer ? "Условия оферты обновлены аналитиком (T12)" : "Одобрено аналитиком (T12)")
         });
 
         await appDb.SaveChangesAsync(ct);

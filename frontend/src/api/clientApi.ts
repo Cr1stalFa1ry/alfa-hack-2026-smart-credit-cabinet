@@ -405,11 +405,30 @@ export const clientApi = {
   },
 
   acceptOffer: async (id: string, useAlternative?: boolean): Promise<CreditApplication> => {
-    const res = await apiClient.post<any>(`/client/applications/${id}/accept-offer`, {
+    const res = await apiClient.post<any>(`/client/applications/${id}/accept`, {
       useAlternative: Boolean(useAlternative),
     });
     const resData = (res.data as any)?.value || res.data;
     return mapBackendApplication(resData);
+  },
+
+  requestAlternativeOffer: async (
+    id: string,
+    params: {
+      requestedAmount?: number;
+      requestedTermMonths?: number;
+      desiredMonthlyPayment?: number;
+      comment?: string;
+    }
+  ): Promise<CreditApplication> => {
+    const res = await apiClient.post<any>(`/client/applications/${id}/request-alternative`, params);
+    const resData = (res.data as any)?.value || res.data;
+    // После запроса альтернативы запрашиваем актуальное состояние заявки
+    try {
+      return await clientApi.getApplicationById(id);
+    } catch {
+      return mapBackendApplication(resData);
+    }
   },
 
   signDocuments: async (id: string): Promise<CreditApplication> => {

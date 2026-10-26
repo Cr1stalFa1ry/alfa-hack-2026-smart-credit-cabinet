@@ -320,4 +320,79 @@ public class BankEmployeeFeaturesTests
         Assert.Equal(ApplicationStatus.Closed, updated.Status);
         Assert.Equal(CreditDecision.Declined, updated.Decision);
     }
+
+    [Fact]
+    public async Task ApproveApplicationHandler_CanModifyOffer_WhenStatusIsOffer()
+    {
+        var db = CreateAppDbContext(nameof(ApproveApplicationHandler_CanModifyOffer_WhenStatusIsOffer));
+        var appId = Guid.NewGuid();
+        db.Applications.Add(new SmartKabinet.Application.Domain.Application
+        {
+            Id = appId,
+            ClientId = Guid.NewGuid(),
+            Inn = "770100000001",
+            Status = ApplicationStatus.Offer,
+            RequestedAmount = 1_000_000m,
+            RequestedTermMonths = 12
+        });
+        await db.SaveChangesAsync();
+
+        var mockDossierBuilder = CreateMockDossierBuilder();
+        var handler = new ApproveApplicationHandler(db, mockDossierBuilder.Object);
+
+        var command = new ApproveApplicationCommand(
+            appId,
+            ApprovedAmount: 1_200_000m,
+            TermMonths: 24,
+            AnnualRatePercent: 21.0m,
+            Comment: "Встречное предложение банка"
+        );
+
+        var result = await handler.Handle(command);
+
+        Assert.True(result.IsSuccess);
+        var updated = await db.Applications.Include(a => a.CurrentOffer).FirstAsync(a => a.Id == appId);
+        Assert.Equal(ApplicationStatus.Offer, updated.Status);
+        Assert.Equal(1_200_000m, updated.CurrentOffer?.ApprovedAmount);
+        Assert.Equal(24, updated.CurrentOffer?.TermMonths);
+    }
+
+    [Fact]
+    public async Task DeclineApplicationHandler_CanDecline_WhenStatusIsOffer()
+    {
+        var db = CreateAppDbContext(nameof(DeclineApplicationHandler_CanDecline_WhenStatusIsOffer));
+        var appId = Guid.NewGuid();
+        db.Applications.Add(new SmartKabinet.Application.Domain.Application
+        {
+            Id = appId,
+            ClientId = Guid.NewGuid(),
+            Inn = "770100000001",
+            Status = ApplicationStatus.Offer,
+            RequestedAmount = 1_000_000m
+        });
+        await db.SaveChangesAsync();
+
+        var mockDossierBuilder = CreateMockDossierBuilder();
+        var handler = new DeclineApplicationHandler(db, mockDossierBuilder.Object);
+
+        var command = new DeclineApplicationCommand(
+            appId,
+            ReasonCode: "HIGH_RISK_SCORE",
+            Comment: "Отказ аналитика после рассмотрения"
+        );
+
+        var result = await handler.Handle(command);
+
+        Assert.True(result.IsSuccess);
+        var updated = await db.Applications.FirstAsync(a => a.Id == appId);
+        Assert.Equal(ApplicationStatus.Declined, updated.Status);
+    }
+
+    [Fact]
+    public void ApplicationStateMachine_AllowsCounterOfferTransitions()
+    {
+        Assert.True(ApplicationStateMachine.CanTransition(ApplicationStatus.Offer, ApplicationStatus.Review));
+        Assert.True(ApplicationStateMachine.CanTransition(ApplicationStatus.Offer, ApplicationStatus.Offer));
+        Assert.True(ApplicationStateMachine.CanTransition(ApplicationStatus.Offer, ApplicationStatus.Declined));
+    }
 }

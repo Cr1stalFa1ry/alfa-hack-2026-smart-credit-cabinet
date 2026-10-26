@@ -10,13 +10,19 @@ namespace SmartKabinet.Client.Features.Applications;
 
 public record AcceptOfferRequest(bool? UseAlternativeTerm = false);
 public record SignAgreementRequest(string? SmsCode = null);
+public record RequestAlternativeOfferRequest(
+    decimal? RequestedAmount = null,
+    int? RequestedTermMonths = null,
+    decimal? DesiredMonthlyPayment = null,
+    string? Comment = null
+);
 
 public static class SignAndDisburseEndpoints
 {
     public static RouteGroupBuilder MapSignAndDisburseEndpoints(this RouteGroupBuilder group)
     {
-        // POST /api/client/applications/{id}/accept (T21: Принятие оферты заёмщиком)
-        group.MapPost("/{id:guid}/accept", async (
+        // Обработчик принятия оферты
+        var acceptHandler = async (
             Guid id,
             AcceptOfferRequest? request,
             IUserContext userContext,
@@ -60,10 +66,94 @@ public static class SignAndDisburseEndpoints
                 acceptedAt = DateTime.UtcNow,
                 message = "Кредитная оферта принята заёмщиком (T21). Ожидается подписание договора."
             });
+        };
+
+        // POST /api/client/applications/{id}/accept (T21: Принятие оферты заёмщиком)
+        group.MapPost("/{id:guid}/accept", acceptHandler)
+            .RequireAuthorization(AuthPolicies.ClientOnly)
+            .WithName("AcceptCreditOffer")
+            .WithSummary("T21: Принятие кредитной оферты клиентом");
+
+        // Алиас /accept-offer
+        group.MapPost("/{id:guid}/accept-offer", acceptHandler)
+            .RequireAuthorization(AuthPolicies.ClientOnly)
+            .ExcludeFromDescription();
+
+        // POST /api/client/applications/{id}/request-alternative (Запрос альтернативных условий заёмщиком)
+        group.MapPost("/{id:guid}/request-alternative", async (
+            Guid id,
+            RequestAlternativeOfferRequest? request,
+            IUserContext userContext,
+            ApplicationDbContext appDb) =>
+        {
+            if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
+
+            var app = await appDb.Applications
+                .Include(a => a.CurrentOffer)
+                .FirstOrDefaultAsync(a => a.Id == id && a.ClientId == userContext.UserId.Value);
+
+            if (app is null) return Results.NotFound(new { error = "Заявка не найдена." });
+            if (app.Status != ApplicationStatus.Offer)
+            {
+                return Results.BadRequest(new { error = $"Запрос пересмотра доступен только для заявок со сформированной офертой (текущий: {app.Status})." });
+            }
+
+            var fromStatus = app.Status;
+            app.Status = ApplicationStatus.Review;
+            app.Decision = CreditDecision.ReviewRequired;
+            app.UpdatedAt = DateTimeOffset.UtcNow;
+
+            var commentParts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(request?.Comment))
+            {
+                commentParts.Add(request.Comment.Trim());
+            }
+            if (request?.RequestedAmount.HasValue == true && request.RequestedAmount.Value > 0)
+            {
+                commentParts.Add($"желаемая сумма: {request.RequestedAmount.Value:N0} ₽");
+            }
+            if (request?.RequestedTermMonths.HasValue == true && request.RequestedTermMonths.Value > 0)
+            {
+                commentParts.Add($"желаемый срок: {request.RequestedTermMonths.Value} мес.");
+            }
+            if (request?.DesiredMonthlyPayment.HasValue == true && request.DesiredMonthlyPayment.Value > 0)
+            {
+                commentParts.Add($"желаемый платёж: {request.DesiredMonthlyPayment.Value:N0} ₽/мес.");
+            }
+
+            var fullComment = commentParts.Count > 0
+                ? $"Клиент запросил пересмотр условий: {string.Join("; ", commentParts)}"
+                : "Клиент запросил альтернативные условия кредитования";
+
+            if (app.CurrentOffer != null)
+            {
+                app.CurrentOffer.IsCounterOffer = true;
+                app.CurrentOffer.ReasonCode = "CLIENT_REQUESTED_REVISION";
+            }
+
+            appDb.TransitionHistory.Add(new TransitionRecord
+            {
+                ApplicationId = app.Id,
+                FromStatus = fromStatus,
+                ToStatus = ApplicationStatus.Review,
+                Actor = "client",
+                ReasonCode = "CLIENT_COUNTER_OFFER_REQUEST",
+                Comment = fullComment
+            });
+
+            await appDb.SaveChangesAsync();
+
+            return Results.Ok(new
+            {
+                applicationId = app.Id,
+                status = "review",
+                message = "Запрос на пересмотр условий направлен кредитному аналитику."
+            });
         })
         .RequireAuthorization(AuthPolicies.ClientOnly)
-        .WithName("AcceptCreditOffer")
-        .WithSummary("T21: Принятие кредитной оферты клиентом");
+        .WithName("RequestAlternativeOfferTerms")
+        .WithSummary("Запрос заёмщиком альтернативных параметров оферты");
 
         // POST /api/client/applications/{id}/sign (T22: Симуляция подписания договора ЭЦП / SMS-кодом)
         group.MapPost("/{id:guid}/sign", async (

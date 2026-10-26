@@ -11,6 +11,7 @@ import { StateMachineStepper } from '../../components/application/StateMachineSt
 import { ScoringCard } from '../../components/application/ScoringCard';
 import { OfferCard } from '../../components/application/OfferCard';
 import { NeedInfoResponseModal } from '../../components/application/NeedInfoResponseModal';
+import { Modal } from '../../components/common/Modal';
 import { FileUpload } from '../../components/common/FileUpload';
 import { ConsentModal, ConsentType } from '../../components/application/ConsentModal';
 import { NewApplicationWizardPage } from './NewApplicationWizardPage';
@@ -114,6 +115,11 @@ export const ApplicationDetailsPage: React.FC = () => {
   // Modals
   const [isNeedInfoModalOpen, setIsNeedInfoModalOpen] = useState(false);
   const [activeConsentType, setActiveConsentType] = useState<ConsentType | null>(null);
+  const [isCounterOfferModalOpen, setIsCounterOfferModalOpen] = useState(false);
+  const [counterAmount, setCounterAmount] = useState<number>(1000000);
+  const [counterTerm, setCounterTerm] = useState<number>(12);
+  const [counterPayment, setCounterPayment] = useState<string>('');
+  const [counterComment, setCounterComment] = useState<string>('');
 
   // Сворачивание блоков
   const [isHistoryExpanded, setIsHistoryExpanded] = useState<boolean>(false);
@@ -216,6 +222,39 @@ export const ApplicationDetailsPage: React.FC = () => {
       setIsActionLoading(false);
     }
   };
+
+  // Counter offer / Request alternative terms
+  const handleSendCounterOffer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!application) return;
+    setIsActionLoading(true);
+    try {
+      const updated = await clientApi.requestAlternativeOffer(application.id, {
+        requestedAmount: Number(counterAmount),
+        requestedTermMonths: Number(counterTerm),
+        desiredMonthlyPayment: counterPayment ? Number(counterPayment) : undefined,
+        comment: counterComment || 'Запрос альтернативных условий кредитования',
+      });
+      setApplication((prev) => (prev ? { ...prev, ...updated, status: 'review' } : null));
+      setIsCounterOfferModalOpen(false);
+    } catch (err: any) {
+      console.error('Counter offer error:', err);
+      alert('Ошибка при отправке запроса: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // Инициализация полей встречного запроса при изменении оферты
+  useEffect(() => {
+    if (application?.offer) {
+      setCounterAmount(application.offer.approvedAmount || application.requestedAmount || 1000000);
+      setCounterTerm(application.offer.approvedTermMonths || application.requestedTermMonths || 12);
+    } else if (application) {
+      setCounterAmount(application.requestedAmount || 1000000);
+      setCounterTerm(application.requestedTermMonths || 12);
+    }
+  }, [application?.offer?.approvedAmount, application?.offer?.approvedTermMonths, application?.requestedAmount, application?.requestedTermMonths]);
 
   // T17: Withdraw application
   const handleWithdraw = async () => {
@@ -611,9 +650,30 @@ export const ApplicationDetailsPage: React.FC = () => {
         <OfferCard
           offer={application.offer}
           onAccept={handleAcceptOffer}
+          onRequestAlternative={() => setIsCounterOfferModalOpen(true)}
           isLoading={isActionLoading}
         />
       )}
+
+      {/* Если клиент запросил другие условия и заявка на рассмотрении у аналитика */}
+      {application.status === 'review' &&
+        (application.history || []).some(
+          (h) =>
+            h.reasonCode === 'CLIENT_COUNTER_OFFER_REQUEST' ||
+            (h.actor === 'client' && h.comment?.toLowerCase().includes('пересмотр условий'))
+        ) && (
+          <div className="p-5 rounded-[16px] bg-[#fff8eb] border border-[#f5c97a] flex items-start gap-3.5">
+            <Sparkles className="w-5 h-5 text-[#b45309] shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-bold text-[15px] text-[#78350f] m-0">
+                Запрос на изменение условий отправлен кредитному аналитику
+              </h4>
+              <p className="text-[13px] text-[#92400e] m-0 leading-relaxed">
+                Мы получили ваш встречный запрос с пожеланиями по кредиту. Специалист банка пересматривает заявку и готовит обновлённые условия. Они появятся здесь сразу после согласования.
+              </p>
+            </div>
+          </div>
+        )}
 
       {/* T09 / T13 Declined */}
       {application.status === 'declined' && (
@@ -1018,6 +1078,91 @@ export const ApplicationDetailsPage: React.FC = () => {
         applicantName={companyTitle}
         inn={application.inn}
       />
+
+      {/* Модальное окно: Запрос других условий оферты клиентом */}
+      <Modal
+        isOpen={isCounterOfferModalOpen}
+        onClose={() => setIsCounterOfferModalOpen(false)}
+        maxWidth="lg"
+        title="Запрос других условий кредитования"
+        description="Укажите комфортные параметры. Кредитный специалист Альфа-Банка пересмотрит оферту в индивидуальном порядке."
+      >
+        <form onSubmit={handleSendCounterOffer} className="space-y-4 text-[#141414]">
+          <div>
+            <label className="block text-xs font-bold text-[#686b70] uppercase tracking-wider mb-1.5">
+              Желаемая сумма кредита (₽)
+            </label>
+            <input
+              type="number"
+              step="50000"
+              min="50000"
+              className="w-full px-4 py-3 border border-[#D1D5D8] rounded-[11px] bg-white text-[#141414] text-[14px] focus:outline-2 focus:outline-[#EF3124]"
+              value={counterAmount}
+              onChange={(e) => setCounterAmount(Number(e.target.value))}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-[#686b70] uppercase tracking-wider mb-1.5">
+              Желаемый срок (месяцев)
+            </label>
+            <input
+              type="number"
+              min="3"
+              max="60"
+              className="w-full px-4 py-3 border border-[#D1D5D8] rounded-[11px] bg-white text-[#141414] text-[14px] focus:outline-2 focus:outline-[#EF3124]"
+              value={counterTerm}
+              onChange={(e) => setCounterTerm(Number(e.target.value))}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-[#686b70] uppercase tracking-wider mb-1.5">
+              Комфортный ежемесячный платёж (₽, опционально)
+            </label>
+            <input
+              type="number"
+              step="1000"
+              placeholder="Например: 60000"
+              className="w-full px-4 py-3 border border-[#D1D5D8] rounded-[11px] bg-white text-[#141414] text-[14px] focus:outline-2 focus:outline-[#EF3124]"
+              value={counterPayment}
+              onChange={(e) => setCounterPayment(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-[#686b70] uppercase tracking-wider mb-1.5">
+              Пожелания / комментарий для аналитика
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Например: Просим увеличить срок до 36 мес., чтобы снизить платёж, либо согласовать траншевую форму финансирования"
+              className="w-full px-4 py-3 border border-[#D1D5D8] rounded-[11px] bg-white text-[#141414] text-[14px] focus:outline-2 focus:outline-[#EF3124]"
+              value={counterComment}
+              onChange={(e) => setCounterComment(e.target.value)}
+            />
+          </div>
+
+          <div className="pt-3 border-t border-[#e6e8ea] flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setIsCounterOfferModalOpen(false)}
+              className="px-4 py-2.5 rounded-[11px] text-[14px] font-bold text-[#686b70] hover:text-[#141414] border border-[#d1d5d8] hover:bg-[#f5f6f7] cursor-pointer"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={isActionLoading}
+              className="px-5 py-2.5 rounded-[11px] text-[14px] font-bold text-white bg-[#EF3124] hover:bg-[#cd2017] cursor-pointer disabled:opacity-40"
+            >
+              {isActionLoading ? 'Отправка...' : 'Отправить запрос аналитику'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
