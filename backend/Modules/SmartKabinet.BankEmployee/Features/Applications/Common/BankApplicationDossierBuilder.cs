@@ -391,7 +391,7 @@ public class BankApplicationDossierBuilder(
         {
             try
             {
-                var primaryReason = app.ReasonCodes.FirstOrDefault();
+                var primaryReason = app.CurrentOffer?.ReasonCode ?? app.ReasonCodes.FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(primaryReason))
                 {
                     primaryReason = app.Status switch

@@ -378,52 +378,36 @@ export const AnalystReviewPage: React.FC = () => {
 
       {/* Основная панель карточки досье (.panel из макет.html) */}
       <div className="border border-[#e6e8ea] rounded-[22px] p-[22px] sm:p-[30px] bg-white">
-        {/* Блок результата анализа (.analysis-result и .score-circle из макет.html) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[25px] pb-[25px] border-b border-[#e6e8ea]">
-          <div>
-            <div className="text-[11px] tracking-[0.12em] uppercase text-[#686b70] font-bold mb-3">
-              Автоматическое заключение системы
-            </div>
-            <h2 className="text-[23px] sm:text-[27px] font-bold tracking-[-0.045em] leading-[1.15] max-w-[540px] mb-3">
-              {isWithdrawn
-                ? 'Заявка отозвана заёмщиком (T17)'
-                : isPaused
-                ? 'Приостановленный бизнес: индивидуальное рассмотрение специалистом'
-                : isPrelaunch
-                ? 'Заявка нового ИП направлена на профильное рассмотрение специалисту'
-                : calculatedVariant?.isCounterOffer
-                ? 'Рекомендовано одобрение со встречными условиями (Counter-Offer)'
-                : 'Положительное заключение скоринга — рекомендовано к одобрению'}
-            </h2>
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="inline-block rounded-[7px] bg-[#f5f6f7] px-[9px] py-[5px] text-[11px] font-medium text-[#141414]">
-                Цель: {application.purpose || 'Пополнение оборотных средств'}
-              </span>
-              <span
-                className={`inline-block rounded-[7px] px-[9px] py-[5px] text-[11px] font-medium ${
-                  missingInfoList.length === 0
-                    ? 'bg-[#edf7f0] text-[#176b45]'
-                    : 'bg-[#fff6e4] text-[#885215]'
-                }`}
-              >
-                {missingInfoList.length === 0
-                  ? 'Все проверки пройдены'
-                  : `Требуют внимания: ${missingInfoList.length} п.`}
-              </span>
-            </div>
+        {/* Блок результата анализа (.analysis-result из макет.html) */}
+        <div className="pb-[25px] border-b border-[#e6e8ea]">
+          <div className="text-[11px] tracking-[0.12em] uppercase text-[#686b70] font-bold mb-3">
+            Автоматическое заключение системы
           </div>
-
-          {/* Круг скоринга (.score-circle из макет.html) */}
-          <div
-            className={`w-[94px] h-[94px] sm:w-[132px] sm:h-[132px] rounded-full border-[6px] sm:border-[8px] flex flex-col items-center justify-center shrink-0 ${
-              isPrelaunch ? 'border-[#e6e8ea]' : 'border-[#EF3124]'
-            }`}
-          >
-            <strong className="text-[29px] sm:text-[38px] leading-[1.2] tracking-[-0.04em] text-[#141414]">
-              {isPrelaunch ? '—' : effectiveScoring?.score ?? 78}
-            </strong>
-            <span className="text-[8px] sm:text-[10px] text-[#686b70] uppercase tracking-wider">
-              {isPrelaunch ? 'новый ИП' : 'балл из 100'}
+          <h2 className="text-[23px] sm:text-[27px] font-bold tracking-[-0.045em] leading-[1.15] max-w-[720px] mb-3">
+            {isWithdrawn
+              ? 'Заявка отозвана заёмщиком (T17)'
+              : isPaused
+              ? 'Приостановленный бизнес: индивидуальное рассмотрение специалистом'
+              : isPrelaunch
+              ? 'Заявка нового ИП направлена на профильное рассмотрение специалисту'
+              : calculatedVariant?.isCounterOffer
+              ? 'Рекомендовано одобрение со встречными условиями (Counter-Offer)'
+              : 'Положительное заключение скоринга — рекомендовано к одобрению'}
+          </h2>
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="inline-block rounded-[7px] bg-[#f5f6f7] px-[9px] py-[5px] text-[11px] font-medium text-[#141414]">
+              Цель: {application.purpose || 'Пополнение оборотных средств'}
+            </span>
+            <span
+              className={`inline-block rounded-[7px] px-[9px] py-[5px] text-[11px] font-medium ${
+                missingInfoList.length === 0
+                  ? 'bg-[#edf7f0] text-[#176b45]'
+                  : 'bg-[#fff6e4] text-[#885215]'
+              }`}
+            >
+              {missingInfoList.length === 0
+                ? 'Все проверки пройдены'
+                : `Требуют внимания: ${missingInfoList.length} п.`}
             </span>
           </div>
         </div>

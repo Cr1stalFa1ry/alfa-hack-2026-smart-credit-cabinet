@@ -1657,14 +1657,21 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
         await clientApi.saveDraft(targetId, payload as any);
       }
       
-      // Отправляем реально загруженные файлы на бэкенд
-      const allFilesList = Object.values(uploadedFiles).flat();
-      for (const item of allFilesList) {
-        if (item.file) {
-          try {
-            await clientApi.uploadDocument(targetId, item.file);
-          } catch (e) {
-            console.warn('Backend document upload fallback:', e);
+      // Отправляем реально загруженные файлы на бэкенд с точным указанием типа документа
+      for (const [group, items] of Object.entries(uploadedFiles)) {
+        const resolvedDocType =
+          group === 'equipmentDoc' ? 'equipment_invoice' :
+          group === 'otherBankStatements' ? 'bank_statement' :
+          group === 'expenseDoc' ? 'expense_contract' :
+          group === 'collateralDoc' ? 'collateral_doc' : 'other';
+
+        for (const item of items) {
+          if (item.file) {
+            try {
+              await clientApi.uploadDocument(targetId, item.file, resolvedDocType);
+            } catch (e) {
+              console.warn('Backend document upload fallback:', e);
+            }
           }
         }
       }

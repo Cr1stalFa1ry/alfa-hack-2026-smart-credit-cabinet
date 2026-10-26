@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using SmartKabinet.Application.Domain;
 using SmartKabinet.Application.Infrastructure.Persistence;
 using SmartKabinet.Auth.Infrastructure.Security;
 using SmartKabinet.Intergrations.Ml.Services;
@@ -23,25 +24,30 @@ public static class GetExplanationEndpoint
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
             if (!userContext.IsClient) return Results.Forbid();
 
-            var app = await appDb.Applications.FirstOrDefaultAsync(
-                a => a.Id == id && a.ClientId == userContext.UserId.Value, ct);
+            var app = await appDb.Applications
+                .Include(a => a.CurrentOffer)
+                .FirstOrDefaultAsync(
+                    a => a.Id == id && a.ClientId == userContext.UserId.Value, ct);
 
             if (app is null) return Results.NotFound(new { error = "Заявка не найдена." });
 
-            var primaryReason = app.ReasonCodes.FirstOrDefault();
+            var primaryReason = app.CurrentOffer?.ReasonCode ?? app.ReasonCodes.FirstOrDefault();
             if (string.IsNullOrWhiteSpace(primaryReason))
             {
-                return Results.Ok(new
+                primaryReason = app.Status switch
                 {
-                    applicationId = app.Id,
-                    status = app.Status.ToString().ToLowerInvariant(),
-                    explanation = "Заявка находится в обработке.",
-                    source = "default"
-                });
+                    ApplicationStatus.Offer or ApplicationStatus.Accepted => app.CurrentOffer?.IsCounterOffer == true ? "OFFER_COUNTER" : "OFFER_ORIGINAL",
+                    ApplicationStatus.Declined => "SCORE_BELOW_MIN",
+                    _ => "DATA_REQUIRED"
+                };
             }
 
             var details = new Dictionary<string, object>
             {
+                ["amount"] = app.CurrentOffer?.ApprovedAmount ?? app.RequestedAmount,
+                ["term"] = app.CurrentOffer?.TermMonths ?? (app.RequestedTermMonths ?? 12),
+                ["rate"] = app.CurrentOffer?.AnnualRatePercent ?? 18.5m,
+                ["payment"] = app.CurrentOffer?.MonthlyPayment ?? 0m,
                 ["requested_amount"] = app.RequestedAmount,
                 ["stage"] = app.Stage.ToString(),
                 ["status"] = app.Status.ToString()

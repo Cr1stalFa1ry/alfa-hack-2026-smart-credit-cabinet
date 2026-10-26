@@ -421,8 +421,8 @@ export const clientApi = {
     return mapBackendApplication(resData);
   },
 
-  uploadDocument: async (id: string, file: File): Promise<UploadedDocument> => {
-    const fileType = file.name.endsWith('.pdf') ? 'bank_statement' : 'other';
+  uploadDocument: async (id: string, file: File, documentType?: string): Promise<UploadedDocument> => {
+    const fileType = documentType || (file.name.endsWith('.pdf') ? 'bank_statement' : 'other');
     const formData = new FormData();
     formData.append('file', file);
     formData.append('documentType', fileType);
