@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartKabinet.Application.Contracts;
 using SmartKabinet.Application.Domain;
 using SmartKabinet.Application.Infrastructure.Persistence;
+using SmartKabinet.Checking.Domain;
 using SmartKabinet.Intergrations.Ml.Services;
 using SmartKabinet.Intergrations.Synthetic.Services;
 
@@ -89,17 +90,141 @@ public class BankApplicationDossierBuilder(
         ScoringDetailsDto? scoringDto = null;
         if (companyInfo is not null)
         {
+            var isRestart = app.ProductCode is "RESTART" or "PAUSED";
+            var requestedAmount = app.RequestedAmount > 0 ? app.RequestedAmount : 1_000_000m;
+            var requestedTerm = app.RequestedTermMonths is > 0 ? app.RequestedTermMonths.Value : 12;
+
+            // 1. Возраст бизнеса (месяцы)
+            var operatingMonths = companyInfo.OperatingMonths
+                ?? (companyInfo.RegistrationDate.HasValue
+                    ? Math.Max(1, (int)Math.Floor((DateTime.UtcNow - companyInfo.RegistrationDate.Value).TotalDays / 30.4375))
+                    : (app.HistoryMonths ?? 24));
+
+            // 2. Годовая выручка
+            decimal annualInflow = 0m;
+            if (app.MonthlyRevenue.HasValue && app.MonthlyRevenue.Value > 0)
+            {
+                annualInflow = app.MonthlyRevenue.Value * 12m;
+            }
+            else if (companyInfo.AnnualRevenue.HasValue && companyInfo.AnnualRevenue.Value > 0)
+            {
+                annualInflow = companyInfo.AnnualRevenue.Value;
+            }
+            else if (companyInfo.Facts is { Count: > 0 })
+            {
+                annualInflow = companyInfo.Facts.Sum(f => f.CleanReceiptsRub) * (12m / companyInfo.Facts.Count);
+            }
+            else if (!isRestart)
+            {
+                annualInflow = (app.ProjectedMonthlyRevenue ?? 300_000m) * 12m;
+            }
+
+            // 3. Коэффициент вариации выручки (CV)
+            decimal cv = 0.20m;
+            if (companyInfo.Facts is { Count: >= 3 })
+            {
+                var values = companyInfo.Facts.Select(f => (double)f.CleanReceiptsRub).ToList();
+                var avg = values.Average();
+                if (avg > 0)
+                {
+                    var sumSquares = values.Sum(v => Math.Pow(v - avg, 2));
+                    var stdDev = Math.Sqrt(sumSquares / values.Count);
+                    cv = Math.Round((decimal)(stdDev / avg), 2);
+                }
+            }
+
+            // 4. Обязательства и доступный денежный поток
+            var existingObligations = app.ExistingMonthlyObligations
+                ?? (companyInfo.Debts?.Sum(d => d.MonthlyMaxPaymentRub) ?? 0m);
+
+            decimal businessCash;
+            if (app.MonthlyRevenue.HasValue && app.MonthlyExpenses.HasValue && app.MonthlyRevenue.Value > 0)
+            {
+                businessCash = app.MonthlyRevenue.Value - app.MonthlyExpenses.Value;
+            }
+            else if (companyInfo.NetCashFlow.HasValue && companyInfo.NetCashFlow.Value > 0)
+            {
+                businessCash = companyInfo.NetCashFlow.Value;
+            }
+            else if (companyInfo.AnnualRevenue.HasValue && companyInfo.AverageMonthlyExpenses.HasValue)
+            {
+                businessCash = (companyInfo.AnnualRevenue.Value / 12m) - companyInfo.AverageMonthlyExpenses.Value;
+            }
+            else if (!isRestart)
+            {
+                var baseMonthly = app.ProjectedMonthlyRevenue ?? 300_000m;
+                businessCash = baseMonthly * 0.4m;
+            }
+            else
+            {
+                businessCash = 0m;
+            }
+
+            var householdExpenses = app.HouseholdExpenses ?? 0m;
+            var personalIncome = app.AdditionalIncomeAmount ?? app.PersonalIncome ?? 0m;
+            var netCashFlow = Math.Max(0m, businessCash - householdExpenses + personalIncome);
+            var recommendedMaxPayment = Math.Round(netCashFlow * 0.7m, 2);
+
+            // 5. Динамический расчет баллов по правилам регламента R09-R25
+            int overdueDays = 0;
+            decimal bkiScore = overdueDays == 0 ? 25m : (overdueDays <= 30 ? 10m : 0m);
+
+            decimal historyScore = operatingMonths switch
+            {
+                >= 24 => 15m,
+                >= 12 => 10m,
+                >= 6 => 5m,
+                _ => 0m
+            };
+
+            decimal cvScore;
+            decimal ratioScore;
+            decimal dscrScore;
+            double calculatedDscr;
+
+            if (isRestart)
+            {
+                cvScore = 0m;
+                ratioScore = 0m;
+                dscrScore = 0m;
+                calculatedDscr = 0.0;
+            }
+            else
+            {
+                cvScore = cv switch
+                {
+                    <= 0.30m => 15m,
+                    <= 0.60m => 8m,
+                    _ => 0m
+                };
+
+                ratioScore = annualInflow > 0 && (requestedAmount / annualInflow <= 0.25m) ? 5m : 0m;
+
+                var refPayment = ScoringEngine.CalculateMonthlyPayment(requestedAmount, 24m, requestedTerm);
+                var rawRefDscr = ScoringEngine.CalculateDscr(netCashFlow, refPayment, existingObligations);
+                calculatedDscr = Math.Round((double)rawRefDscr, 2);
+
+                dscrScore = rawRefDscr switch
+                {
+                    >= 1.50m => 40m,
+                    >= 1.20m => 25m,
+                    >= 1.00m => 10m,
+                    _ => 0m
+                };
+            }
+
+            var calculatedTotalScore = (int)(bkiScore + historyScore + cvScore + ratioScore + dscrScore);
+
             var isRiskHigh = companyInfo.IsBankrupt || companyInfo.HasFnsBlock || companyInfo.ZskRiskLevel == "HIGH";
-            var score = isRiskHigh ? 35 : 82;
-            var riskLevel = isRiskHigh ? "high" : "low";
+            var finalScore = isRiskHigh ? Math.Min(35, calculatedTotalScore) : calculatedTotalScore;
 
-            var dscr = companyInfo.NetCashFlow > 0 && app.CurrentOffer?.MonthlyPayment > 0
-                ? Math.Round((double)(companyInfo.NetCashFlow.Value / app.CurrentOffer.MonthlyPayment), 2)
-                : 1.45;
+            var riskLevel = isRiskHigh
+                ? "high"
+                : (isRestart ? "medium" : (finalScore >= 70 ? "low" : (finalScore >= 50 ? "medium" : "high")));
 
-            var baseCashFlow = app.ProjectedMonthlyRevenue ?? 300_000m;
-            var netCashFlow = companyInfo.NetCashFlow ?? (baseCashFlow * 0.4m);
-            var recommendedMaxPayment = netCashFlow * 0.7m;
+            var dscr = app.CurrentOffer?.MonthlyPayment > 0
+                ? Math.Round((double)ScoringEngine.CalculateDscr(netCashFlow, app.CurrentOffer.MonthlyPayment, existingObligations), 2)
+                : calculatedDscr;
 
             var stopFactors = new List<StopFactorDto>
             {
@@ -154,8 +279,8 @@ public class BankApplicationDossierBuilder(
             var bki = new BkiDetailsDto(
                 companyInfo.IsAlfaClient ? 780 : 710,
                 companyInfo.IsAlfaClient ? 1 : 0,
-                0m,
-                0,
+                existingObligations,
+                overdueDays,
                 0m,
                 false
             );
@@ -165,41 +290,49 @@ public class BankApplicationDossierBuilder(
                 new(
                     "coverage",
                     "Покрытие платежей (DSCR)",
-                    companyInfo.NetCashFlow > 0 && app.CurrentOffer?.MonthlyPayment > 0 && (double)(companyInfo.NetCashFlow.Value / app.CurrentOffer.MonthlyPayment) >= 1.25 ? 35 : 20,
+                    (int)dscrScore,
                     40,
-                    $"DSCR {(companyInfo.NetCashFlow > 0 && app.CurrentOffer?.MonthlyPayment > 0 ? Math.Round((double)(companyInfo.NetCashFlow.Value / app.CurrentOffer.MonthlyPayment), 2) : 1.45)}",
+                    isRestart
+                        ? "Деятельность приостановлена: расчет DSCR отключен по регламенту перезапуска"
+                        : $"Опорный DSCR {calculatedDscr:F2} (порог 1.50 / 1.20 / 1.00)",
                     "R20–R21"
                 ),
                 new(
                     "credit",
                     "Кредитная история (БКИ)",
-                    companyInfo.IsAlfaClient ? 25 : 20,
+                    (int)bkiScore,
                     25,
-                    "В ответе БКИ нет критических просрочек",
+                    overdueDays == 0 ? "В ответе БКИ нет текущих просрочек" : $"Просрочка по БКИ: {overdueDays} дн.",
                     "R09–R10"
                 ),
                 new(
                     "history",
                     "Длительность деятельности",
-                    14,
+                    (int)historyScore,
                     15,
-                    "Срок регистрации бизнеса более 12 месяцев",
+                    $"Срок регистрации бизнеса: {operatingMonths} мес.",
                     "R18, R22"
                 ),
                 new(
                     "variation",
                     "Устойчивость выручки (CV)",
-                    11,
+                    (int)cvScore,
                     15,
-                    "Коэффициент вариации выручки CV в норме",
+                    isRestart
+                        ? "Деятельность приостановлена (CV не применяется)"
+                        : $"Коэффициент вариации выручки CV = {cv:P0}",
                     "R19, R22"
                 ),
                 new(
                     "annual",
                     "Сумма к годовой выручке",
+                    (int)ratioScore,
                     5,
-                    5,
-                    "Лимит суммы не превышает годовой оборот",
+                    isRestart
+                        ? "Индивидуальный подбор лимита финансирования"
+                        : (annualInflow > 0
+                            ? $"Запрос {requestedAmount:N0} ₽ к выручке {annualInflow:N0} ₽ ({(requestedAmount / annualInflow):P0})"
+                            : "Годовая выручка не определена"),
                     "R23"
                 )
             };
@@ -209,9 +342,21 @@ public class BankApplicationDossierBuilder(
             {
                 issues.Add("Уточнить целевое назначение кредита");
             }
+            if (isRiskHigh)
+            {
+                issues.Add("Обнаружены критические стоп-факторы (ФНС / ЗСК / Банкротство)");
+            }
+            if (isRestart)
+            {
+                issues.Add("Приостановленная деятельность: требуется согласование параметров перезапуска специалистом");
+            }
+            else if (calculatedDscr < 1.20 && netCashFlow > 0)
+            {
+                issues.Add($"Низкий коэффициент покрытия долга (DSCR = {calculatedDscr:F2} < 1.20)");
+            }
 
             scoringDto = new ScoringDetailsDto(
-                score,
+                finalScore,
                 riskLevel,
                 dscr,
                 netCashFlow,
