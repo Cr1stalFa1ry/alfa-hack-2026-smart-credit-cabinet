@@ -1,0 +1,2339 @@
+[
+  {
+    "date": "2025-10-01",
+    "amount": "-31460.58",
+    "counterparty": "ООО \"Упаковка\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ октябрь",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-001",
+    "source_row": 1,
+    "page": 1,
+    "bbox_points": [
+      28,
+      356.27559055118115,
+      813.8897637795277,
+      377.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-10-05",
+    "amount": "-67025.79",
+    "counterparty": "ООО \"Упаковка\"",
+    "description": "ОПЛ ПО СЧ 2237 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-002",
+    "source_row": 2,
+    "page": 1,
+    "bbox_points": [
+      28,
+      335.27559055118115,
+      813.8897637795277,
+      356.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-10-06",
+    "amount": "-5477.14",
+    "counterparty": "ООО \"Упаковка\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ октябрь",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-003",
+    "source_row": 3,
+    "page": 1,
+    "bbox_points": [
+      28,
+      314.27559055118115,
+      813.8897637795277,
+      335.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-10-06",
+    "amount": "66954.73",
+    "counterparty": "ООО \"ТехноЛайн\"",
+    "description": "ОПЛАТА ПО ДОГ 8995 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-004",
+    "source_row": 4,
+    "page": 1,
+    "bbox_points": [
+      28,
+      293.27559055118115,
+      813.8897637795277,
+      314.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-10-18",
+    "amount": "-52102.98",
+    "counterparty": "ООО \"Упаковка\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ октябрь",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-005",
+    "source_row": 5,
+    "page": 1,
+    "bbox_points": [
+      28,
+      272.27559055118115,
+      813.8897637795277,
+      293.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-10-23",
+    "amount": "-137255.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПЕРЕВОД НА СВОЮ КАРТУ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-006",
+    "source_row": 6,
+    "page": 1,
+    "bbox_points": [
+      28,
+      251.27559055118115,
+      813.8897637795277,
+      272.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-10-24",
+    "amount": "-5293.03",
+    "counterparty": "",
+    "description": "ПОКУПКА АПТЕКА 36,6",
+    "category": "PERSONAL",
+    "row_id": "DEMO-003-007",
+    "source_row": 7,
+    "page": 1,
+    "bbox_points": [
+      28,
+      230.27559055118115,
+      813.8897637795277,
+      251.27559055118115
+    ],
+    "semantic_review_required": true,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": "Категория генератора известна при создании; личное назначение не всегда доказуемо одним текстом, поэтому некоторые строки требуют человека."
+  },
+  {
+    "date": "2025-10-25",
+    "amount": "42522.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПОПОЛНЕНИЕ СЧЕТА СОБСТВЕННЫМИ СРЕДСТВАМИ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-008",
+    "source_row": 8,
+    "page": 1,
+    "bbox_points": [
+      28,
+      209.27559055118115,
+      813.8897637795277,
+      230.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-10-27",
+    "amount": "-221433.51",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-009",
+    "source_row": 9,
+    "page": 1,
+    "bbox_points": [
+      28,
+      188.27559055118115,
+      813.8897637795277,
+      209.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-10-30",
+    "amount": "414445.27",
+    "counterparty": "ООО \"Дом и Сад\"",
+    "description": "ОПЛАТА ПО ДОГ 9656 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-010",
+    "source_row": 10,
+    "page": 1,
+    "bbox_points": [
+      28,
+      167.27559055118115,
+      813.8897637795277,
+      188.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-11-05",
+    "amount": "136227.87",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛ ПО СЧ 4862 ОТ 05.11.2025 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-011",
+    "source_row": 11,
+    "page": 1,
+    "bbox_points": [
+      28,
+      146.27559055118115,
+      813.8897637795277,
+      167.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-11-12",
+    "amount": "-119811.22",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-012",
+    "source_row": 12,
+    "page": 1,
+    "bbox_points": [
+      28,
+      125.27559055118115,
+      813.8897637795277,
+      146.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-11-14",
+    "amount": "-17584.61",
+    "counterparty": "ООО \"ОптТорг\"",
+    "description": "ОПЛ ПО СЧ 7178 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-013",
+    "source_row": 13,
+    "page": 1,
+    "bbox_points": [
+      28,
+      104.27559055118115,
+      813.8897637795277,
+      125.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-11-15",
+    "amount": "388272.13",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛАТА ПО ДОГ 3153 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-014",
+    "source_row": 14,
+    "page": 1,
+    "bbox_points": [
+      28,
+      83.27559055118115,
+      813.8897637795277,
+      104.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-11-17",
+    "amount": "-158222.20",
+    "counterparty": "ООО \"СтройМатериалы\"",
+    "description": "ОПЛ ПО СЧ 2935 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-015",
+    "source_row": 15,
+    "page": 1,
+    "bbox_points": [
+      28,
+      62.27559055118115,
+      813.8897637795277,
+      83.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-11-20",
+    "amount": "-141081.97",
+    "counterparty": "ООО \"Аренда-Центр\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ ноябрь",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-016",
+    "source_row": 16,
+    "page": 2,
+    "bbox_points": [
+      28,
+      356.27559055118115,
+      813.8897637795277,
+      377.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-11-20",
+    "amount": "-4553.66",
+    "counterparty": "",
+    "description": "ПОКУПКА АПТЕКА 36,6",
+    "category": "PERSONAL",
+    "row_id": "DEMO-003-017",
+    "source_row": 17,
+    "page": 2,
+    "bbox_points": [
+      28,
+      335.27559055118115,
+      813.8897637795277,
+      356.27559055118115
+    ],
+    "semantic_review_required": true,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": "Категория генератора известна при создании; личное назначение не всегда доказуемо одним текстом, поэтому некоторые строки требуют человека."
+  },
+  {
+    "date": "2025-12-03",
+    "amount": "-103053.95",
+    "counterparty": "ООО \"ЛогистикПро\"",
+    "description": "ОПЛ ПО СЧ 2633 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-018",
+    "source_row": 18,
+    "page": 2,
+    "bbox_points": [
+      28,
+      314.27559055118115,
+      813.8897637795277,
+      335.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-12-03",
+    "amount": "198724.08",
+    "counterparty": "ООО \"Альфа-Снаб\"",
+    "description": "ОПЛ ПО СЧ 6615 ОТ 03.12.2025 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-019",
+    "source_row": 19,
+    "page": 2,
+    "bbox_points": [
+      28,
+      293.27559055118115,
+      813.8897637795277,
+      314.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-12-09",
+    "amount": "-340225.30",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-020",
+    "source_row": 20,
+    "page": 2,
+    "bbox_points": [
+      28,
+      272.27559055118115,
+      813.8897637795277,
+      293.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-12-10",
+    "amount": "10279.79",
+    "counterparty": "ООО \"Дом и Сад\"",
+    "description": "ОПЛ ПО СЧ 9852 ОТ 10.12.2025 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-021",
+    "source_row": 21,
+    "page": 2,
+    "bbox_points": [
+      28,
+      251.27559055118115,
+      813.8897637795277,
+      272.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-12-16",
+    "amount": "47631.26",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛ ПО СЧ 6425 ОТ 16.12.2025 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-022",
+    "source_row": 22,
+    "page": 2,
+    "bbox_points": [
+      28,
+      230.27559055118115,
+      813.8897637795277,
+      251.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-12-17",
+    "amount": "-7429.23",
+    "counterparty": "",
+    "description": "ПОКУПКА ПЯТЕРОЧКА",
+    "category": "PERSONAL",
+    "row_id": "DEMO-003-023",
+    "source_row": 23,
+    "page": 2,
+    "bbox_points": [
+      28,
+      209.27559055118115,
+      813.8897637795277,
+      230.27559055118115
+    ],
+    "semantic_review_required": true,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": "Категория генератора известна при создании; личное назначение не всегда доказуемо одним текстом, поэтому некоторые строки требуют человека."
+  },
+  {
+    "date": "2025-12-17",
+    "amount": "-5920.75",
+    "counterparty": "ООО \"Аренда-Центр\"",
+    "description": "ОПЛ УСЛУГ СВЯЗИ СЧ 9519",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-024",
+    "source_row": 24,
+    "page": 2,
+    "bbox_points": [
+      28,
+      188.27559055118115,
+      813.8897637795277,
+      209.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-12-19",
+    "amount": "135004.02",
+    "counterparty": "АО \"Ритейл Плюс\"",
+    "description": "ОПЛАТА ПО ДОГ 2076 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-025",
+    "source_row": 25,
+    "page": 2,
+    "bbox_points": [
+      28,
+      167.27559055118115,
+      813.8897637795277,
+      188.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-12-29",
+    "amount": "141041.46",
+    "counterparty": "ООО \"Альфа-Снаб\"",
+    "description": "ОПЛ ПО СЧ 5143 ОТ 29.12.2025 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-026",
+    "source_row": 26,
+    "page": 2,
+    "bbox_points": [
+      28,
+      146.27559055118115,
+      813.8897637795277,
+      167.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2025-12-30",
+    "amount": "61719.39",
+    "counterparty": "АО \"Ритейл Плюс\"",
+    "description": "ОПЛАТА ПО ДОГ 2914 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-027",
+    "source_row": 27,
+    "page": 2,
+    "bbox_points": [
+      28,
+      125.27559055118115,
+      813.8897637795277,
+      146.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-02",
+    "amount": "176031.05",
+    "counterparty": "ООО \"ТехноЛайн\"",
+    "description": "ОПЛ ПО СЧ 8820 ОТ 02.01.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-028",
+    "source_row": 28,
+    "page": 2,
+    "bbox_points": [
+      28,
+      104.27559055118115,
+      813.8897637795277,
+      125.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-05",
+    "amount": "-101289.82",
+    "counterparty": "ООО \"Аренда-Центр\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ январь",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-029",
+    "source_row": 29,
+    "page": 2,
+    "bbox_points": [
+      28,
+      83.27559055118115,
+      813.8897637795277,
+      104.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-05",
+    "amount": "32405.22",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛАТА ПО ДОГ 1009 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-030",
+    "source_row": 30,
+    "page": 2,
+    "bbox_points": [
+      28,
+      62.27559055118115,
+      813.8897637795277,
+      83.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-10",
+    "amount": "95810.55",
+    "counterparty": "ИП Белова Е. С.",
+    "description": "ОПЛАТА ПО ДОГ 9586 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-031",
+    "source_row": 31,
+    "page": 3,
+    "bbox_points": [
+      28,
+      356.27559055118115,
+      813.8897637795277,
+      377.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-11",
+    "amount": "-94223.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПЕРЕВОД НА СВОЮ КАРТУ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-032",
+    "source_row": 32,
+    "page": 3,
+    "bbox_points": [
+      28,
+      335.27559055118115,
+      813.8897637795277,
+      356.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-12",
+    "amount": "51778.52",
+    "counterparty": "АО \"ПроцессингЦентр\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 12.01.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-033",
+    "source_row": 33,
+    "page": 3,
+    "bbox_points": [
+      28,
+      314.27559055118115,
+      813.8897637795277,
+      335.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-14",
+    "amount": "20888.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПОПОЛНЕНИЕ СЧЕТА СОБСТВЕННЫМИ СРЕДСТВАМИ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-034",
+    "source_row": 34,
+    "page": 3,
+    "bbox_points": [
+      28,
+      293.27559055118115,
+      813.8897637795277,
+      314.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-15",
+    "amount": "-96023.17",
+    "counterparty": "ООО \"ОптТорг\"",
+    "description": "ОПЛ УСЛУГ СВЯЗИ СЧ 5360",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-035",
+    "source_row": 35,
+    "page": 3,
+    "bbox_points": [
+      28,
+      272.27559055118115,
+      813.8897637795277,
+      293.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-16",
+    "amount": "-29238.13",
+    "counterparty": "ООО \"Аренда-Центр\"",
+    "description": "ОПЛ УСЛУГ СВЯЗИ СЧ 6666",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-036",
+    "source_row": 36,
+    "page": 3,
+    "bbox_points": [
+      28,
+      251.27559055118115,
+      813.8897637795277,
+      272.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-22",
+    "amount": "11845.00",
+    "counterparty": "АО \"Энергосбыт\"",
+    "description": "ВОЗВРАТ ДС ПО СЧ 8308",
+    "category": "REFUND_IN",
+    "row_id": "DEMO-003-037",
+    "source_row": 37,
+    "page": 3,
+    "bbox_points": [
+      28,
+      230.27559055118115,
+      813.8897637795277,
+      251.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-23",
+    "amount": "45644.44",
+    "counterparty": "АО \"Ритейл Плюс\"",
+    "description": "ОПЛАТА ПО ДОГ 2799 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-038",
+    "source_row": 38,
+    "page": 3,
+    "bbox_points": [
+      28,
+      209.27559055118115,
+      813.8897637795277,
+      230.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-28",
+    "amount": "43330.22",
+    "counterparty": "АО \"Ритейл Плюс\"",
+    "description": "ОПЛ ПО СЧ 7262 ОТ 28.01.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-039",
+    "source_row": 39,
+    "page": 3,
+    "bbox_points": [
+      28,
+      188.27559055118115,
+      813.8897637795277,
+      209.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-01-29",
+    "amount": "-97348.88",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-040",
+    "source_row": 40,
+    "page": 3,
+    "bbox_points": [
+      28,
+      167.27559055118115,
+      813.8897637795277,
+      188.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-02",
+    "amount": "-49451.78",
+    "counterparty": "ООО \"ЛогистикПро\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ февраль",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-041",
+    "source_row": 41,
+    "page": 3,
+    "bbox_points": [
+      28,
+      146.27559055118115,
+      813.8897637795277,
+      167.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-07",
+    "amount": "-14626.13",
+    "counterparty": "АО \"Энергосбыт\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ февраль",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-042",
+    "source_row": 42,
+    "page": 3,
+    "bbox_points": [
+      28,
+      125.27559055118115,
+      813.8897637795277,
+      146.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-10",
+    "amount": "-221571.90",
+    "counterparty": "ООО \"ОптТорг\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ февраль",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-043",
+    "source_row": 43,
+    "page": 3,
+    "bbox_points": [
+      28,
+      104.27559055118115,
+      813.8897637795277,
+      125.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-12",
+    "amount": "-20075.80",
+    "counterparty": "ООО \"ЛогистикПро\"",
+    "description": "ОПЛ ПО СЧ 5520 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-044",
+    "source_row": 44,
+    "page": 3,
+    "bbox_points": [
+      28,
+      83.27559055118115,
+      813.8897637795277,
+      104.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-18",
+    "amount": "-135657.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПЕРЕВОД НА СВОЮ КАРТУ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-045",
+    "source_row": 45,
+    "page": 3,
+    "bbox_points": [
+      28,
+      62.27559055118115,
+      813.8897637795277,
+      83.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-20",
+    "amount": "202775.41",
+    "counterparty": "ПАО \"Банк-Эквайер\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 20.02.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-046",
+    "source_row": 46,
+    "page": 4,
+    "bbox_points": [
+      28,
+      356.27559055118115,
+      813.8897637795277,
+      377.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-22",
+    "amount": "39734.71",
+    "counterparty": "ИП Белова Е. С.",
+    "description": "ОПЛ ПО СЧ 373 ОТ 22.02.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-047",
+    "source_row": 47,
+    "page": 4,
+    "bbox_points": [
+      28,
+      335.27559055118115,
+      813.8897637795277,
+      356.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-27",
+    "amount": "-39871.76",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-048",
+    "source_row": 48,
+    "page": 4,
+    "bbox_points": [
+      28,
+      314.27559055118115,
+      813.8897637795277,
+      335.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-27",
+    "amount": "210489.88",
+    "counterparty": "ПАО \"Банк-Эквайер\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 27.02.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-049",
+    "source_row": 49,
+    "page": 4,
+    "bbox_points": [
+      28,
+      293.27559055118115,
+      813.8897637795277,
+      314.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-02-28",
+    "amount": "-38502.63",
+    "counterparty": "ООО \"СтройМатериалы\"",
+    "description": "ОПЛ ПО СЧ 6042 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-050",
+    "source_row": 50,
+    "page": 4,
+    "bbox_points": [
+      28,
+      272.27559055118115,
+      813.8897637795277,
+      293.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-03-04",
+    "amount": "-309610.19",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-051",
+    "source_row": 51,
+    "page": 4,
+    "bbox_points": [
+      28,
+      251.27559055118115,
+      813.8897637795277,
+      272.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-03-09",
+    "amount": "-47359.87",
+    "counterparty": "ООО \"Аренда-Центр\"",
+    "description": "ОПЛ ПО СЧ 7025 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-052",
+    "source_row": 52,
+    "page": 4,
+    "bbox_points": [
+      28,
+      230.27559055118115,
+      813.8897637795277,
+      251.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-03-10",
+    "amount": "-2179.16",
+    "counterparty": "АО \"Энергосбыт\"",
+    "description": "ОПЛ УСЛУГ СВЯЗИ СЧ 4689",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-053",
+    "source_row": 53,
+    "page": 4,
+    "bbox_points": [
+      28,
+      209.27559055118115,
+      813.8897637795277,
+      230.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-03-10",
+    "amount": "69197.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПОПОЛНЕНИЕ СЧЕТА СОБСТВЕННЫМИ СРЕДСТВАМИ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-054",
+    "source_row": 54,
+    "page": 4,
+    "bbox_points": [
+      28,
+      188.27559055118115,
+      813.8897637795277,
+      209.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-03-13",
+    "amount": "158119.35",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛ ПО СЧ 7748 ОТ 13.03.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-055",
+    "source_row": 55,
+    "page": 4,
+    "bbox_points": [
+      28,
+      167.27559055118115,
+      813.8897637795277,
+      188.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-03-16",
+    "amount": "66361.21",
+    "counterparty": "ООО \"Дом и Сад\"",
+    "description": "ОПЛАТА ПО ДОГ 7173 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-056",
+    "source_row": 56,
+    "page": 4,
+    "bbox_points": [
+      28,
+      146.27559055118115,
+      813.8897637795277,
+      167.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-03-24",
+    "amount": "126747.84",
+    "counterparty": "АО \"Ритейл Плюс\"",
+    "description": "ОПЛАТА ПО ДОГ 1990 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-057",
+    "source_row": 57,
+    "page": 4,
+    "bbox_points": [
+      28,
+      125.27559055118115,
+      813.8897637795277,
+      146.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-03-25",
+    "amount": "-74950.78",
+    "counterparty": "АО \"Энергосбыт\"",
+    "description": "ОПЛ ПО СЧ 5232 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-058",
+    "source_row": 58,
+    "page": 4,
+    "bbox_points": [
+      28,
+      104.27559055118115,
+      813.8897637795277,
+      125.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-03-30",
+    "amount": "210571.60",
+    "counterparty": "ООО \"Дом и Сад\"",
+    "description": "ОПЛАТА ПО ДОГ 6007 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-059",
+    "source_row": 59,
+    "page": 4,
+    "bbox_points": [
+      28,
+      83.27559055118115,
+      813.8897637795277,
+      104.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-03",
+    "amount": "-27202.14",
+    "counterparty": "ООО \"СтройМатериалы\"",
+    "description": "ОПЛ ПО СЧ 5753 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-060",
+    "source_row": 60,
+    "page": 4,
+    "bbox_points": [
+      28,
+      62.27559055118115,
+      813.8897637795277,
+      83.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-03",
+    "amount": "95735.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПОПОЛНЕНИЕ СЧЕТА СОБСТВЕННЫМИ СРЕДСТВАМИ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-061",
+    "source_row": 61,
+    "page": 5,
+    "bbox_points": [
+      28,
+      356.27559055118115,
+      813.8897637795277,
+      377.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-04",
+    "amount": "23736.50",
+    "counterparty": "АО \"ПроцессингЦентр\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 04.04.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-062",
+    "source_row": 62,
+    "page": 5,
+    "bbox_points": [
+      28,
+      335.27559055118115,
+      813.8897637795277,
+      356.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-11",
+    "amount": "-68511.46",
+    "counterparty": "АО \"Энергосбыт\"",
+    "description": "ОПЛ ПО СЧ 4784 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-063",
+    "source_row": 63,
+    "page": 5,
+    "bbox_points": [
+      28,
+      314.27559055118115,
+      813.8897637795277,
+      335.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-12",
+    "amount": "91687.64",
+    "counterparty": "ПАО \"Банк-Эквайер\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 12.04.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-064",
+    "source_row": 64,
+    "page": 5,
+    "bbox_points": [
+      28,
+      293.27559055118115,
+      813.8897637795277,
+      314.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-16",
+    "amount": "-22824.80",
+    "counterparty": "ООО \"СтройМатериалы\"",
+    "description": "ОПЛ ПО СЧ 9628 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-065",
+    "source_row": 65,
+    "page": 5,
+    "bbox_points": [
+      28,
+      272.27559055118115,
+      813.8897637795277,
+      293.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-20",
+    "amount": "-49912.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПЕРЕВОД НА СВОЮ КАРТУ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-066",
+    "source_row": 66,
+    "page": 5,
+    "bbox_points": [
+      28,
+      251.27559055118115,
+      813.8897637795277,
+      272.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-25",
+    "amount": "-24843.15",
+    "counterparty": "ООО \"СтройМатериалы\"",
+    "description": "ОПЛ ПО СЧ 8228 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-067",
+    "source_row": 67,
+    "page": 5,
+    "bbox_points": [
+      28,
+      230.27559055118115,
+      813.8897637795277,
+      251.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-26",
+    "amount": "52043.80",
+    "counterparty": "ИП Белова Е. С.",
+    "description": "ОПЛ ПО СЧ 7404 ОТ 26.04.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-068",
+    "source_row": 68,
+    "page": 5,
+    "bbox_points": [
+      28,
+      209.27559055118115,
+      813.8897637795277,
+      230.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-27",
+    "amount": "218532.06",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛ ПО СЧ 9875 ОТ 27.04.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-069",
+    "source_row": 69,
+    "page": 5,
+    "bbox_points": [
+      28,
+      188.27559055118115,
+      813.8897637795277,
+      209.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-30",
+    "amount": "-104983.39",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-070",
+    "source_row": 70,
+    "page": 5,
+    "bbox_points": [
+      28,
+      167.27559055118115,
+      813.8897637795277,
+      188.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-04-30",
+    "amount": "-24935.06",
+    "counterparty": "ООО \"ОптТорг\"",
+    "description": "ОПЛ УСЛУГ СВЯЗИ СЧ 3847",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-071",
+    "source_row": 71,
+    "page": 5,
+    "bbox_points": [
+      28,
+      146.27559055118115,
+      813.8897637795277,
+      167.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-05-02",
+    "amount": "-361530.91",
+    "counterparty": "АО \"Энергосбыт\"",
+    "description": "ОПЛ ПО СЧ 1727 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-072",
+    "source_row": 72,
+    "page": 5,
+    "bbox_points": [
+      28,
+      125.27559055118115,
+      813.8897637795277,
+      146.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-05-04",
+    "amount": "82506.84",
+    "counterparty": "ООО \"Вектор\"",
+    "description": "ОПЛАТА ПО ДОГ 3090 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-073",
+    "source_row": 73,
+    "page": 5,
+    "bbox_points": [
+      28,
+      104.27559055118115,
+      813.8897637795277,
+      125.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-05-04",
+    "amount": "209912.53",
+    "counterparty": "ИП Морозов Д. А.",
+    "description": "ОПЛАТА ПО ДОГ 8909 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-074",
+    "source_row": 74,
+    "page": 5,
+    "bbox_points": [
+      28,
+      83.27559055118115,
+      813.8897637795277,
+      104.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-05-09",
+    "amount": "22042.00",
+    "counterparty": "ООО \"ОптТорг\"",
+    "description": "ВОЗВРАТ ДС ПО СЧ 9829",
+    "category": "REFUND_IN",
+    "row_id": "DEMO-003-075",
+    "source_row": 75,
+    "page": 5,
+    "bbox_points": [
+      28,
+      62.27559055118115,
+      813.8897637795277,
+      83.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-05-13",
+    "amount": "47711.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПОПОЛНЕНИЕ СЧЕТА СОБСТВЕННЫМИ СРЕДСТВАМИ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-076",
+    "source_row": 76,
+    "page": 6,
+    "bbox_points": [
+      28,
+      356.27559055118115,
+      813.8897637795277,
+      377.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-05-21",
+    "amount": "63588.02",
+    "counterparty": "ИП Белова Е. С.",
+    "description": "ОПЛАТА ПО ДОГ 1338 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-077",
+    "source_row": 77,
+    "page": 6,
+    "bbox_points": [
+      28,
+      335.27559055118115,
+      813.8897637795277,
+      356.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-05-24",
+    "amount": "-32969.09",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-078",
+    "source_row": 78,
+    "page": 6,
+    "bbox_points": [
+      28,
+      314.27559055118115,
+      813.8897637795277,
+      335.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-05-26",
+    "amount": "206492.61",
+    "counterparty": "ООО \"Вектор\"",
+    "description": "ОПЛ ПО СЧ 5106 ОТ 26.05.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-079",
+    "source_row": 79,
+    "page": 6,
+    "bbox_points": [
+      28,
+      293.27559055118115,
+      813.8897637795277,
+      314.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-05-30",
+    "amount": "-6319.76",
+    "counterparty": "",
+    "description": "ПОКУПКА МАГНИТ",
+    "category": "PERSONAL",
+    "row_id": "DEMO-003-080",
+    "source_row": 80,
+    "page": 6,
+    "bbox_points": [
+      28,
+      272.27559055118115,
+      813.8897637795277,
+      293.27559055118115
+    ],
+    "semantic_review_required": true,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": "Категория генератора известна при создании; личное назначение не всегда доказуемо одним текстом, поэтому некоторые строки требуют человека."
+  },
+  {
+    "date": "2026-06-01",
+    "amount": "-10591.53",
+    "counterparty": "ООО \"СтройМатериалы\"",
+    "description": "ОПЛ УСЛУГ СВЯЗИ СЧ 5625",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-081",
+    "source_row": 81,
+    "page": 6,
+    "bbox_points": [
+      28,
+      251.27559055118115,
+      813.8897637795277,
+      272.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-06-02",
+    "amount": "-221830.52",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-082",
+    "source_row": 82,
+    "page": 6,
+    "bbox_points": [
+      28,
+      230.27559055118115,
+      813.8897637795277,
+      251.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-06-07",
+    "amount": "69551.89",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛ ПО СЧ 1950 ОТ 07.06.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-083",
+    "source_row": 83,
+    "page": 6,
+    "bbox_points": [
+      28,
+      209.27559055118115,
+      813.8897637795277,
+      230.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-06-08",
+    "amount": "128159.97",
+    "counterparty": "ПАО \"Банк-Эквайер\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 08.06.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-084",
+    "source_row": 84,
+    "page": 6,
+    "bbox_points": [
+      28,
+      188.27559055118115,
+      813.8897637795277,
+      209.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-06-14",
+    "amount": "16264.22",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛАТА ПО ДОГ 7319 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-085",
+    "source_row": 85,
+    "page": 6,
+    "bbox_points": [
+      28,
+      167.27559055118115,
+      813.8897637795277,
+      188.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-06-15",
+    "amount": "-40330.09",
+    "counterparty": "АО \"Энергосбыт\"",
+    "description": "ОПЛ УСЛУГ СВЯЗИ СЧ 5197",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-086",
+    "source_row": 86,
+    "page": 6,
+    "bbox_points": [
+      28,
+      146.27559055118115,
+      813.8897637795277,
+      167.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-06-15",
+    "amount": "-21250.00",
+    "counterparty": "Соловьёв А. А.",
+    "description": "ПЕРЕВОД НА СВОЮ КАРТУ",
+    "category": "OWN_TRANSFER",
+    "row_id": "DEMO-003-087",
+    "source_row": 87,
+    "page": 6,
+    "bbox_points": [
+      28,
+      125.27559055118115,
+      813.8897637795277,
+      146.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-06-17",
+    "amount": "-5199.40",
+    "counterparty": "",
+    "description": "ПОКУПКА ПЯТЕРОЧКА",
+    "category": "PERSONAL",
+    "row_id": "DEMO-003-088",
+    "source_row": 88,
+    "page": 6,
+    "bbox_points": [
+      28,
+      104.27559055118115,
+      813.8897637795277,
+      125.27559055118115
+    ],
+    "semantic_review_required": true,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": "Категория генератора известна при создании; личное назначение не всегда доказуемо одним текстом, поэтому некоторые строки требуют человека."
+  },
+  {
+    "date": "2026-06-20",
+    "amount": "2091.96",
+    "counterparty": "ИП Морозов Д. А.",
+    "description": "ОПЛ ПО СЧ 4155 ОТ 20.06.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-089",
+    "source_row": 89,
+    "page": 6,
+    "bbox_points": [
+      28,
+      83.27559055118115,
+      813.8897637795277,
+      104.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-06-23",
+    "amount": "-41947.86",
+    "counterparty": "ООО \"Аренда-Центр\"",
+    "description": "ОПЛ УСЛУГ СВЯЗИ СЧ 3372",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-090",
+    "source_row": 90,
+    "page": 6,
+    "bbox_points": [
+      28,
+      62.27559055118115,
+      813.8897637795277,
+      83.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-06-28",
+    "amount": "226631.96",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛ ПО СЧ 72 ОТ 28.06.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-091",
+    "source_row": 91,
+    "page": 7,
+    "bbox_points": [
+      28,
+      356.27559055118115,
+      813.8897637795277,
+      377.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-07-02",
+    "amount": "30251.50",
+    "counterparty": "ПАО \"Банк-Эквайер\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 02.07.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-092",
+    "source_row": 92,
+    "page": 7,
+    "bbox_points": [
+      28,
+      335.27559055118115,
+      813.8897637795277,
+      356.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-07-12",
+    "amount": "167855.61",
+    "counterparty": "АО \"Ритейл Плюс\"",
+    "description": "ОПЛ ПО СЧ 9411 ОТ 12.07.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-093",
+    "source_row": 93,
+    "page": 7,
+    "bbox_points": [
+      28,
+      314.27559055118115,
+      813.8897637795277,
+      335.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-07-16",
+    "amount": "97856.97",
+    "counterparty": "ООО \"СеверТорг\"",
+    "description": "ОПЛАТА ПО ДОГ 6547 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-094",
+    "source_row": 94,
+    "page": 7,
+    "bbox_points": [
+      28,
+      293.27559055118115,
+      813.8897637795277,
+      314.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-07-17",
+    "amount": "34734.06",
+    "counterparty": "ИП Морозов Д. А.",
+    "description": "ОПЛ ПО СЧ 8144 ОТ 17.07.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-095",
+    "source_row": 95,
+    "page": 7,
+    "bbox_points": [
+      28,
+      272.27559055118115,
+      813.8897637795277,
+      293.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-07-18",
+    "amount": "-161230.72",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-096",
+    "source_row": 96,
+    "page": 7,
+    "bbox_points": [
+      28,
+      251.27559055118115,
+      813.8897637795277,
+      272.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-07-19",
+    "amount": "40886.03",
+    "counterparty": "ИП Морозов Д. А.",
+    "description": "ОПЛАТА ПО ДОГ 9857 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-097",
+    "source_row": 97,
+    "page": 7,
+    "bbox_points": [
+      28,
+      230.27559055118115,
+      813.8897637795277,
+      251.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-07-19",
+    "amount": "96342.41",
+    "counterparty": "ИП Морозов Д. А.",
+    "description": "ОПЛАТА ПО ДОГ 3145 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-098",
+    "source_row": 98,
+    "page": 7,
+    "bbox_points": [
+      28,
+      209.27559055118115,
+      813.8897637795277,
+      230.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-07-21",
+    "amount": "-3447.37",
+    "counterparty": "",
+    "description": "КОММУНАЛЬНЫЕ ПЛАТЕЖИ июль",
+    "category": "PERSONAL",
+    "row_id": "DEMO-003-099",
+    "source_row": 99,
+    "page": 7,
+    "bbox_points": [
+      28,
+      188.27559055118115,
+      813.8897637795277,
+      209.27559055118115
+    ],
+    "semantic_review_required": true,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": "Категория генератора известна при создании; личное назначение не всегда доказуемо одним текстом, поэтому некоторые строки требуют человека."
+  },
+  {
+    "date": "2026-07-26",
+    "amount": "29173.42",
+    "counterparty": "ООО \"Вектор\"",
+    "description": "ОПЛАТА ПО ДОГ 9964 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-100",
+    "source_row": 100,
+    "page": 7,
+    "bbox_points": [
+      28,
+      167.27559055118115,
+      813.8897637795277,
+      188.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-07-29",
+    "amount": "-231869.28",
+    "counterparty": "ООО \"Упаковка\"",
+    "description": "ОПЛ ПО СЧ 5969 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-101",
+    "source_row": 101,
+    "page": 7,
+    "bbox_points": [
+      28,
+      146.27559055118115,
+      813.8897637795277,
+      167.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-08-02",
+    "amount": "31258.35",
+    "counterparty": "ИП Морозов Д. А.",
+    "description": "ОПЛАТА ПО ДОГ 2755 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-102",
+    "source_row": 102,
+    "page": 7,
+    "bbox_points": [
+      28,
+      125.27559055118115,
+      813.8897637795277,
+      146.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-08-04",
+    "amount": "278815.04",
+    "counterparty": "ИП Морозов Д. А.",
+    "description": "ОПЛАТА ПО ДОГ 9792 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-103",
+    "source_row": 103,
+    "page": 7,
+    "bbox_points": [
+      28,
+      104.27559055118115,
+      813.8897637795277,
+      125.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-08-06",
+    "amount": "-85552.10",
+    "counterparty": "АО \"Энергосбыт\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ август",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-104",
+    "source_row": 104,
+    "page": 7,
+    "bbox_points": [
+      28,
+      83.27559055118115,
+      813.8897637795277,
+      104.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-08-08",
+    "amount": "26647.64",
+    "counterparty": "ПАО \"Банк-Эквайер\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 08.08.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-105",
+    "source_row": 105,
+    "page": 7,
+    "bbox_points": [
+      28,
+      62.27559055118115,
+      813.8897637795277,
+      83.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-08-11",
+    "amount": "86531.37",
+    "counterparty": "ПАО \"Банк-Эквайер\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 11.08.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-106",
+    "source_row": 106,
+    "page": 8,
+    "bbox_points": [
+      28,
+      356.27559055118115,
+      813.8897637795277,
+      377.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-08-21",
+    "amount": "-190058.27",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-107",
+    "source_row": 107,
+    "page": 8,
+    "bbox_points": [
+      28,
+      335.27559055118115,
+      813.8897637795277,
+      356.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-08-23",
+    "amount": "-120300.55",
+    "counterparty": "ООО \"Упаковка\"",
+    "description": "ОПЛ ПО СЧ 604 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-108",
+    "source_row": 108,
+    "page": 8,
+    "bbox_points": [
+      28,
+      314.27559055118115,
+      813.8897637795277,
+      335.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-08-23",
+    "amount": "-1916.83",
+    "counterparty": "",
+    "description": "ПОКУПКА АПТЕКА 36,6",
+    "category": "PERSONAL",
+    "row_id": "DEMO-003-109",
+    "source_row": 109,
+    "page": 8,
+    "bbox_points": [
+      28,
+      293.27559055118115,
+      813.8897637795277,
+      314.27559055118115
+    ],
+    "semantic_review_required": true,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": "Категория генератора известна при создании; личное назначение не всегда доказуемо одним текстом, поэтому некоторые строки требуют человека."
+  },
+  {
+    "date": "2026-08-23",
+    "amount": "-1789.08",
+    "counterparty": "ООО \"Аренда-Центр\"",
+    "description": "ОПЛ ПО СЧ 8612 ЗА СЫРЬЕ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-110",
+    "source_row": 110,
+    "page": 8,
+    "bbox_points": [
+      28,
+      272.27559055118115,
+      813.8897637795277,
+      293.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-08-31",
+    "amount": "64047.60",
+    "counterparty": "ООО \"Дом и Сад\"",
+    "description": "ОПЛ ПО СЧ 2423 ОТ 31.08.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-111",
+    "source_row": 111,
+    "page": 8,
+    "bbox_points": [
+      28,
+      251.27559055118115,
+      813.8897637795277,
+      272.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-10",
+    "amount": "-67436.67",
+    "counterparty": "ИП Соколов П. В.",
+    "description": "ОПЛ УСЛУГ СВЯЗИ СЧ 2236",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-112",
+    "source_row": 112,
+    "page": 8,
+    "bbox_points": [
+      28,
+      230.27559055118115,
+      813.8897637795277,
+      251.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-10",
+    "amount": "-10110.23",
+    "counterparty": "УФК (ФНС России)",
+    "description": "ЕНП ЕДИНЫЙ НАЛОГОВЫЙ ПЛАТЕЖ",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-113",
+    "source_row": 113,
+    "page": 8,
+    "bbox_points": [
+      28,
+      209.27559055118115,
+      813.8897637795277,
+      230.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-12",
+    "amount": "-211136.79",
+    "counterparty": "ООО \"ЛогистикПро\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ сентябрь",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-114",
+    "source_row": 114,
+    "page": 8,
+    "bbox_points": [
+      28,
+      188.27559055118115,
+      813.8897637795277,
+      209.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-12",
+    "amount": "44418.67",
+    "counterparty": "ИП Морозов Д. А.",
+    "description": "ОПЛАТА ПО ДОГ 9252 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-115",
+    "source_row": 115,
+    "page": 8,
+    "bbox_points": [
+      28,
+      167.27559055118115,
+      813.8897637795277,
+      188.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-13",
+    "amount": "-7598.40",
+    "counterparty": "",
+    "description": "ПОКУПКА ПЯТЕРОЧКА",
+    "category": "PERSONAL",
+    "row_id": "DEMO-003-116",
+    "source_row": 116,
+    "page": 8,
+    "bbox_points": [
+      28,
+      146.27559055118115,
+      813.8897637795277,
+      167.27559055118115
+    ],
+    "semantic_review_required": true,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": "Категория генератора известна при создании; личное назначение не всегда доказуемо одним текстом, поэтому некоторые строки требуют человека."
+  },
+  {
+    "date": "2026-09-13",
+    "amount": "15752.00",
+    "counterparty": "ООО \"Упаковка\"",
+    "description": "ВОЗВРАТ ДС ПО СЧ 8367",
+    "category": "REFUND_IN",
+    "row_id": "DEMO-003-117",
+    "source_row": 117,
+    "page": 8,
+    "bbox_points": [
+      28,
+      125.27559055118115,
+      813.8897637795277,
+      146.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-14",
+    "amount": "48865.24",
+    "counterparty": "ИП Белова Е. С.",
+    "description": "ОПЛ ПО СЧ 8673 ОТ 14.09.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-118",
+    "source_row": 118,
+    "page": 8,
+    "bbox_points": [
+      28,
+      104.27559055118115,
+      813.8897637795277,
+      125.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-15",
+    "amount": "113185.30",
+    "counterparty": "ИП Белова Е. С.",
+    "description": "ОПЛАТА ПО ДОГ 8905 ЗА УСЛУГИ БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-119",
+    "source_row": 119,
+    "page": 8,
+    "bbox_points": [
+      28,
+      83.27559055118115,
+      813.8897637795277,
+      104.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-21",
+    "amount": "225066.42",
+    "counterparty": "ПАО \"Банк-Эквайер\"",
+    "description": "ЭКВАЙРИНГ ВОЗМЕЩЕНИЕ ЗА 21.09.2026 КОМИССИЯ УДЕРЖАНА",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-120",
+    "source_row": 120,
+    "page": 8,
+    "bbox_points": [
+      28,
+      62.27559055118115,
+      813.8897637795277,
+      83.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-25",
+    "amount": "126964.37",
+    "counterparty": "АО \"Ритейл Плюс\"",
+    "description": "ОПЛ ПО СЧ 6413 ОТ 25.09.2026 ЗА ТОВАР БЕЗ НДС",
+    "category": "BUSINESS_RECEIPT",
+    "row_id": "DEMO-003-121",
+    "source_row": 121,
+    "page": 9,
+    "bbox_points": [
+      28,
+      356.27559055118115,
+      813.8897637795277,
+      377.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-26",
+    "amount": "-105844.85",
+    "counterparty": "АО \"Энергосбыт\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ сентябрь",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-122",
+    "source_row": 122,
+    "page": 9,
+    "bbox_points": [
+      28,
+      335.27559055118115,
+      813.8897637795277,
+      356.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  },
+  {
+    "date": "2026-09-28",
+    "amount": "-29471.46",
+    "counterparty": "ООО \"ЛогистикПро\"",
+    "description": "АРЕНДА ПОМЕЩЕНИЯ сентябрь",
+    "category": "OPERATING_OUTFLOW",
+    "row_id": "DEMO-003-123",
+    "source_row": 123,
+    "page": 9,
+    "bbox_points": [
+      28,
+      314.27559055118115,
+      813.8897637795277,
+      335.27559055118115
+    ],
+    "semantic_review_required": false,
+    "label_source": "original_generator_construction_exact_replay",
+    "note": ""
+  }
+]

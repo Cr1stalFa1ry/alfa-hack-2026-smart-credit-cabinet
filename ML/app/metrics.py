@@ -3,7 +3,7 @@
 Определения согласованы со словарём данных (лист «Данные» банковской логики):
   месяцы — закрытые календарные, текущий месяц на дату as_of не берётся, максимум 12 последних (F13);
   выручка = поступления без кредитов, своих переводов и возвратов (cleanReceiptsRub, F13);
-  расходы = операционные + налоги, без долговых платежей и своих переводов (operatingOutflowRub, F13);
+  расходы = операционные + налоги, без долговых платежей, лизинга, личного и своих переводов (operatingOutflowRub, F13);
   чистый поток = среднее(выручка − расходы) (F33); CV = σ генеральной / среднее (F38, R19);
   годовая выручка — только при ровно 12 месяцах, без экстраполяции (F37).
 Если показатель не найден — value=None и статус not_found/unclear, а не 0.
@@ -73,6 +73,7 @@ def monthly_table(df: pd.DataFrame, months: list[str]) -> pd.DataFrame:
     t["operating_outflow"] = t["expenses"] + (t["taxes"] if TAXES_IN_OPERATING else 0.0)
     t["net"] = t["revenue"] - t["operating_outflow"]
     t["loan_payments"] = by_month(outflow, {C.LOAN_PAYMENT})
+    t["personal"] = by_month(outflow, {C.PERSONAL})  # личное владельца: не расход бизнеса
     t["loan_proceeds"] = by_month(inflow, {C.LOAN_IN})
     t["own_transfers_in"] = by_month(inflow, {C.OWN_TRANSFER})
     t["own_transfers_out"] = by_month(outflow, {C.OWN_TRANSFER})

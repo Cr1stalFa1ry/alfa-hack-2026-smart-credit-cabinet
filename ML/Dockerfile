@@ -3,6 +3,9 @@ FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     OLLAMA_URL=http://ollama:11434 OLLAMA_MODEL=qwen2.5:7b-instruct LLM_ENABLED=1
 WORKDIR /srv
+# OCR сканов и фото документов: Tesseract с русским языком (~40 МБ)
+RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-rus \
+    && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app

@@ -1,0 +1,133 @@
+{
+  "note": "Предложенное разбиение; не является доказательством независимости, если набор использовали для настройки.",
+  "groups": {
+    "development": [
+      {
+        "document_id": "S11_01",
+        "file": "documents/S11_01.pdf",
+        "application_id": "DEMO-011",
+        "source_family": "S11_01"
+      },
+      {
+        "document_id": "S11_02",
+        "file": "documents/S11_02.pdf",
+        "application_id": "DEMO-011",
+        "source_family": "S11_02"
+      },
+      {
+        "document_id": "S11_03",
+        "file": "documents/S11_03.pdf",
+        "application_id": "DEMO-011",
+        "source_family": "S11_03"
+      },
+      {
+        "document_id": "S11_04",
+        "file": "documents/S11_04.pdf",
+        "application_id": "DEMO-011",
+        "source_family": "S11_04"
+      },
+      {
+        "document_id": "I01_statement",
+        "file": "documents/I01_statement.pdf",
+        "application_id": "DEMO-001",
+        "source_family": "I01_statement"
+      },
+      {
+        "document_id": "S11_01_scan",
+        "file": "documents/S11_01_scan.pdf",
+        "application_id": "DEMO-011",
+        "source_family": "S11_01"
+      },
+      {
+        "document_id": "S11_01_low_resolution",
+        "file": "documents/S11_01_low_resolution.pdf",
+        "application_id": "DEMO-011",
+        "source_family": "S11_01"
+      },
+      {
+        "document_id": "I01_page1_photo",
+        "file": "documents/I01_page1_photo.jpg",
+        "application_id": "DEMO-001",
+        "source_family": "I01_statement"
+      }
+    ],
+    "engineered_control_not_blind": [
+      {
+        "document_id": "C01_operations",
+        "file": "documents/C01_operations.pdf",
+        "application_id": null,
+        "source_family": "C01_operations"
+      }
+    ],
+    "reserved_template_test": [
+      {
+        "document_id": "M53_01",
+        "file": "documents/M53_01.pdf",
+        "application_id": "DEMO-053",
+        "source_family": "M53_01"
+      },
+      {
+        "document_id": "M53_02",
+        "file": "documents/M53_02.pdf",
+        "application_id": "DEMO-053",
+        "source_family": "M53_02"
+      },
+      {
+        "document_id": "M53_03",
+        "file": "documents/M53_03.pdf",
+        "application_id": "DEMO-053",
+        "source_family": "M53_03"
+      },
+      {
+        "document_id": "M53_04",
+        "file": "documents/M53_04.pdf",
+        "application_id": "DEMO-053",
+        "source_family": "M53_04"
+      },
+      {
+        "document_id": "S03_statement",
+        "file": "documents/S03_statement.pdf",
+        "application_id": "DEMO-003",
+        "source_family": "S03_statement"
+      },
+      {
+        "document_id": "S03_statement_scan",
+        "file": "documents/S03_statement_scan.pdf",
+        "application_id": "DEMO-003",
+        "source_family": "S03_statement"
+      },
+      {
+        "document_id": "M53_02_photo",
+        "file": "documents/M53_02_photo.jpg",
+        "application_id": "DEMO-053",
+        "source_family": "M53_02"
+      }
+    ],
+    "seen_regression_only": [
+      {
+        "document_id": "DOC-002-01",
+        "file": "documents/01_Счет_совпадает.pdf",
+        "application_id": "DEMO-002",
+        "source_family": "ZAKHAROV_EXISTING"
+      },
+      {
+        "document_id": "DOC-002-02",
+        "file": "documents/02_Другая_стоимость.pdf",
+        "application_id": "DEMO-002",
+        "source_family": "ZAKHAROV_EXISTING"
+      },
+      {
+        "document_id": "DOC-002-03",
+        "file": "documents/03_Другой_поставщик.pdf",
+        "application_id": "DEMO-002",
+        "source_family": "ZAKHAROV_EXISTING"
+      },
+      {
+        "document_id": "DOC-002-04",
+        "file": "documents/04_Неполный_документ.pdf",
+        "application_id": "DEMO-002",
+        "source_family": "ZAKHAROV_EXISTING"
+      }
+    ]
+  }
+}

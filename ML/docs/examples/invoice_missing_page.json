@@ -1,0 +1,157 @@
+{
+ "document": {
+  "document_id": "demo-04_Неполный_документ",
+  "document_version": "1",
+  "sha256": "6e4de0546107b2371dacaae55d274e31dc8c97c285f9604777b5477d3fab6101"
+ },
+ "run": {
+  "run_id": "run-example",
+  "processed_at": "2026-10-24T12:00:00+00:00"
+ },
+ "schema_version": "documents-1",
+ "pipeline_version": "0.2.0",
+ "file": {
+  "sha256": "6e4de0546107b2371dacaae55d274e31dc8c97c285f9604777b5477d3fab6101",
+  "bytes": 76840,
+  "name": "04_Неполный_документ.pdf",
+  "format": "pdf",
+  "pages": 1,
+  "pages_declared": 2
+ },
+ "document_type": "INVOICE",
+ "status": "PARTIAL",
+ "needs_review": true,
+ "fields": {
+  "document_number": {
+   "value": "ДЕМО-002-04",
+   "status": "ok",
+   "page": 1,
+   "quote": "Счёт на оплату ДЕМО-002-04",
+   "bbox": [
+    42.0,
+    100.0,
+    312.4,
+    119.0
+   ],
+   "confidence": null
+  },
+  "document_date": {
+   "value": "2026-10-23",
+   "status": "ok",
+   "page": 1,
+   "quote": "Дата 23.10.2026 · Заявка DEMO-002",
+   "bbox": [
+    42.0,
+    130.1,
+    211.2,
+    140.1
+   ],
+   "confidence": null
+  },
+  "supplier_name": {
+   "value": "ООО «Индустрия-Сервис 667»",
+   "status": "ok",
+   "page": 1,
+   "quote": "ООО «Индустрия-Сервис 667»",
+   "bbox": [
+    42.0,
+    193.3,
+    207.5,
+    204.3
+   ],
+   "confidence": null
+  },
+  "supplier_inn": {
+   "value": "9963393667",
+   "status": "ok",
+   "page": 1,
+   "quote": "9963393667",
+   "bbox": [
+    42.0,
+    242.3,
+    103.2,
+    253.3
+   ],
+   "confidence": null
+  },
+  "buyer_name": {
+   "value": "ИП Захаров Виктор Сергеевич",
+   "status": "ok",
+   "page": 1,
+   "quote": "ИП Захаров Виктор Сергеевич",
+   "bbox": [
+    42.0,
+    340.3,
+    209.0,
+    351.3
+   ],
+   "confidence": null
+  },
+  "buyer_inn": {
+   "value": "992934509242",
+   "status": "ok",
+   "page": 1,
+   "quote": "992934509242",
+   "bbox": [
+    42.0,
+    389.3,
+    115.4,
+    400.3
+   ],
+   "confidence": null
+  },
+  "total_amount_rub": {
+   "value": null,
+   "status": "not_found",
+   "page": null,
+   "quote": null,
+   "bbox": null,
+   "confidence": null
+  }
+ },
+ "issues": [
+  {
+   "code": "MISSING_PAGE",
+   "message": "Передано 1 стр. из 2: нет стр. 2.",
+   "pages": [
+    2
+   ]
+  },
+  {
+   "code": "FIELD_NOT_FOUND",
+   "message": "Поле total_amount_rub: не найдено.",
+   "field": "total_amount_rub"
+  },
+  {
+   "code": "ITEM_PRICES_MISSING",
+   "message": "У части позиций нет цены или стоимости."
+  }
+ ],
+ "pages": [
+  {
+   "page": 1,
+   "text_source": "text",
+   "dpi": null,
+   "ocr_confidence": null
+  }
+ ],
+ "line_items": [
+  {
+   "description": "Форматно-раскроечный станок",
+   "quantity": 1,
+   "unit": "шт.",
+   "unit_price_rub": null,
+   "amount_rub": null,
+   "page": 1,
+   "quote": "Форматно-раскроечный станок",
+   "bbox": [
+    42.0,
+    488.5,
+    229.9,
+    500.5
+   ],
+   "confidence": null
+  }
+ ],
+ "cached": false
+}

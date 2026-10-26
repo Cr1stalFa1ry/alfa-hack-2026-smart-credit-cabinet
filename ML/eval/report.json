@@ -1,5 +1,5 @@
 {
-  "mode": "rules+llm",
+  "mode": "rules",
   "statements": {
     "files": [
       {
@@ -170,36 +170,21 @@
   },
   "labels": {
     "total": 28,
-    "accuracy": 0.9643,
-    "coverage": 0.9643,
-    "precision_on_covered": 0.963,
-    "wrong_confident": 1,
-    "errors": [
-      {
-        "description": "Перевод",
-        "sign": "-",
-        "expected": "unclear",
-        "predicted": "own_transfer",
-        "source": "llm"
-      }
-    ]
+    "accuracy": 1.0,
+    "coverage": 0.9286,
+    "precision_on_covered": 1.0,
+    "wrong_confident": 0,
+    "errors": []
   },
   "hard_cases": {
     "total": 16,
-    "accuracy": 0.625,
-    "coverage": 0.25,
+    "accuracy": 0.6875,
+    "coverage": 0.3125,
     "precision_on_covered": 1.0,
     "wrong_confident": 0,
     "errors": [
       {
         "description": "Перевод по СБП за ремонт обуви",
-        "sign": "+",
-        "expected": "revenue",
-        "predicted": "unclear",
-        "source": "none"
-      },
-      {
-        "description": "Зачисление от покупателя по накладной 45",
         "sign": "+",
         "expected": "revenue",
         "predicted": "unclear",
@@ -234,5 +219,724 @@
         "source": "none"
       }
     ]
+  },
+  "package_statements": {
+    "development": {
+      "statements": 71,
+      "analyzed": 67,
+      "exact": 67,
+      "months_ok": 756,
+      "months": 756,
+      "manual_input": {
+        "DEMO-057": "SHORT_HISTORY",
+        "DEMO-058": "SHORT_HISTORY",
+        "DEMO-060": "SHORT_HISTORY",
+        "DEMO-061": "SHORT_HISTORY"
+      }
+    },
+    "reserved": {
+      "statements": 1,
+      "analyzed": 1,
+      "exact": 1,
+      "months_ok": 12,
+      "months": 12,
+      "manual_input": {}
+    },
+    "files": [
+      {
+        "application_id": "DEMO-001",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-002",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 3
+      },
+      {
+        "application_id": "DEMO-003",
+        "reserved": true,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-004",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 3
+      },
+      {
+        "application_id": "DEMO-005",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 10,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-006",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 10,
+        "bad_months": [],
+        "needs_review": 7
+      },
+      {
+        "application_id": "DEMO-007",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 1
+      },
+      {
+        "application_id": "DEMO-008",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-009",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 2
+      },
+      {
+        "application_id": "DEMO-010",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-011",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 5
+      },
+      {
+        "application_id": "DEMO-012",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 11,
+        "bad_months": [],
+        "needs_review": 7
+      },
+      {
+        "application_id": "DEMO-013",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 10
+      },
+      {
+        "application_id": "DEMO-014",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 9,
+        "bad_months": [],
+        "needs_review": 7
+      },
+      {
+        "application_id": "DEMO-015",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-016",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-017",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 2
+      },
+      {
+        "application_id": "DEMO-018",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 7
+      },
+      {
+        "application_id": "DEMO-019",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 10,
+        "bad_months": [],
+        "needs_review": 7
+      },
+      {
+        "application_id": "DEMO-020",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 7,
+        "bad_months": [],
+        "needs_review": 1
+      },
+      {
+        "application_id": "DEMO-021",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 5
+      },
+      {
+        "application_id": "DEMO-022",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-023",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 1
+      },
+      {
+        "application_id": "DEMO-024",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 7
+      },
+      {
+        "application_id": "DEMO-025",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-026",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-027",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-028",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 9,
+        "bad_months": [],
+        "needs_review": 3
+      },
+      {
+        "application_id": "DEMO-029",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-030",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 8,
+        "bad_months": [],
+        "needs_review": 4
+      },
+      {
+        "application_id": "DEMO-031",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 2
+      },
+      {
+        "application_id": "DEMO-032",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 5
+      },
+      {
+        "application_id": "DEMO-033",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-034",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 11,
+        "bad_months": [],
+        "needs_review": 1
+      },
+      {
+        "application_id": "DEMO-035",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-036",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 10
+      },
+      {
+        "application_id": "DEMO-037",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 4
+      },
+      {
+        "application_id": "DEMO-038",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 4,
+        "bad_months": [],
+        "needs_review": 2
+      },
+      {
+        "application_id": "DEMO-039",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 9
+      },
+      {
+        "application_id": "DEMO-040",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 3,
+        "bad_months": [],
+        "needs_review": 1
+      },
+      {
+        "application_id": "DEMO-041",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 5
+      },
+      {
+        "application_id": "DEMO-042",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 7,
+        "bad_months": [],
+        "needs_review": 5
+      },
+      {
+        "application_id": "DEMO-043",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-044",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-045",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-046",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-047",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 3
+      },
+      {
+        "application_id": "DEMO-048",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 5
+      },
+      {
+        "application_id": "DEMO-049",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 9,
+        "bad_months": [],
+        "needs_review": 2
+      },
+      {
+        "application_id": "DEMO-050",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 4
+      },
+      {
+        "application_id": "DEMO-051",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-052",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 2
+      },
+      {
+        "application_id": "DEMO-057",
+        "reserved": false,
+        "status": "manual_input_required",
+        "reason": "SHORT_HISTORY",
+        "months": 1,
+        "bad_months": [
+          "2026-09"
+        ],
+        "needs_review": null
+      },
+      {
+        "application_id": "DEMO-058",
+        "reserved": false,
+        "status": "manual_input_required",
+        "reason": "SHORT_HISTORY",
+        "months": 2,
+        "bad_months": [
+          "2026-08",
+          "2026-09"
+        ],
+        "needs_review": null
+      },
+      {
+        "application_id": "DEMO-060",
+        "reserved": false,
+        "status": "manual_input_required",
+        "reason": "SHORT_HISTORY",
+        "months": 2,
+        "bad_months": [
+          "2026-08",
+          "2026-09"
+        ],
+        "needs_review": null
+      },
+      {
+        "application_id": "DEMO-061",
+        "reserved": false,
+        "status": "manual_input_required",
+        "reason": "SHORT_HISTORY",
+        "months": 1,
+        "bad_months": [
+          "2026-09"
+        ],
+        "needs_review": null
+      },
+      {
+        "application_id": "DEMO-079",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 10
+      },
+      {
+        "application_id": "DEMO-080",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 9
+      },
+      {
+        "application_id": "DEMO-081",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 4
+      },
+      {
+        "application_id": "DEMO-082",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 5
+      },
+      {
+        "application_id": "DEMO-084",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-086",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-087",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-088",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 4
+      },
+      {
+        "application_id": "DEMO-089",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 8
+      },
+      {
+        "application_id": "DEMO-090",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 11
+      },
+      {
+        "application_id": "DEMO-091",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 6
+      },
+      {
+        "application_id": "DEMO-092",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 2
+      },
+      {
+        "application_id": "DEMO-093",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 9
+      },
+      {
+        "application_id": "DEMO-094",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 7
+      },
+      {
+        "application_id": "DEMO-095",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 2
+      },
+      {
+        "application_id": "DEMO-096",
+        "reserved": false,
+        "status": "ok",
+        "reason": null,
+        "months": 12,
+        "bad_months": [],
+        "needs_review": 9
+      }
+    ]
+  },
+  "control_lines": {
+    "total": 40,
+    "correct": 40,
+    "sent_to_review": 0,
+    "wrong_confident": 0,
+    "critical_to_revenue": 0,
+    "errors": []
+  },
+  "statement_labels": {
+    "DEMO-001": {
+      "reserved": false,
+      "expected": 145,
+      "extracted": 145,
+      "matched": 145,
+      "not_in_document": 0,
+      "category": {
+        "correct": 145
+      },
+      "critical_to_revenue": [],
+      "monthly_ok": null,
+      "errors": []
+    },
+    "DEMO-003": {
+      "reserved": true,
+      "expected": 123,
+      "extracted": 123,
+      "matched": 123,
+      "not_in_document": 0,
+      "category": {
+        "correct": 123
+      },
+      "critical_to_revenue": [],
+      "monthly_ok": null,
+      "errors": []
+    }
   }
 }
