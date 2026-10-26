@@ -327,16 +327,36 @@ test_statements/
 
 ## Локальное развёртывание и сброс данных
 
-### Запуск сервисов с нуля
+### 1. Запуск для жюри
+
+В репозитории настроен полный стек контейнеров (`Frontend`, `Backend`, `ML-сервис`, `PostgreSQL 16` с предзаполненными данными и `MinIO`). Чтобы запустить всё, нужно перейти в корень проекта и запустить команду:
+
+```bash
+docker compose up --build
+```
+
+> **Автоматическая инициализация:** Контейнер базы данных при первом старте автоматически создаёт базы `SmartKabinet` и `SyntheticDb`, накатывает таблицы и заполняет их синтетическими данными ЕГРИП, ФНС, ЗСК и готовыми пользователями через скрипт `docker/postgres/init-dbs.sh`. Дополнительных ручных скриптов накатывать не нужно!
+
+После запуска:
+- **Интерфейс системы**: **[http://localhost:3000](http://localhost:3000)**
+- **Swagger API**: **[http://localhost:5000/swagger](http://localhost:5000/swagger)**
+- **ML FastAPI Docs**: **[http://localhost:8000/docs](http://localhost:8000/docs)**
+- **MinIO Console**: **[http://localhost:9001](http://localhost:9001)** (`minioadmin` / `minioadmin`)
+
+---
+
+### 2. Запуск вручную для локальной разработки (без полного Docker-стека)
+
+Если вы разрабатываете и хотите запускать сервисы отдельно:
 
 ```bash
 # 1. Запуск БД и MinIO в Docker
-docker compose up -d
+docker compose up -d postgres minio
 
-# 2. Инициализация БД и пользователей
-psql -U postgres -h localhost -d SmartKabinet -f backend/scripts/create_synthetic_tables.sql
-psql -U postgres -h localhost -d SmartKabinet -f backend/scripts/seed_synthetic_data.sql
-psql -U postgres -h localhost -d SmartKabinet -f backend/scripts/seed_users.sql
+# 2. Инициализация БД и пользователей (при необходимости)
+psql -U postgres -h localhost -p 5433 -d SmartKabinet -f backend/scripts/create_synthetic_tables.sql
+psql -U postgres -h localhost -p 5433 -d SmartKabinet -f backend/scripts/seed_synthetic_data.sql
+psql -U postgres -h localhost -p 5433 -d SmartKabinet -f backend/scripts/seed_users.sql
 
 # 3. Запуск Backend (.NET 10)
 cd backend

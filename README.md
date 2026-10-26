@@ -2,7 +2,7 @@
 > **Решение кейс-чемпионата «Альфа-Будущее Хакатон 2026»**  
 > **Трек:** Умный кредитный кабинет предпринимателя  
 >  
-> 🎯 **Руководство для жюри и быстрое тестирование:** 👉 **[`JURY_GUIDE.md`](JURY_GUIDE.md)** *(все аккаунты, пароли, готовые сценарии и ссылки)*
+> 🎯 **Руководство для жюри и быстрое тестирование:** 👉 **[`TESTING_GUIDE.md`](TESTING_GUIDE.md)** *(все аккаунты, пароли, готовые сценарии и ссылки)*
 
 ---
 
@@ -149,19 +149,39 @@ graph TD
 
 ## 5. Быстрый запуск
 
-### Требования к окружению:
+### Вариант 1 (Рекомендуемый для жюри): Запуск в 1 команду через Docker
+
+Для запуска всего стека (Frontend, Backend, ML-сервис, PostgreSQL 16 с предзаполненными данными и MinIO S3) требуется только **Docker** и **Docker Compose**:
+
+```bash
+docker compose up --build
+```
+
+> 💡 **Всё настраивается автоматически:** скрипт инициализации сам создаст базы `SmartKabinet` и `SyntheticDb`, применит схемы и наполнит их синтетическими данными ЕГРИП, ФНС, ЗСК и готовыми пользователями.
+
+После запуска сервисы будут доступны:
+- 🌐 **Клиентский веб-кабинет и рабочее место аналитика**: [http://localhost:3000](http://localhost:3000)
+- 📑 **Backend API (Swagger UI)**: [http://localhost:5000/swagger](http://localhost:5000/swagger) (или через прокси на `http://localhost:3000/swagger/`)
+- 🤖 **ML-сервис (FastAPI Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- 🗄️ **MinIO S3 Web Console**: [http://localhost:9001](http://localhost:9001) (`minioadmin` / `minioadmin`)
+
+---
+
+### Вариант 2: Локальный запуск для разработки (без Docker)
+
+#### Требования к окружению:
 - .NET SDK 10.0 (или .NET 9.0)
 - Node.js 20+ и npm
 - PostgreSQL 15+
 
-### Шаг 1. База данных PostgreSQL
+#### Шаг 1. База данных PostgreSQL
 Создайте БД `SmartKabinet` и примените синтетические данные:
 ```bash
 psql -U postgres -d SmartKabinet -f backend/scripts/create_synthetic_tables.sql
 psql -U postgres -d SmartKabinet -f backend/scripts/seed_synthetic_data.sql
 ```
 
-### Шаг 2. Запуск Backend
+#### Шаг 2. Запуск Backend
 В файле `backend/SmartKabinet.Host/appsettings.json` проверьте строку подключения `DefaultConnection`.
 Запустите бэкенд:
 ```bash
@@ -171,7 +191,7 @@ dotnet run --project SmartKabinet.Host/SmartKabinet.Host.csproj
 Сервис доступен по адресу: `http://localhost:5189`.  
 Swagger UI: `http://localhost:5189/swagger`.
 
-### Шаг 3. Запуск Frontend
+#### Шаг 3. Запуск Frontend
 ```bash
 cd frontend
 npm install

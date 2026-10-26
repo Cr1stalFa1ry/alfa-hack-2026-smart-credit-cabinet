@@ -211,8 +211,35 @@ export function mapBackendApplication(item: any): CreditApplication {
     };
 }
 
+function getCurrentClientIdentity(): { inn?: string; userId?: string; username?: string } | null {
+  try {
+    const raw = localStorage.getItem('smart_kabinet_user');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        inn: parsed.inn || undefined,
+        userId: parsed.id || parsed.userId || undefined,
+        username: parsed.username || undefined,
+      };
+    }
+  } catch {}
+  return null;
+}
+
+function isAppOwnedByCurrentClient(app: CreditApplication, identity: { inn?: string; userId?: string; username?: string } | null): boolean {
+  if (!identity) return false;
+  if (identity.inn && app.inn) {
+    return app.inn.trim() === identity.inn.trim();
+  }
+  if (identity.userId && (app as any).clientId) {
+    return String((app as any).clientId) === String(identity.userId);
+  }
+  return false;
+}
+
 export const clientApi = {
   getMyApplications: async (): Promise<CreditApplication[]> => {
+    const identity = getCurrentClientIdentity();
     try {
       const res = await apiClient.get<any>('/client/applications', { timeout: 4000 });
       const data = (res.data as any)?.value || res.data;
@@ -220,20 +247,27 @@ export const clientApi = {
         const mapped = data
           .map(mapBackendApplication)
           .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
-        const local = applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
+
+        // Включаем из локального хранилища ТОЛЬКО заявки текущего клиента (строгая фильтрация по ИНН/userId)
+        const local = applicationStore
+          .getAll()
+          .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO') && isAppOwnedByCurrentClient(a, identity));
+
         const mapIds = new Set(mapped.map((m) => m.id));
         const combined = [...mapped, ...local.filter((l) => !mapIds.has(l.id))];
-        applicationStore.syncApps(combined);
         return combined;
       }
     } catch (err) {
       console.warn('Backend client applications unavailable, using local store:', err);
-      return applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
+      return applicationStore
+        .getAll()
+        .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO') && isAppOwnedByCurrentClient(a, identity));
     }
     return [];
   },
 
   getApplicationById: async (id: string): Promise<CreditApplication> => {
+    const identity = getCurrentClientIdentity();
     try {
       const res = await apiClient.get<any>(`/client/applications/${id}`, { timeout: 4000 });
       const data = res.data?.value || res.data;
@@ -250,7 +284,7 @@ export const clientApi = {
       console.warn(`Backend client getApplicationById ${id} error:`, err);
     }
     const local = applicationStore.getById(id);
-    if (local) return local;
+    if (local && isAppOwnedByCurrentClient(local, identity)) return local;
     throw new Error('Заявка не найдена');
   },
 
