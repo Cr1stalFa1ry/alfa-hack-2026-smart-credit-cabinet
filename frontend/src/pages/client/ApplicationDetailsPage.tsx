@@ -34,8 +34,62 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
+  Sparkles,
 } from 'lucide-react';
 import { extractInquiriesHistory, InquiryItem } from '../../utils/inquiriesHelpers';
+
+function getClientExplanation(application: CreditApplication, loadedExplanation?: string): string {
+  if (loadedExplanation && loadedExplanation.trim()) {
+    return loadedExplanation.trim();
+  }
+  if (application.mlExplanation && application.mlExplanation.trim()) {
+    return application.mlExplanation.trim();
+  }
+
+  const reasonCode = (application.reasonCodes && application.reasonCodes[0]) || '';
+
+  if (reasonCode === 'NO_FEASIBLE_TERMS' || application.declineReason?.includes('NO_FEASIBLE_TERMS')) {
+    return 'Мы не можем выдать кредит на эту сумму: платёж получается слишком большим для вашего дохода даже на максимальный срок. Вы можете подать новую заявку на меньшую сумму.';
+  }
+  if (reasonCode === 'DSCR_LOW' || application.declineReason?.includes('DSCR_LOW')) {
+    return 'Размер ежемесячного платежа превышает комфортный уровень относительно чистого дохода бизнеса. Рекомендуем запросить меньшую сумму или увеличить срок кредитования.';
+  }
+  if (reasonCode === 'OVERDUE_GT_30' || application.declineReason?.includes('OVERDUE')) {
+    return 'В кредитной истории зафиксирована активная просроченная задолженность свыше 30 дней. Повторная подача заявки станет доступна после её полного погашения.';
+  }
+  if (reasonCode === 'LOW_SCORE' || application.declineReason?.includes('LOW_SCORE')) {
+    return 'Текущий кредитный рейтинг бизнеса пока недостаточен для одобрения финансирования на выбранных условиях. Рекомендуем повторить подачу заявки через 30 дней.';
+  }
+
+  if (application.status === 'declined') {
+    if (application.declineReason && application.declineReason.length > 5) {
+      return `Банк не может одобрить заявку на текущих условиях: ${application.declineReason}. Вы можете скорректировать параметры и подать новую заявку через некоторое время.`;
+    }
+    return 'Мы не можем выдать кредит на эту сумму: платёж получается слишком большим для вашего дохода даже на максимальный срок. Вы можете подать новую заявку на меньшую сумму.';
+  }
+
+  if (['offer', 'accepted', 'signed_sim', 'disbursed_sim'].includes(application.status)) {
+    return 'Заявка успешно прошла проверку. Ваш бизнес демонстрирует стабильные финансовые показатели и достаточный уровень платёжеспособности. Банк сформировал персональное предложение с комфортным графиком платежей.';
+  }
+
+  if (application.status === 'need_info') {
+    return 'Для завершения оценки кредитоспособности банку требуется уточнить несколько параметров или получить подтверждающие документы. Пожалуйста, ознакомьтесь с вопросом специалиста банка выше и отправьте ответ.';
+  }
+
+  if (application.status === 'review') {
+    return 'Автоматические проверки данных бизнеса пройдены успешно. Заявка передана кредитному эксперту для подготовки индивидуальных условий финансирования.';
+  }
+
+  if (application.status === 'checking') {
+    return 'Система проводит автоматический анализ финансовых показателей, кредитной истории и данных из государственных реестров.';
+  }
+
+  if (application.status === 'waiting_check') {
+    return 'Один из внешних государственных сервисов временно недоступен. Это техническая пауза, не влияющая на решение. Проверка будет автоматически возобновлена в ближайшее время.';
+  }
+
+  return 'Заёмщик демонстрирует стабильные финансовые показатели. Критических стоп-факторов по линии государственных реестров не зафиксировано.';
+}
 
 export const ApplicationDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +99,7 @@ export const ApplicationDetailsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isSavedNotice, setIsSavedNotice] = useState(false);
+  const [clientExplanation, setClientExplanation] = useState<string | null>(null);
 
   // Modals
   const [isNeedInfoModalOpen, setIsNeedInfoModalOpen] = useState(false);
@@ -95,6 +150,20 @@ export const ApplicationDetailsPage: React.FC = () => {
         history: data.history || [],
       };
       setApplication(normalized);
+      if (normalized.mlExplanation) {
+        setClientExplanation(normalized.mlExplanation);
+      } else {
+        clientApi
+          .getExplanation(appId)
+          .then((res) => {
+            if (res?.explanation) {
+              setClientExplanation(res.explanation);
+            }
+          })
+          .catch(() => {
+            // Игнорируем сетевые сбои (будет использован адаптивный текст по умолчанию)
+          });
+      }
     } catch (err) {
       console.error('Failed to load application:', err);
     } finally {
@@ -533,6 +602,25 @@ export const ApplicationDetailsPage: React.FC = () => {
           Вы можете подать новую заявку через 30 дней после исправления замечаний.
         </Alert>
       )}
+
+      {/* AI-ассистент в стиле рабочего места (вывод понятным языком, без метрик) */}
+      <div className="p-5 sm:p-6 rounded-[16px] bg-[#f5f6f7] dark:bg-slate-900 border border-[#e6e8ea] dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#EF3124]" />
+            <h3 className="text-[16px] font-bold text-[#141414] dark:text-slate-100 m-0">
+              AI-ассистент
+            </h3>
+          </div>
+          <span className="text-[11px] text-[#686b70] dark:text-slate-400">
+            Автоматическая интерпретация факторов риска
+          </span>
+        </div>
+
+        <div className="p-4 rounded-[12px] bg-white dark:bg-slate-800/90 border border-[#e6e8ea] dark:border-slate-700/80 text-[13px] text-[#141414] dark:text-slate-200 leading-[1.6]">
+          {getClientExplanation(application, clientExplanation || undefined)}
+        </div>
+      </div>
 
       {/* Main Content Grid: Application Parameters & Editing */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

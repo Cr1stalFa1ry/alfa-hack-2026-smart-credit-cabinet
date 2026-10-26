@@ -16,10 +16,13 @@ const NUMERIC_STATUS_MAP: Record<string, ApplicationStatus> = {
   '7': 'offer',
   '8': 'closed',
   '9': 'closed',
-  '10': 'declined',
-  '11': 'accepted',
+  '10': 'offer',
+  '11': 'signed_sim',
   '12': 'signed_sim',
-  '13': 'closed',
+  '13': 'disbursed_sim',
+  '14': 'declined',
+  '15': 'accepted',
+  '16': 'closed',
   'draft': 'draft',
   'submitted': 'checking',
   'checking': 'checking',
@@ -28,14 +31,24 @@ const NUMERIC_STATUS_MAP: Record<string, ApplicationStatus> = {
   'needinfo': 'need_info',
   'need_info': 'need_info',
   'inforeceived': 'checking',
+  'info_received': 'checking',
   'review': 'review',
   'offer': 'offer',
-  'declined': 'declined',
-  'accepted': 'accepted',
+  'offerrejected': 'closed',
+  'offer_rejected': 'closed',
+  'offerexpired': 'closed',
+  'offer_expired': 'closed',
+  'preconditions': 'offer',
+  'pre_conditions': 'offer',
   'signedsim': 'signed_sim',
   'signed_sim': 'signed_sim',
+  'readytodisburse': 'signed_sim',
+  'ready_to_disburse': 'signed_sim',
   'disbursedsim': 'disbursed_sim',
   'disbursed_sim': 'disbursed_sim',
+  'declined': 'declined',
+  'accepted': 'accepted',
+  'approved': 'offer',
   'closed': 'closed',
 };
 
@@ -196,8 +209,11 @@ export const clientApi = {
         const mapped = data
           .map(mapBackendApplication)
           .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
-        applicationStore.syncApps(mapped);
-        return mapped;
+        const local = applicationStore.getAll().filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'));
+        const mapIds = new Set(mapped.map((m) => m.id));
+        const combined = [...mapped, ...local.filter((l) => !mapIds.has(l.id))];
+        applicationStore.syncApps(combined);
+        return combined;
       }
     } catch (err) {
       console.warn('Backend client applications unavailable, using local store:', err);

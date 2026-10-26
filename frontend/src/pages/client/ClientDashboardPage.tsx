@@ -13,10 +13,12 @@ import {
   CheckCircle,
   ArrowRight,
   MessageSquare,
+  Archive,
 } from 'lucide-react';
 
 export const ClientDashboardPage: React.FC = () => {
   const [applications, setApplications] = useState<CreditApplication[]>([]);
+  const [filter, setFilter] = useState<'all' | 'in_progress' | 'approved' | 'closed'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -34,10 +36,30 @@ export const ClientDashboardPage: React.FC = () => {
     }
   };
 
-  const activeCount = applications.filter((a) => !['closed', 'declined'].includes(a.status)).length;
-  const offerCount = applications.filter((a) => a.status === 'offer').length;
+  const totalCount = applications.length;
+  const inProgressCount = applications.filter((a) =>
+    ['draft', 'checking', 'waiting_check', 'need_info', 'review'].includes(a.status)
+  ).length;
+  const approvedCount = applications.filter((a) =>
+    ['offer', 'accepted', 'signed_sim', 'disbursed_sim'].includes(a.status)
+  ).length;
+  const closedCount = applications.filter((a) =>
+    ['closed', 'declined'].includes(a.status)
+  ).length;
   const needInfoApplications = applications.filter((a) => a.status === 'need_info');
-  const inProgressCount = applications.filter((a) => ['checking', 'waiting_check', 'need_info', 'review'].includes(a.status)).length;
+
+  const filteredApplications = applications.filter((app) => {
+    if (filter === 'in_progress') {
+      return ['draft', 'checking', 'waiting_check', 'need_info', 'review'].includes(app.status);
+    }
+    if (filter === 'approved') {
+      return ['offer', 'accepted', 'signed_sim', 'disbursed_sim'].includes(app.status);
+    }
+    if (filter === 'closed') {
+      return ['closed', 'declined'].includes(app.status);
+    }
+    return true; // 'all' - показывает абсолютно все заявки
+  });
 
   return (
     <div className="space-y-8">
@@ -85,61 +107,164 @@ export const ClientDashboardPage: React.FC = () => {
       )}
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-            <FileText className="w-6 h-6" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card
+          className={`flex items-center gap-4 cursor-pointer transition-all ${
+            filter === 'all'
+              ? 'ring-2 ring-blue-500/50 bg-blue-50/20 dark:bg-blue-950/20'
+              : 'hover:border-slate-300 dark:hover:border-slate-700'
+          }`}
+          onClick={() => setFilter('all')}
+        >
+          <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">Активные заявки</span>
-            <div className="text-2xl font-black text-slate-900 dark:text-white">{activeCount}</div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Всего заявок
+            </span>
+            <div className="text-2xl font-black text-slate-900 dark:text-white">{totalCount}</div>
           </div>
         </Card>
 
-        <Card className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-            <Clock className="w-6 h-6" />
+        <Card
+          className={`flex items-center gap-4 cursor-pointer transition-all ${
+            filter === 'in_progress'
+              ? 'ring-2 ring-amber-500/50 bg-amber-50/20 dark:bg-amber-950/20'
+              : 'hover:border-slate-300 dark:hover:border-slate-700'
+          }`}
+          onClick={() => setFilter('in_progress')}
+        >
+          <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">На рассмотрении</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              В обработке
+            </span>
             <div className="text-2xl font-black text-slate-900 dark:text-white">{inProgressCount}</div>
           </div>
         </Card>
 
-        <Card className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <CheckCircle className="w-6 h-6" />
+        <Card
+          className={`flex items-center gap-4 cursor-pointer transition-all ${
+            filter === 'approved'
+              ? 'ring-2 ring-emerald-500/50 bg-emerald-50/20 dark:bg-emerald-950/20'
+              : 'hover:border-slate-300 dark:hover:border-slate-700'
+          }`}
+          onClick={() => setFilter('approved')}
+        >
+          <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <CheckCircle className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">Одобренные оферты</span>
-            <div className="text-2xl font-black text-slate-900 dark:text-white">{offerCount}</div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Одобрено / Выдано
+            </span>
+            <div className="text-2xl font-black text-slate-900 dark:text-white">{approvedCount}</div>
+          </div>
+        </Card>
+
+        <Card
+          className={`flex items-center gap-4 cursor-pointer transition-all ${
+            filter === 'closed'
+              ? 'ring-2 ring-slate-400/50 bg-slate-100/40 dark:bg-slate-800/40'
+              : 'hover:border-slate-300 dark:hover:border-slate-700'
+          }`}
+          onClick={() => setFilter('closed')}
+        >
+          <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0">
+            <Archive className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Закрыто / Отказ
+            </span>
+            <div className="text-2xl font-black text-slate-900 dark:text-white">{closedCount}</div>
           </div>
         </Card>
       </div>
 
       {/* Applications list */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Ваши кредитные заявки</h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            Всего: {applications.length}
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Ваши кредитные заявки</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {filter === 'all' && `Отображаются все заявки (${filteredApplications.length})`}
+              {filter === 'in_progress' && `Только заявки в обработке (${filteredApplications.length})`}
+              {filter === 'approved' && `Только одобренные и выданные заявки (${filteredApplications.length})`}
+              {filter === 'closed' && `Только закрытые и отклоненные заявки (${filteredApplications.length})`}
+            </p>
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs font-semibold overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setFilter('all')}
+              className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+                filter === 'all'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Все ({totalCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('in_progress')}
+              className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+                filter === 'in_progress'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              В обработке ({inProgressCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('approved')}
+              className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+                filter === 'approved'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Одобрено ({approvedCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('closed')}
+              className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+                filter === 'closed'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Закрыто / Отказ ({closedCount})
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
           <div className="p-12 text-center text-slate-400 dark:text-slate-500">Загрузка заявок...</div>
-        ) : applications.length === 0 ? (
+        ) : filteredApplications.length === 0 ? (
           <Card className="text-center py-12 space-y-3 border-dashed">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
               <FileText className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">Заявок пока нет</h3>
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                {filter === 'all'
+                  ? 'Заявок пока нет'
+                  : 'В данной категории заявок нет'}
+              </h3>
             </div>
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {applications.map((app) => {
+            {filteredApplications.map((app) => {
               const isNeedInfo = app.status === 'need_info';
               return (
                 <Card
