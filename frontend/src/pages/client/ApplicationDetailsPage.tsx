@@ -431,7 +431,7 @@ export const ApplicationDetailsPage: React.FC = () => {
                 >
                   <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 pb-1.5 border-b border-slate-100 dark:border-slate-800">
                     <span className="font-bold text-slate-700 dark:text-slate-300">
-                      Запрос #{idx + 1} • {inquiry.actorName || 'Специалист банка'}
+                      Запрос #{idx + 1}
                     </span>
                     {inquiry.promptAt && <span>{formatDateTime(inquiry.promptAt)}</span>}
                   </div>
