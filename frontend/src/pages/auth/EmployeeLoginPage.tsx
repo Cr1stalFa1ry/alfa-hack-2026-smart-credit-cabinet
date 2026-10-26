@@ -118,12 +118,8 @@ export const EmployeeLoginPage: React.FC = () => {
             Служебный доступ предназначен исключительно для сотрудников банка
           </div>
 
-          {/* Quick account for Jury */}
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-semibold text-slate-700 dark:text-slate-300">Быстрый вход для жюри:</span>
-              <span className="text-[11px] font-mono text-slate-400">пароль: password123</span>
-            </div>
+          {/* Quick account for Employee */}
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
               onClick={() => { setUsername('analyst'); setPassword('password123'); }}

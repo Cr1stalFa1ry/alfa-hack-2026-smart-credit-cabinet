@@ -119,51 +119,6 @@ export const LoginPage: React.FC = () => {
               Зарегистрировать ИП
             </Link>
           </div>
-
-          {/* Quick accounts for Jury */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-semibold text-slate-700 dark:text-slate-300">Быстрый вход для жюри:</span>
-              <span className="text-[11px] font-mono text-slate-400">пароль: password123</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => { setUsername('client1'); setPassword('password123'); }}
-                className="text-left p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-alfa-50 hover:border-alfa-300 dark:hover:bg-alfa-950/30 transition-all text-slate-700 dark:text-slate-300"
-              >
-                <div className="font-bold text-slate-900 dark:text-white">client1 (S1)</div>
-                <div className="text-[11px] text-slate-500 truncate">Торговля (800к)</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setUsername('client2'); setPassword('password123'); }}
-                className="text-left p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-alfa-50 hover:border-alfa-300 dark:hover:bg-alfa-950/30 transition-all text-slate-700 dark:text-slate-300"
-              >
-                <div className="font-bold text-slate-900 dark:text-white">client2 (S2)</div>
-                <div className="text-[11px] text-slate-500 truncate">Оборудование (2.5м)</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setUsername('client6'); setPassword('password123'); }}
-                className="text-left p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-alfa-50 hover:border-alfa-300 dark:hover:bg-alfa-950/30 transition-all text-slate-700 dark:text-slate-300"
-              >
-                <div className="font-bold text-slate-900 dark:text-white">client6 (ЕГРИП)</div>
-                <div className="text-[11px] text-slate-500 truncate">Мебель (ОСНО)</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setUsername('client12'); setPassword('password123'); }}
-                className="text-left p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-alfa-50 hover:border-alfa-300 dark:hover:bg-alfa-950/30 transition-all text-slate-700 dark:text-slate-300"
-              >
-                <div className="font-bold text-slate-900 dark:text-white">client12 (ЕГРИП)</div>
-                <div className="text-[11px] text-slate-500 truncate">Грузоперевозки</div>
-              </button>
-            </div>
-            <div className="text-[11px] text-center text-slate-400 dark:text-slate-500">
-              Доступны клиенты <span className="font-mono font-semibold text-slate-600 dark:text-slate-300">client1–client15</span> и аналитик <span className="font-mono font-semibold text-slate-600 dark:text-slate-300">analyst</span> (подробнее в README.md)
-            </div>
-          </div>
         </Card>
       </div>
     </div>
