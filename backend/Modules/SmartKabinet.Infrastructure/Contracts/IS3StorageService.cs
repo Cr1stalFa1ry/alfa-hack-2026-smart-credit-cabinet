@@ -42,6 +42,13 @@ public interface IS3StorageService
         CancellationToken ct = default);
 
     /// <summary>
+    /// Удалить все файлы по префиксу (папке), например applications/{applicationId}
+    /// </summary>
+    Task<Result> DeleteFolderAsync(
+        string prefix,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Проверить существование объекта в бакете.
     /// </summary>
     Task<bool> ExistsAsync(

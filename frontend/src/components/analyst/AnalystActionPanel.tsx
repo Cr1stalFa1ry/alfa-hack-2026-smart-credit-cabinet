@@ -156,6 +156,26 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
     }
   };
 
+  const isWithdrawn =
+    (application as any).status === 'withdrawn' ||
+    (application.history || []).some(
+      (h) => h.transitionCode === 'T17' || h.comment?.toLowerCase().includes('отозван')
+    );
+  const isClosed = application.status === 'closed';
+
+  const handleDeleteConfirm = async () => {
+    if (!onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete();
+      setIsDeleteModalOpen(false);
+    } catch (err) {
+      console.error('Delete error:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const inputClass =
     'w-full px-4 py-3.5 border border-[#D1D5D8] rounded-[11px] bg-white text-[#141414] text-[14px] focus:outline-2 focus:outline-[#EF3124] focus:outline-offset-2';
 
@@ -163,76 +183,110 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
     <>
       {/* Блок инструментов банка в стиле .bank-tools из макет.html */}
       <div className="bg-[#f5f6f7] rounded-[14px] p-[22px] border border-[#e6e8ea]">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-[18px] font-bold text-[#141414] m-0">
-              Принятие экспертного решения по заявке
-            </h3>
+        {isWithdrawn || isClosed ? (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#e6e8ea] text-[#686b70]">
+                  {isWithdrawn ? 'T17 • Отозвана клиентом' : 'T16 • Закрыта'}
+                </span>
+                <span className="text-xs text-[#686b70]">Действия над заявкой заблокированы</span>
+              </div>
+              <h3 className="text-[18px] font-bold text-[#141414] m-0">
+                {isWithdrawn ? 'Заявка отозвана клиентом' : 'Заявка закрыта'}
+              </h3>
+              <p className="text-[13px] text-[#686b70] mt-1 mb-0 max-w-[650px]">
+                {isWithdrawn
+                  ? 'Клиент отозвал кредитную анкету. Вынесение кредитных решений и запросы сведений недоступны. Вы можете удалить эту анкету из системы.'
+                  : 'Заявка переведена в архивный статус закрытия. Вынесение кредитных решений недоступно. Вы можете удалить эту анкету из системы.'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="rounded-[12px] px-[21px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-[#EF3124] hover:bg-[#cd2017] text-white transition-colors cursor-pointer shadow-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Удалить анкету
+                </button>
+              )}
+            </div>
           </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-[18px] font-bold text-[#141414] m-0">
+                Принятие экспертного решения по заявке
+              </h3>
+            </div>
 
-          {/* Кнопки действий: горизонтальное расположение как было изначально */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => {
-                setComment('');
-                setActiveModal('approve');
-              }}
-              className="rounded-[12px] px-[21px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-[#EF3124] hover:bg-[#cd2017] text-white transition-colors cursor-pointer"
-            >
-              <Check className="w-4 h-4" />
-              Одобрить оферту (T12)
-            </button>
+            {/* Кнопки действий: горизонтальное расположение как было изначально */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setComment('');
+                  setActiveModal('approve');
+                }}
+                className="rounded-[12px] px-[21px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-[#EF3124] hover:bg-[#cd2017] text-white transition-colors cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                Одобрить оферту (T12)
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setComment('Просим прислать выписку по счетам за последние 6 месяцев для подтверждения оборотов');
-                setActiveModal('need_info');
-              }}
-              className="rounded-[12px] px-[18px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-white text-[#141414] border border-[#e6e8ea] hover:bg-[#eeeff1] transition-colors cursor-pointer"
-            >
-              <HelpCircle className="w-4 h-4 text-[#885215]" />
-              Запросить сведения (T11)
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setComment('Просим прислать выписку по счетам за последние 6 месяцев для подтверждения оборотов');
+                  setActiveModal('need_info');
+                }}
+                className="rounded-[12px] px-[18px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-white text-[#141414] border border-[#e6e8ea] hover:bg-[#eeeff1] transition-colors cursor-pointer"
+              >
+                <HelpCircle className="w-4 h-4 text-[#885215]" />
+                Запросить сведения (T11)
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setComment('Параметры скорректированы, запуск повторного скоринга');
-                setActiveModal('recheck');
-              }}
-              className="rounded-[12px] px-[18px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-white text-[#141414] border border-[#e6e8ea] hover:bg-[#eeeff1] transition-colors cursor-pointer"
-            >
-              <RefreshCw className="w-4 h-4 text-[#686b70]" />
-              На скоринг (T14)
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setComment('Параметры скорректированы, запуск повторного скоринга');
+                  setActiveModal('recheck');
+                }}
+                className="rounded-[12px] px-[18px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-white text-[#141414] border border-[#e6e8ea] hover:bg-[#eeeff1] transition-colors cursor-pointer"
+              >
+                <RefreshCw className="w-4 h-4 text-[#686b70]" />
+                На скоринг (T14)
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setComment('');
-                setActiveModal('decline');
-              }}
-              className="rounded-[12px] px-[18px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-white text-[#EF3124] border border-[#fac6c2] hover:bg-[#fff1ef] transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-              Отказать (T13)
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setComment('');
+                  setActiveModal('decline');
+                }}
+                className="rounded-[12px] px-[18px] py-[13px] font-bold text-[14px] inline-flex items-center justify-center gap-2 bg-white text-[#EF3124] border border-[#fac6c2] hover:bg-[#fff1ef] transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                Отказать (T13)
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setComment('');
-                setActiveModal('close');
-              }}
-              className="rounded-[12px] px-[14px] py-[13px] font-bold text-[13px] inline-flex items-center justify-center gap-1.5 text-[#686b70] hover:text-[#141414] transition-colors cursor-pointer border border-transparent hover:border-[#e6e8ea]"
-            >
-              <Ban className="w-4 h-4" />
-              Закрыть (T16)
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setComment('');
+                  setActiveModal('close');
+                }}
+                className="rounded-[12px] px-[14px] py-[13px] font-bold text-[13px] inline-flex items-center justify-center gap-1.5 text-[#686b70] hover:text-[#141414] transition-colors cursor-pointer border border-transparent hover:border-[#e6e8ea]"
+              >
+                <Ban className="w-4 h-4" />
+                Закрыть (T16)
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Модальное окно T12: Одобрение */}
@@ -681,6 +735,48 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
               className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
             >
               {isSubmitting ? 'Закрытие...' : 'Да, закрыть заявку'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Модальное окно подтверждения удаления анкеты */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => !isDeleting && setIsDeleteModalOpen(false)}
+        title="Удаление кредитной анкеты"
+        description="Подтвердите безвозвратное удаление анкеты из базы данных"
+      >
+        <div className="space-y-4 text-[#141414]">
+          <div className="p-4 rounded-[12px] bg-[#fff1ef] border border-[#fac6c2] flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-[#EF3124] shrink-0 mt-0.5" />
+            <div className="text-[13px] leading-relaxed text-[#cd2017]">
+              <strong className="block text-[#141414] mb-1">Безвозвратное действие</strong>
+              Кредитная анкета клиента{' '}
+              <span className="font-semibold text-[#141414]">
+                {application.companyName || (application.inn ? `ИНН ${application.inn}` : application.id)}
+              </span>
+              , прикрепленные документы, результаты проверок и вся история переходов будут полностью удалены.
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e8ea]">
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] hover:bg-[#e6e8ea] cursor-pointer disabled:opacity-50"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={handleDeleteConfirm}
+              className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45 inline-flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              {isDeleting ? 'Удаление...' : 'Да, удалить анкету'}
             </button>
           </div>
         </div>

@@ -225,6 +225,57 @@ public class S3StorageService : IS3StorageService
         }
     }
 
+    public async Task<Result> DeleteFolderAsync(
+        string prefix,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(prefix))
+        {
+            return Result.Failure(StorageErrors.InvalidFile("Префикс папки не может быть пустым."));
+        }
+
+        try
+        {
+            string? continuationToken = null;
+            do
+            {
+                var listRequest = new ListObjectsV2Request
+                {
+                    BucketName = _options.BucketName,
+                    Prefix = prefix,
+                    ContinuationToken = continuationToken
+                };
+
+                var listResponse = await _s3Client.ListObjectsV2Async(listRequest, ct);
+                if (listResponse.S3Objects.Count > 0)
+                {
+                    var deleteRequest = new DeleteObjectsRequest
+                    {
+                        BucketName = _options.BucketName,
+                        Objects = listResponse.S3Objects.Select(o => new KeyVersion { Key = o.Key }).ToList()
+                    };
+                    await _s3Client.DeleteObjectsAsync(deleteRequest, ct);
+                    _logger.LogInformation("Удалено {Count} объектов с префиксом {Prefix} из бакета {Bucket}",
+                        listResponse.S3Objects.Count, prefix, _options.BucketName);
+                }
+
+                continuationToken = listResponse.NextContinuationToken;
+            } while (!string.IsNullOrEmpty(continuationToken));
+
+            return Result.Success();
+        }
+        catch (AmazonS3Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка AWS S3 при удалении объектов с префиксом {Prefix}", prefix);
+            return Result.Failure(StorageErrors.DeleteFailed(ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Непредвиденная ошибка при удалении объектов с префиксом {Prefix}", prefix);
+            return Result.Failure(StorageErrors.DeleteFailed(ex.Message));
+        }
+    }
+
     public async Task<bool> ExistsAsync(
         string fileKey,
         CancellationToken ct = default)

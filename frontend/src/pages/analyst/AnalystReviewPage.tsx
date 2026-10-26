@@ -110,6 +110,13 @@ export const AnalystReviewPage: React.FC = () => {
     setApplication(updated);
   };
 
+  // Удаление анкеты аналитиком
+  const handleDeleteApplication = async () => {
+    if (!application) return;
+    await analystApi.deleteApplication(application.id);
+    navigate('/analyst/queue');
+  };
+
   // 1. Рассчитанный вариант кредитования
   const calculatedVariant = useMemo(() => {
     if (!application) return null;
@@ -253,6 +260,12 @@ export const AnalystReviewPage: React.FC = () => {
   }
 
   const isPrelaunch = application.businessType === 'prelaunch' || application.stage === 'prelaunch';
+  const isWithdrawn =
+    application.status === 'closed' ||
+    (application as any).status === 'withdrawn' ||
+    (application.history || []).some(
+      (h) => h.transitionCode === 'T17' || h.comment?.toLowerCase().includes('отозван')
+    );
   const inquiriesHistory = extractInquiriesHistory(application);
 
   return (
@@ -359,7 +372,9 @@ export const AnalystReviewPage: React.FC = () => {
               Автоматическое заключение системы
             </div>
             <h2 className="text-[23px] sm:text-[27px] font-bold tracking-[-0.045em] leading-[1.15] max-w-[540px] mb-3">
-              {isPrelaunch
+              {isWithdrawn
+                ? 'Заявка отозвана заёмщиком (T17)'
+                : isPrelaunch
                 ? 'Заявка нового ИП направлена на профильное рассмотрение специалисту'
                 : calculatedVariant?.isCounterOffer
                 ? 'Рекомендовано одобрение со встречными условиями (Counter-Offer)'
@@ -401,7 +416,7 @@ export const AnalystReviewPage: React.FC = () => {
         {/* Линия вкладок (.tabs-line из макет.html) */}
         <div className="flex gap-1.5 border-b border-[#e6e8ea] my-6 overflow-x-auto">
           {[
-            { id: 'overview', label: 'Обзор и решение' },
+            { id: 'overview', label: isWithdrawn ? 'Действия по заявке' : 'Обзор и решение' },
             { id: 'scoring', label: 'Скоринг и проверки' },
             { id: 'dossier', label: `Анкета и документы (${application.documents.length})` },
             { id: 'audit', label: `Запросы и история (${application.history.length})` },
@@ -427,9 +442,22 @@ export const AnalystReviewPage: React.FC = () => {
           {/* ВКЛАДКА 1: ОБЗОР И РЕШЕНИЕ */}
           {(activeTab === 'overview' || activeTab === 'all') && (
             <div className="space-y-6">
-              {/* Карточка рассчитанного предложения (.candidate-card из макет.html) */}
-              {calculatedVariant && (
-                <div className="p-6 border border-[#efddd8] rounded-[16px] bg-[#fff8f6]">
+              {isWithdrawn || application.status === 'closed' ? (
+                /* Для отозванной клиентом / закрытой заявки: оставляем только блок с удалением анкеты */
+                <AnalystActionPanel
+                  application={application}
+                  onApprove={handleApprove}
+                  onDecline={handleDecline}
+                  onRequestInfo={handleRequestInfo}
+                  onReturnToChecking={handleReturnToChecking}
+                  onCloseNonCredit={handleCloseNonCredit}
+                  onDelete={handleDeleteApplication}
+                />
+              ) : (
+                <>
+                  {/* Карточка рассчитанного предложения (.candidate-card из макет.html) */}
+                  {calculatedVariant && (
+                    <div className="p-6 border border-[#efddd8] rounded-[16px] bg-[#fff8f6]">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                     <div>
                       <span className="text-[11px] tracking-[0.12em] uppercase text-[#EF3124] font-bold block mb-1">
@@ -518,27 +546,6 @@ export const AnalystReviewPage: React.FC = () => {
                       </button>
                     </div>
                   )}
-
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-[#efddd8]">
-                    <span className="text-[12px] text-[#686b70]">
-                      Вы можете утвердить системную оферту в 1 клик или скорректировать параметры ниже
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleApprove({
-                          approvedAmount: calculatedVariant.amount,
-                          approvedTermMonths: calculatedVariant.term,
-                          annualInterestRate: calculatedVariant.rate,
-                          comment: `Одобрен базовый вариант: ${formatRubles(calculatedVariant.amount)}, ${calculatedVariant.term} мес, ставка ${formatPercent(calculatedVariant.rate)}`,
-                        })
-                      }
-                      className="rounded-[12px] px-[21px] py-[12px] font-bold text-[13px] inline-flex items-center gap-2 bg-[#EF3124] hover:bg-[#cd2017] text-white transition-colors cursor-pointer"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Утвердить базовый вариант (T12)
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -767,15 +774,18 @@ export const AnalystReviewPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Панель принятия решения сотрудником банка (.bank-tools из макет.html) */}
-              <AnalystActionPanel
-                application={application}
-                onApprove={handleApprove}
-                onDecline={handleDecline}
-                onRequestInfo={handleRequestInfo}
-                onReturnToChecking={handleReturnToChecking}
-                onCloseNonCredit={handleCloseNonCredit}
-              />
+                  {/* Панель принятия решения сотрудником банка (.bank-tools из макет.html) */}
+                  <AnalystActionPanel
+                    application={application}
+                    onApprove={handleApprove}
+                    onDecline={handleDecline}
+                    onRequestInfo={handleRequestInfo}
+                    onReturnToChecking={handleReturnToChecking}
+                    onCloseNonCredit={handleCloseNonCredit}
+                    onDelete={handleDeleteApplication}
+                  />
+                </>
+              )}
             </div>
           )}
 

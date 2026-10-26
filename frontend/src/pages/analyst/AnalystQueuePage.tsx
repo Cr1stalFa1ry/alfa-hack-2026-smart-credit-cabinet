@@ -41,6 +41,7 @@ export const AnalystQueuePage: React.FC = () => {
   const needInfoCount = applications.filter((a) => a.status === 'need_info').length;
   const offerCount = applications.filter((a) => a.status === 'offer').length;
   const checkingCount = applications.filter((a) => a.status === 'checking').length;
+  const closedCount = applications.filter((a) => a.status === 'closed').length;
 
   const filteredApplications = applications.filter((app) => {
     if (app.status === 'draft') return false;
@@ -100,6 +101,7 @@ export const AnalystQueuePage: React.FC = () => {
               { id: 'need_info', label: 'Ожидают инфо', count: needInfoCount },
               { id: 'offer', label: 'Одобрено', count: offerCount },
               { id: 'checking', label: 'На проверке', count: checkingCount },
+              { id: 'closed', label: 'Отозваны / Закрыты', count: closedCount },
             ].map((tab) => (
               <button
                 key={tab.id}
