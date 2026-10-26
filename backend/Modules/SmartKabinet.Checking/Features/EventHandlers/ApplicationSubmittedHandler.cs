@@ -91,6 +91,21 @@ public class ApplicationSubmittedHandler
             return;
         }
 
+        // 2.3. Сценарий: Приостановленный бизнес / Перезапуск (RESTART)
+        // Регламент: никакого автоматического отказа, отключение стандартного скоринга выручки, передача на индивидуальное рассмотрение (Review)
+        if (@event.ProductCode == "RESTART" || @event.ProductCode == "PAUSED")
+        {
+            _logger.LogInformation("Restart: заявка приостановленного бизнеса передана на индивидуальное рассмотрение аналитику (Review).");
+            await _bus.InvokeAsync(new ApplyCheckingDecisionCommand(
+                @event.ApplicationId,
+                TargetStatus: 6, // Review (T07)
+                Decision: 4, // ReviewRequired
+                ReasonCodes: new List<string> { "BUSINESS_RESTART", "MANUAL_REVIEW_REQUIRED" },
+                Comment: "Приостановленная деятельность / Перезапуск бизнеса. Направлено на индивидуальное рассмотрение кредитному эксперту (T07)"
+            ));
+            return;
+        }
+
         // 3. Сценарий prelaunch (Новый бизнес: Stage == 2)
         if (@event.Stage == 2 || @event.ProductCode == "START")
         {

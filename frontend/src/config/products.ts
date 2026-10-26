@@ -62,6 +62,26 @@ export const CREDIT_PRODUCTS: Record<ProductCode, CreditProductConfig> = {
     minContributionPercent: () => 0,
     badgeColor: 'purple',
   },
+  RESTART: {
+    code: 'RESTART',
+    name: 'Перезапуск бизнеса',
+    shortName: 'Перезапуск',
+    category: 'Приостановленная деятельность / Перезапуск',
+    description: 'Индивидуальное финансирование для ИП с приостановленной деятельностью. Лизинг оборудования или оборотные средства под залог/поручительство.',
+    minAmount: 100_000,
+    maxAmount: 5_000_000,
+    minTermMonths: 3,
+    maxTermMonths: 48,
+    allowedStages: ['prelaunch'],
+    allowedPurposes: ['equipment', 'working_capital'],
+    decisionRule: 'Решает сотрудник (индивидуальное рассмотрение)',
+    decisionMaker: 'analyst',
+    minInterestRate: 16,
+    maxInterestRate: 24,
+    rateDescription: 'Индивидуальная ставка с возможностью льготного периода',
+    minContributionPercent: () => 0,
+    badgeColor: 'amber',
+  },
 };
 
 export const ALL_PRODUCTS = Object.values(CREDIT_PRODUCTS);

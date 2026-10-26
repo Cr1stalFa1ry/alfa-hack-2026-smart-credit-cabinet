@@ -1,7 +1,7 @@
 import React from 'react';
 import { ProductCode } from '../../types/products';
 import { CREDIT_PRODUCTS } from '../../config/products';
-import { Wrench, Repeat, Rocket } from 'lucide-react';
+import { Wrench, Repeat, Rocket, Sparkles } from 'lucide-react';
 
 interface ProductCodeBadgeProps {
   code?: ProductCode | string;
@@ -35,6 +35,7 @@ export const ProductCodeBadge: React.FC<ProductCodeBadgeProps> = ({
     EQ: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800/60',
     WC: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/60',
     START: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800/60',
+    RESTART: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60',
   };
 
   const getIcon = () => {
@@ -45,6 +46,8 @@ export const ProductCodeBadge: React.FC<ProductCodeBadgeProps> = ({
         return <Repeat className={iconSize} />;
       case 'START':
         return <Rocket className={iconSize} />;
+      case 'RESTART':
+        return <Sparkles className={iconSize} />;
       default:
         return <Repeat className={iconSize} />;
     }

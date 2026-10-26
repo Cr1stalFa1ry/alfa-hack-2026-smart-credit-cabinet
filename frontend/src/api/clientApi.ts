@@ -113,10 +113,10 @@ export function mapBackendApplication(item: any): CreditApplication {
     purpose: item.purpose || 'Кредит на развитие бизнеса',
     monthlyRevenue: Number(item.monthlyRevenue || 0),
     monthlyExpenses: Number(item.monthlyExpenses || 0),
-    clientAnswers: item.clientAnswers,
-    specialistNotes: item.specialistNotes,
-    scenario: item.scenario,
-    submissionPayload: item.submissionPayload,
+    clientAnswers: item.clientAnswers || applicationStore.getById(String(item.id || item.applicationId))?.clientAnswers || (item.submissionPayload?.clientAnswers),
+    specialistNotes: item.specialistNotes || applicationStore.getById(String(item.id || item.applicationId))?.specialistNotes,
+    scenario: item.scenario || (String(item.productCode).toUpperCase() === 'RESTART' ? 'paused' : undefined) || applicationStore.getById(String(item.id || item.applicationId))?.scenario,
+    submissionPayload: item.submissionPayload || applicationStore.getById(String(item.id || item.applicationId))?.submissionPayload,
     status: normalizeStatus(item.status),
     createdAt: item.createdAt || new Date().toISOString(),
     updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
@@ -244,10 +244,10 @@ export const clientApi = {
   },
 
   createDraft: async (data: CreateDraftRequest): Promise<CreditApplication> => {
-    const isPaused = data.scenario === 'paused' || (data.clientAnswers as any)?.business === 'paused';
+    const isPaused = data.scenario === 'paused' || data.productCode === 'RESTART' || (data.clientAnswers as any)?.business === 'paused';
     const stage = data.stage || (data.businessType === 'prelaunch' ? 'prelaunch' : 'operating');
     const purposeCode = data.purposeCode || (data.purpose?.toLowerCase().includes('оборудован') ? 'equipment' : 'working_capital');
-    const productCode = data.productCode || (purposeCode === 'equipment' ? 'EQ' : (stage === 'prelaunch' ? 'START' : 'WC'));
+    const productCode = isPaused ? 'RESTART' : (data.productCode || (purposeCode === 'equipment' ? 'EQ' : (stage === 'prelaunch' ? 'START' : 'WC')));
 
     const res = await apiClient.post<any>('/client/applications/draft', {
       inn: data.inn,
@@ -286,14 +286,15 @@ export const clientApi = {
   },
 
   saveDraft: async (id: string, data: Partial<CreateDraftRequest>): Promise<CreditApplication> => {
-    const isPaused = data.scenario === 'paused' || (data.clientAnswers as any)?.business === 'paused';
+    const isPaused = data.scenario === 'paused' || data.productCode === 'RESTART' || (data.clientAnswers as any)?.business === 'paused';
+    const productCode = isPaused ? 'RESTART' : data.productCode;
     const res = await apiClient.put<any>(`/client/applications/${id}/draft`, {
       requestedAmount: data.requestedAmount || 0,
       ownContribution: data.ownContribution || 0,
       requestedTermMonths: data.requestedTermMonths,
       bkiConsent: isPaused ? true : (data.bkiConsent ?? true),
       personalDataConsent: data.personalDataConsent ?? true,
-      productCode: data.productCode,
+      productCode,
       neededByDate: data.neededByDate,
       expensePeriod: data.expensePeriod,
       hasExpenseContract: data.hasExpenseContract ?? (data.hasContract === 'Да' || data.hasContract === 'yes'),

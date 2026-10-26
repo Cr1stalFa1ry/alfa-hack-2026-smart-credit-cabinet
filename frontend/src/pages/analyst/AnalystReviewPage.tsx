@@ -260,6 +260,11 @@ export const AnalystReviewPage: React.FC = () => {
   }
 
   const isPrelaunch = application.businessType === 'prelaunch' || application.stage === 'prelaunch';
+  const isPaused =
+    application.scenario === 'paused' ||
+    application.productCode === 'RESTART' ||
+    application.clientAnswers?.business === 'paused' ||
+    (application.reasonCodes || []).includes('BUSINESS_RESTART');
   const isWithdrawn =
     application.status === 'closed' ||
     (application as any).status === 'withdrawn' ||
@@ -327,38 +332,46 @@ export const AnalystReviewPage: React.FC = () => {
         <div className="p-[18px] bg-white border border-[#e6e8ea] rounded-[13px]">
           <span className="text-[#686b70] text-[11px] block">Ежемесячная выручка</span>
           <strong className="text-[23px] block tracking-[-0.04em] my-1.5 text-[#141414]">
-            {formatRubles(application.monthlyRevenue)}
+            {isPaused ? '0 ₽' : formatRubles(application.monthlyRevenue)}
           </strong>
           <span className="text-[#686b70] text-[11px] block">
-            Расходы: {formatRubles(application.monthlyExpenses)} / мес
+            {isPaused ? 'Приостановлен (без выручки)' : `Расходы: ${formatRubles(application.monthlyExpenses)} / мес`}
           </span>
         </div>
 
         <div className="p-[18px] bg-white border border-[#e6e8ea] rounded-[13px]">
           <span className="text-[#686b70] text-[11px] block">Покрытие долга (DSCR)</span>
           <strong className="text-[23px] block tracking-[-0.04em] my-1.5 text-[#141414]">
-            {isPrelaunch ? '—' : effectiveScoring?.dscr.toFixed(2)}
+            {isPaused ? '—' : isPrelaunch ? '—' : effectiveScoring?.dscr.toFixed(2)}
           </strong>
           <span
             className={`inline-block rounded-[7px] px-[9px] py-[3px] text-[11px] font-medium ${
-              isPrelaunch
+              isPaused
+                ? 'bg-[#fff6e4] text-[#885215]'
+                : isPrelaunch
                 ? 'bg-[#f5f6f7] text-[#686b70]'
                 : (effectiveScoring?.dscr ?? 0) >= 1.25
                 ? 'bg-[#edf7f0] text-[#176b45]'
                 : 'bg-[#fff6e4] text-[#885215]'
             }`}
           >
-            {isPrelaunch ? 'Без истории' : (effectiveScoring?.dscr ?? 0) >= 1.25 ? 'В норме (≥ 1.25)' : 'Повышенный риск'}
+            {isPaused
+              ? 'Отключен (регламент)'
+              : isPrelaunch
+              ? 'Без истории'
+              : (effectiveScoring?.dscr ?? 0) >= 1.25
+              ? 'В норме (≥ 1.25)'
+              : 'Повышенный риск'}
           </span>
         </div>
 
         <div className="p-[18px] bg-white border border-[#e6e8ea] rounded-[13px]">
           <span className="text-[#686b70] text-[11px] block">Скоринговый балл</span>
           <strong className="text-[23px] block tracking-[-0.04em] my-1.5 text-[#141414]">
-            {isPrelaunch ? 'Нет' : `${effectiveScoring?.score ?? 0} / 100`}
+            {isPaused ? 'Экспертный' : isPrelaunch ? 'Нет' : `${effectiveScoring?.score ?? 0} / 100`}
           </strong>
           <span className="text-[#686b70] text-[11px] block">
-            Замечаний к досье: {missingInfoList.length}
+            {isPaused ? 'Без авто-отказа' : `Замечаний к досье: ${missingInfoList.length}`}
           </span>
         </div>
       </div>
@@ -374,6 +387,8 @@ export const AnalystReviewPage: React.FC = () => {
             <h2 className="text-[23px] sm:text-[27px] font-bold tracking-[-0.045em] leading-[1.15] max-w-[540px] mb-3">
               {isWithdrawn
                 ? 'Заявка отозвана заёмщиком (T17)'
+                : isPaused
+                ? 'Приостановленный бизнес: индивидуальное рассмотрение специалистом'
                 : isPrelaunch
                 ? 'Заявка нового ИП направлена на профильное рассмотрение специалисту'
                 : calculatedVariant?.isCounterOffer
@@ -549,8 +564,79 @@ export const AnalystReviewPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Маршрут для приостановленного бизнеса (Перезапуск) */}
+              {isPaused && !application.offer && (
+                <div className="p-6 border border-amber-300 rounded-[16px] bg-amber-50/40 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-amber-600" />
+                      <h3 className="text-[18px] font-bold text-[#141414] m-0">
+                        Экспертный разбор: Приостановленная деятельность / Перезапуск
+                      </h3>
+                    </div>
+                    <span className="inline-block rounded-[7px] bg-amber-100 text-amber-900 border border-amber-300 px-[9px] py-[5px] text-[11px] font-bold">
+                      Регламент: рассмотрение без кредитного отказа
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-[#686b70] mb-3 leading-relaxed">
+                    «При отсутствии бизнес-выручки не рассчитываем выдуманные показатели действующего бизнеса».
+                    Аналитик проверяет прошлую кредитную историю до приостановки, заявленный источник платежей до выхода на прибыль и формирует индивидуальные условия (льготный период, лизинг оборудования или залог).
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* 1. Кредитная история */}
+                    <div className="p-4 bg-white rounded-[13px] border border-[#e6e8ea] space-y-1">
+                      <div className="flex items-center justify-between">
+                        <small className="block text-[#686b70] text-[11px] font-semibold">1. Прошлая кредитная история</small>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      </div>
+                      <strong className="text-[14px] font-bold text-[#141414] block">
+                        Дефолтов нет (БКИ проверено)
+                      </strong>
+                      <span className="text-[11px] text-[#686b70] block">
+                        Отсутствие критических просрочек в прошлый период работы ИП
+                      </span>
+                    </div>
+
+                    {/* 2. Планы по перезапуску */}
+                    <div className="p-4 bg-white rounded-[13px] border border-[#e6e8ea] space-y-1">
+                      <small className="block text-[#686b70] text-[11px] font-semibold">2. Планы перезапуска</small>
+                      <strong className="text-[14px] font-bold text-[#141414] block">
+                        {application.clientAnswers?.restartActivity || 'Возобновление деятельности'}
+                      </strong>
+                      <span className="text-[11px] text-[#686b70] block">
+                        Срок старта: {application.clientAnswers?.restartTimeframe || 'Уточняется со специалистом'}
+                      </span>
+                    </div>
+
+                    {/* 3. Источник платежей */}
+                    <div className="p-4 bg-white rounded-[13px] border border-[#e6e8ea] space-y-1">
+                      <small className="block text-[#686b70] text-[11px] font-semibold">3. Источник платежей на время старта</small>
+                      <strong className="text-[14px] font-bold text-[#EF3124] block">
+                        {(application.clientAnswers?.restartPaymentSources || []).join(', ') || application.repaymentSourceDescription || 'Личные сбережения / партнеры'}
+                      </strong>
+                      <span className="text-[11px] text-[#686b70] block">
+                        {application.clientAnswers?.repaymentDescription || 'Клиент готов обслуживать платежи до выхода на прибыль'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Рекомендация по продукту */}
+                  <div className="p-3.5 rounded-xl bg-white border border-amber-200 flex items-center justify-between gap-3 text-xs">
+                    <div>
+                      <span className="font-bold text-[#141414]">Рекомендованный финансовый инструмент: </span>
+                      <span className="text-slate-700">
+                        {application.purposeCode === 'equipment' || (application.purpose && application.purpose.toLowerCase().includes('оборудован'))
+                          ? 'ООО «Альфа-Лизинг» — лизинг оборудования с отсрочкой первого лизингового платежа'
+                          : 'Финансирование оборотных средств с обеспечением (залог недвижимости или поручительство)'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Маршрут для нового бизнеса (Prelaunch) */}
-              {isPrelaunch && !application.offer && (
+              {!isPaused && isPrelaunch && !application.offer && (
                 <div className="p-6 border border-[#efddd8] rounded-[16px] bg-[#fff8f6]">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-2">

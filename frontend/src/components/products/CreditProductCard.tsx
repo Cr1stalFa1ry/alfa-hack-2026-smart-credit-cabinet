@@ -32,6 +32,7 @@ export const CreditProductCard: React.FC<CreditProductCardProps> = ({
     WC: 'border-t-emerald-500',
     EQ: 'border-t-blue-500',
     START: 'border-t-purple-500',
+    RESTART: 'border-t-amber-500',
   };
 
   const getDecisionIcon = () => {

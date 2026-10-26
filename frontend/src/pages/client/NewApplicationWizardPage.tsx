@@ -761,10 +761,52 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
       },
     ];
     if (isPaused) {
-      requestItems.push({
-        label: 'Опишите ситуацию и нужное финансирование',
-        value: answers.pausedDetails || 'Не указано',
-      });
+      requestItems.push(
+        {
+          label: 'Чем планируете заниматься при перезапуске?',
+          value: answers.restartActivity || 'Не указано',
+        },
+        {
+          label: 'Срок возобновления деятельности',
+          value: answers.restartTimeframe || 'Пока не определился',
+        },
+        {
+          label: 'На что нужны деньги?',
+          value:
+            answers.purpose === 'equipment'
+              ? 'Покупка/обновление оборудования (рассматривается лизинг)'
+              : 'Оборотные средства на перезапуск (рассматривается залог/поручительство)',
+        },
+        {
+          label: 'Ориентировочная сумма',
+          value: answers.amountUnspecified
+            ? 'Помогите подобрать'
+            : answers.amount
+            ? formatRubles(answers.amount)
+            : 'Помогите подобрать',
+        },
+        {
+          label: 'Желаемый срок',
+          value: answers.termUnspecified
+            ? 'Помогите подобрать'
+            : answers.term
+            ? `${answers.term} мес.`
+            : 'Помогите подобрать',
+        },
+        {
+          label: 'Источник платежей на период перезапуска',
+          value:
+            answers.restartPaymentSources && answers.restartPaymentSources.length > 0
+              ? answers.restartPaymentSources.join(', ')
+              : 'Пока нет стабильного источника (индивидуальный грейс-период)',
+        }
+      );
+      if (answers.repaymentDescription) {
+        requestItems.push({
+          label: 'Пояснение к источнику платежей',
+          value: answers.repaymentDescription,
+        });
+      }
     } else {
       requestItems.push(
         {
@@ -1146,8 +1188,12 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
           errs.term = 'Укажите желаемый срок в месяцах';
         }
       } else {
-        if (!answers.pausedDetails?.trim()) {
-          errs.pausedDetails = 'Опишите текущую ситуацию и цель обращения';
+        // Для приостановленного бизнеса: «Не знаю» или «Пока нет» не блокируют заявку
+        if (!answers.amountUnspecified && answers.amount && (!validAmount(answers.amount) || Number(answers.amount) <= 0)) {
+          errs.amount = 'Укажите корректную сумму или выберите «Помогите подобрать»';
+        }
+        if (!answers.termUnspecified && answers.term && Number(answers.term) <= 0) {
+          errs.term = 'Укажите корректный срок или выберите «Помогите подобрать»';
         }
       }
     } else if (currentStep.key === 'details') {
@@ -1215,30 +1261,51 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
   // Сборка полезной нагрузки для черновика / заявки
   // ----------------------------------------------------
   const buildDraftPayload = () => {
+    const isPaused = answers.business === 'paused';
+    const finalAmount = isPaused
+      ? (answers.amountUnspecified || !answers.amount ? 500000 : Number(answers.amount))
+      : (Number(answers.amount) || 1000000);
+    const finalTerm = isPaused
+      ? (answers.termUnspecified || !answers.term ? 12 : Number(answers.term))
+      : (answers.termUnspecified ? 12 : Number(answers.term) || 12);
+    const purposeText = isPaused
+      ? (answers.purpose === 'equipment'
+          ? `Перезапуск бизнеса: Оборудование (${answers.restartActivity || 'обновление фондов'})`
+          : `Перезапуск бизнеса: Оборотные средства (${answers.restartActivity || 'возобновление продаж'})`)
+      : (answers.expenseDescription || (isEquipment ? answers.equipment : 'Кредитование бизнеса'));
+
+    const paymentSourcesText = isPaused
+      ? [
+          (answers.restartPaymentSources || []).join(', '),
+          answers.repaymentDescription ? `Детали: ${answers.repaymentDescription}` : '',
+        ].filter(Boolean).join('; ')
+      : answers.repaymentDescription;
+
     return {
       inn: clientProfile.inn,
       companyName: clientProfile.full_name,
-      requestedAmount: Number(answers.amount) || 1000000,
-      requestedTermMonths: answers.termUnspecified ? 12 : Number(answers.term) || 12,
-      purposeCode: isEquipment ? 'equipment' : 'working_capital',
+      requestedAmount: finalAmount,
+      requestedTermMonths: finalTerm,
+      productCode: isPaused ? 'RESTART' : (isEquipment ? 'EQ' : (isOperating ? 'WC' : 'START')),
+      purposeCode: answers.purpose === 'equipment' ? 'equipment' : 'working_capital',
       stage: isOperating ? 'operating' : 'prelaunch',
       businessType: isOperating ? 'operating' : 'prelaunch',
       ownContribution: Number(answers.ownFunds) || 0,
       equipmentPrice: Number(answers.equipmentCost) || undefined,
       equipmentSupplier: answers.supplierInn,
-      purpose: answers.expenseDescription || (isEquipment ? answers.equipment : 'Кредитование бизнеса'),
+      purpose: purposeText,
       neededByDate: answers.paymentDate
         ? (answers.paymentDate.includes('T') ? answers.paymentDate : `${answers.paymentDate}T00:00:00.000Z`)
         : (answers.neededByDate ? new Date(answers.neededByDate).toISOString() : undefined),
       expensePeriod: answers.expensePeriod,
       hasContract: answers.hasContract,
       hasExpenseContract: answers.hasContract === 'Да' ? true : (answers.hasContract === 'Нет' ? false : undefined),
-      monthlyRevenue: clientFacts.length
+      monthlyRevenue: isPaused ? 0 : (clientFacts.length
         ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.clean_receipts_rub), 0) / clientFacts.length)
-        : undefined,
-      monthlyExpenses: clientFacts.length
+        : undefined),
+      monthlyExpenses: isPaused ? 0 : (clientFacts.length
         ? Math.round(clientFacts.reduce((acc, f) => acc + Number(f.operating_outflow_rub), 0) / clientFacts.length)
-        : undefined,
+        : undefined),
       householdExpenses: Number(answers.personalExpenses) || 0,
       existingMonthlyObligations: (clientDebts || []).reduce((acc, d) => acc + Number(d.monthly_max_payment_rub || 0), 0) +
         (answers.extraDebts || []).reduce((acc: number, x: any) => acc + Number(x.payment || 0), 0),
@@ -1249,7 +1316,7 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
       hasAdditionalIncome: answers.additionalIncome === 'Да',
       additionalIncomeAmount: answers.additionalIncome === 'Да' ? Number(answers.personalIncome) || 0 : undefined,
       debtsVerificationStatus: answers.debtsComplete,
-      repaymentSourceDescription: answers.repaymentDescription,
+      repaymentSourceDescription: paymentSourcesText,
       personalDataConsent: Boolean(answers.personalDataConsent),
       personalDataConsentDate: answers.personalDataConsentDate || (answers.personalDataConsent ? new Date().toISOString() : undefined),
       bkiConsent: isPaused ? true : Boolean(answers.bkiConsent),
@@ -1259,7 +1326,7 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
       leasingPartnerName: answers.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
       leasingPartnerConsentDate: answers.leasingPartnerConsentDate || (answers.leasingPartnerConsent ? new Date().toISOString() : undefined),
       clientAnswers: answers,
-      scenario: isNew ? 'new_business' : isPaused ? 'paused' : 'operating',
+      scenario: isPaused ? 'paused' : (isNew ? 'new_business' : 'operating'),
       submissionPayload: {
         scoringResult: scoringEvaluation,
         riskFlags: riskFindings,
@@ -1628,14 +1695,15 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
             <CheckCircle2 className="w-10 h-10" />
           </div>
           <span className="inline-block px-3 py-1 bg-[#fff1ef] text-[#EF3124] rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-            Заявка зарегистрирована
+            {isPaused ? 'На рассмотрении у специалиста • Индивидуальный подбор' : 'Заявка зарегистрирована'}
           </span>
           <h1 className="text-3xl font-extrabold text-[#141414] tracking-tight mb-3">
             Обращение № {submittedAppId} сформировано
           </h1>
           <p className="text-[#686b70] text-base max-w-[540px] mx-auto mb-8">
-            Сведения успешно переданы на рассмотрение. Аналитик банка проверит актуальность досье,
-            источник платежей и подготовит окончательное решение.
+            {isPaused
+              ? 'Заявка принята в работу, кредитный специалист свяжется в кабинете для уточнения деталей перезапуска.'
+              : 'Сведения успешно переданы на рассмотрение. Аналитик банка проверит актуальность досье, источник платежей и подготовит окончательное решение.'}
           </p>
 
           <div className="alfa-panel alfa-panel-soft text-left p-6 mb-8 max-w-[560px] mx-auto">
@@ -2165,24 +2233,256 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
               </div>
 
               {isPaused ? (
-                <div className="alfa-panel">
-                  <div className="alfa-message warn">
-                    <b>Индивидуальный маршрут:</b> Для бизнеса с приостановленной деятельностью автоматический экспресс-скоринг
-                    не применяется. Мы свяжемся с вами для подбора условий.
+                <div className="space-y-6">
+                  {/* Информационный баннер из регламента */}
+                  <div className="alfa-panel bg-amber-50/50 border border-amber-200/80 p-5 rounded-2xl">
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-bold text-[#141414] m-0">
+                          Индивидуальное рассмотрение • Перезапуск бизнеса
+                        </h4>
+                        <p className="text-xs text-slate-600 mt-1 mb-0 leading-relaxed">
+                          Это не кредитный отказ! То, что у бизнеса сейчас нет регулярной выручки, не означает отказ банка. Мы не требуем выписок с оборотами за последние месяцы — специалист банка поможет структурировать сделку с учетом ваших планов перезапуска.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <label className="block text-sm font-bold text-[#141414] mb-2">
-                    Опишите ситуацию и нужное финансирование
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={answers.pausedDetails || ''}
-                    onChange={(e) => setAnswers({ ...answers, pausedDetails: e.target.value })}
-                    placeholder="Причина приостановки, текущее состояние активов и требуемые ресурсы..."
-                    className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
-                  />
-                  {validationErrors.pausedDetails && (
-                    <p className="text-xs text-[#EF3124] mt-1">{validationErrors.pausedDetails}</p>
-                  )}
+
+                  {/* Блок 1. Планы по возобновлению */}
+                  <div className="alfa-panel space-y-4 p-6 rounded-2xl bg-white border border-[#e6e8ea]">
+                    <div className="flex items-center gap-2 pb-2 border-b border-[#e6e8ea]">
+                      <span className="w-6 h-6 rounded-full bg-[#EF3124]/10 text-[#EF3124] text-xs font-bold flex items-center justify-center">
+                        1
+                      </span>
+                      <h3 className="text-base font-bold text-[#141414] m-0">
+                        Планы по возобновлению деятельности
+                      </h3>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-[#141414] mb-1.5">
+                        Чем планируете заниматься при перезапуске?
+                      </label>
+                      <input
+                        type="text"
+                        value={answers.restartActivity || ''}
+                        onChange={(e) => setAnswers({ ...answers, restartActivity: e.target.value })}
+                        placeholder="Например: грузоперевозки, открытие точки в новой локации, оптовая торговля..."
+                        className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm focus:outline-[#EF3124]"
+                      />
+                      <span className="text-xs text-[#686b70] block mt-1">
+                        Кратко укажите сферу или планируемое направление работы
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-[#141414] mb-2">
+                        Когда планируете возобновить деятельность / продажи?
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        {[
+                          { id: '1m', label: 'В течение 1 мес.' },
+                          { id: '2_3m', label: 'Через 2–3 мес.' },
+                          { id: '3_6m', label: 'Через 3–6 мес.' },
+                          { id: 'undecided', label: 'Пока не определился' },
+                        ].map((tf) => (
+                          <button
+                            key={tf.id}
+                            type="button"
+                            onClick={() => setAnswers({ ...answers, restartTimeframe: tf.label })}
+                            className={`p-3 rounded-xl text-xs font-semibold text-center border transition-all cursor-pointer ${
+                              answers.restartTimeframe === tf.label
+                                ? 'border-[#EF3124] bg-[#fff1ef] text-[#EF3124]'
+                                : 'border-[#e6e8ea] bg-white text-[#141414] hover:bg-[#f5f6f7]'
+                            }`}
+                          >
+                            {tf.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Блок 2. Потребность в финансировании */}
+                  <div className="alfa-panel space-y-5 p-6 rounded-2xl bg-white border border-[#e6e8ea]">
+                    <div className="flex items-center gap-2 pb-2 border-b border-[#e6e8ea]">
+                      <span className="w-6 h-6 rounded-full bg-[#EF3124]/10 text-[#EF3124] text-xs font-bold flex items-center justify-center">
+                        2
+                      </span>
+                      <h3 className="text-base font-bold text-[#141414] m-0">
+                        Потребность в финансировании
+                      </h3>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-[#141414] mb-2">
+                        На что нужны деньги?
+                      </label>
+                      <div className="alfa-choices">
+                        <label
+                          className={`alfa-choice ${answers.purpose === 'equipment' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, purpose: 'equipment' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <div>
+                            <span className="block font-semibold">Покупка или обновление оборудования</span>
+                            <span className="text-xs text-[#686b70] block">
+                              Рассматривается лизинг оборудования от ООО «Альфа-Лизинг» с гибким графиком
+                            </span>
+                          </div>
+                        </label>
+                        <label
+                          className={`alfa-choice ${answers.purpose === 'working_capital' ? 'selected' : ''}`}
+                          onClick={() => setAnswers({ ...answers, purpose: 'working_capital' })}
+                        >
+                          <div className="alfa-radio-dot" />
+                          <div>
+                            <span className="block font-semibold">Оборотные средства на перезапуск</span>
+                            <span className="text-xs text-[#686b70] block">
+                              Рассматривается финансирование под залог недвижимости или поручительство
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-3 border-t border-[#e6e8ea]">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-sm font-bold text-[#141414]">Ориентировочная сумма, ₽</label>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-xs text-[#686b70]">
+                            <input
+                              type="checkbox"
+                              checked={answers.amountUnspecified || false}
+                              onChange={(e) =>
+                                setAnswers({
+                                  ...answers,
+                                  amountUnspecified: e.target.checked,
+                                  amount: e.target.checked ? '' : (answers.amount || '1000000'),
+                                })
+                              }
+                              className="rounded text-[#EF3124] focus:ring-[#EF3124]"
+                            />
+                            <span>Помогите подобрать</span>
+                          </label>
+                        </div>
+                        <input
+                          type="number"
+                          disabled={answers.amountUnspecified}
+                          value={answers.amountUnspecified ? '' : answers.amount || ''}
+                          onChange={(e) => setAnswers({ ...answers, amount: e.target.value })}
+                          placeholder={answers.amountUnspecified ? 'Поможет подобрать специалист' : '1 000 000'}
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124] disabled:bg-[#f5f6f7] disabled:text-[#686b70]"
+                        />
+                        {!answers.amountUnspecified && (
+                          <span className="text-xs text-[#686b70] block mt-1">
+                            {formatRubles(Number(answers.amount) || 0)}
+                          </span>
+                        )}
+                        {validationErrors.amount && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.amount}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-sm font-bold text-[#141414]">Желаемый срок, месяцев</label>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-xs text-[#686b70]">
+                            <input
+                              type="checkbox"
+                              checked={answers.termUnspecified || false}
+                              onChange={(e) =>
+                                setAnswers({
+                                  ...answers,
+                                  termUnspecified: e.target.checked,
+                                  term: e.target.checked ? '' : (answers.term || '12'),
+                                })
+                              }
+                              className="rounded text-[#EF3124] focus:ring-[#EF3124]"
+                            />
+                            <span>Помогите подобрать</span>
+                          </label>
+                        </div>
+                        <input
+                          type="number"
+                          disabled={answers.termUnspecified}
+                          value={answers.termUnspecified ? '' : answers.term || ''}
+                          onChange={(e) => setAnswers({ ...answers, term: e.target.value })}
+                          placeholder={answers.termUnspecified ? 'Поможет подобрать специалист' : '12'}
+                          className="w-full p-3 rounded-xl border border-[#e6e8ea] text-sm font-semibold focus:outline-[#EF3124] disabled:bg-[#f5f6f7] disabled:text-[#686b70]"
+                        />
+                        {validationErrors.term && (
+                          <p className="text-xs text-[#EF3124] mt-1">{validationErrors.term}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Блок 3. Источник платежей на период перезапуска */}
+                  <div className="alfa-panel space-y-4 p-6 rounded-2xl bg-white border border-[#e6e8ea]">
+                    <div className="flex items-center gap-2 pb-2 border-b border-[#e6e8ea]">
+                      <span className="w-6 h-6 rounded-full bg-[#EF3124]/10 text-[#EF3124] text-xs font-bold flex items-center justify-center">
+                        3
+                      </span>
+                      <h3 className="text-base font-bold text-[#141414] m-0">
+                        Источник платежей на период перезапуска
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 mb-1">
+                      За счет чего планируется вносить платежи до выхода бизнеса на регулярную прибыль?
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {[
+                        { id: 'savings', label: 'Личные сбережения', desc: 'Накопления на счетах или вкладах' },
+                        { id: 'other_income', label: 'Доход от другой деятельности', desc: 'Зарплата по найму, сдача имущества в аренду' },
+                        { id: 'partners', label: 'Помощь партнеров или поручителя', desc: 'Соинвесторы, партнеры по бизнесу или поручитель' },
+                        { id: 'other', label: 'Другое / пока нет стабильного источника', desc: 'Специалист поможет рассчитать комфортный грейс-период' },
+                      ].map((src) => {
+                        const selected = (answers.restartPaymentSources || []).includes(src.label);
+                        return (
+                          <label
+                            key={src.id}
+                            onClick={() => {
+                              const current = answers.restartPaymentSources || [];
+                              const next = selected ? current.filter((x: string) => x !== src.label) : [...current, src.label];
+                              setAnswers({ ...answers, restartPaymentSources: next });
+                            }}
+                            className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-3 ${
+                              selected
+                                ? 'border-[#EF3124] bg-[#fff1ef]'
+                                : 'border-[#e6e8ea] bg-white hover:bg-[#f5f6f7]'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              readOnly
+                              className="mt-0.5 rounded text-[#EF3124] focus:ring-[#EF3124]"
+                            />
+                            <div>
+                              <span className="block text-xs font-bold text-[#141414]">{src.label}</span>
+                              <span className="block text-[11px] text-[#686b70] mt-0.5">{src.desc}</span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    <div className="pt-2">
+                      <label className="block text-xs font-bold text-[#141414] mb-1.5">
+                        Дополнительные комментарии к источнику (по желанию):
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={answers.repaymentDescription || ''}
+                        onChange={(e) => setAnswers({ ...answers, repaymentDescription: e.target.value })}
+                        placeholder="Например: есть сбережения на 6 месяцев платежей, планируется сдача в аренду..."
+                        className="w-full p-2.5 rounded-xl border border-[#e6e8ea] text-xs focus:outline-[#EF3124]"
+                      />
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="alfa-panel space-y-6">
@@ -3369,6 +3669,18 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
           {/* Step 7: Review (полностью как reviewHtml() в макет.html) */}
           {currentStep.key === 'review' && (
             <div className="alfa-panel">
+              {isPaused && (
+                <div className="alfa-panel bg-amber-50/70 border border-amber-200 p-4 rounded-xl mb-5 flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-[#141414] m-0">Индивидуальный подбор условий</h4>
+                    <p className="text-xs text-slate-700 mt-1 mb-0 leading-relaxed">
+                      Для бизнеса с приостановленной деятельностью мы поможем рассмотреть подходящий вариант финансирования. Окончательные условия определит специалист после проверки.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Summary Sections */}
               {summarySections.map((sec) => (
                 <section key={sec.key} className="summary-section">

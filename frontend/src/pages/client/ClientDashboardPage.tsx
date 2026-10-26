@@ -228,6 +228,11 @@ export const ClientDashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 gap-4">
             {filteredApplications.map((app) => {
               const isNeedInfo = app.status === 'need_info';
+              const isPaused =
+                app.scenario === 'paused' ||
+                app.productCode === 'RESTART' ||
+                app.clientAnswers?.business === 'paused' ||
+                (app.reasonCodes || []).includes('BUSINESS_RESTART');
               return (
                 <Card
                   key={app.id}
@@ -246,9 +251,15 @@ export const ClientDashboardPage: React.FC = () => {
                         </span>
                         <ApplicationStatusBadge status={app.status} />
                         <span className="text-xs text-slate-400">•</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {app.businessType === 'operating' ? 'Действующий бизнес' : 'Новый бизнес (prelaunch)'}
-                        </span>
+                        {isPaused ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            Индивидуальный подбор • Перезапуск бизнеса
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {app.businessType === 'operating' ? 'Действующий бизнес' : 'Новый бизнес (prelaunch)'}
+                          </span>
+                        )}
                       </div>
 
                       <div className="text-xl font-extrabold text-slate-900 dark:text-white">
@@ -261,6 +272,12 @@ export const ClientDashboardPage: React.FC = () => {
                       <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-1">
                         Цель: {app.purpose}
                       </p>
+
+                      {isPaused && (app.status === 'review' || app.status === 'checking') && (
+                        <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                          Заявка принята в работу, кредитный специалист свяжется в кабинете для уточнения деталей перезапуска.
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">

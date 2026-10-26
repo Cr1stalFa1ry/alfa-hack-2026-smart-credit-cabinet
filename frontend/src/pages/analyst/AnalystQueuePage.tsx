@@ -152,7 +152,13 @@ export const AnalystQueuePage: React.FC = () => {
             )}
           </Card>
         ) : (
-          filteredApplications.map((app) => (
+          filteredApplications.map((app) => {
+            const isPaused =
+              app.scenario === 'paused' ||
+              app.productCode === 'RESTART' ||
+              app.clientAnswers?.business === 'paused' ||
+              (app.reasonCodes || []).includes('BUSINESS_RESTART');
+            return (
             <Card
               key={app.id}
               className="hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-md transition-all cursor-pointer p-5"
@@ -165,12 +171,16 @@ export const AnalystQueuePage: React.FC = () => {
                       {app.id}
                     </span>
                     <ApplicationStatusBadge status={app.status} />
-                    {app.scoring && (
+                    {isPaused ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                        Приостановленная деятельность / Перезапуск бизнеса
+                      </span>
+                    ) : app.scoring ? (
                       <ScoringRiskBadge
                         riskLevel={app.scoring.riskLevel}
                         score={app.scoring.score}
                       />
-                    )}
+                    ) : null}
                     <span className="text-xs text-slate-400">•</span>
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                       ИНН {formatInn(app.inn)}
@@ -184,9 +194,15 @@ export const AnalystQueuePage: React.FC = () => {
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       Цель: {app.purpose} • Тип:{' '}
                       <span className="font-semibold text-slate-700 dark:text-slate-300">
-                        {app.businessType === 'operating' ? 'Действующий' : 'Prelaunch'}
+                        {isPaused ? 'Перезапуск бизнеса' : app.businessType === 'operating' ? 'Действующий' : 'Prelaunch'}
                       </span>
-                      {(app.businessType === 'prelaunch' || app.stage === 'prelaunch') && (
+                      {isPaused ? (
+                        <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          {app.purposeCode === 'equipment' || (app.purpose && app.purpose.toLowerCase().includes('оборудован'))
+                            ? 'Лизинг оборудования'
+                            : 'Залог / Поручительство'}
+                        </span>
+                      ) : (app.businessType === 'prelaunch' || app.stage === 'prelaunch') && (
                         <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                           {app.purposeCode === 'equipment' || (app.purpose && app.purpose.toLowerCase().includes('оборудован'))
                             ? 'Специалист по лизингу'
@@ -211,7 +227,16 @@ export const AnalystQueuePage: React.FC = () => {
                     </span>
                   </div>
 
-                  {app.scoring && (
+                  {isPaused ? (
+                    <div className="text-left lg:text-right text-xs">
+                      <span className="text-[11px] uppercase text-amber-600 dark:text-amber-400 font-semibold block">
+                        Маршрут
+                      </span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Индивидуальный разбор
+                      </span>
+                    </div>
+                  ) : app.scoring ? (
                     <div className="text-left lg:text-right text-xs">
                       <span className="text-[11px] uppercase text-slate-400 dark:text-slate-500 font-semibold block">
                         DSCR
@@ -226,7 +251,7 @@ export const AnalystQueuePage: React.FC = () => {
                         {app.scoring.dscr.toFixed(2)}
                       </span>
                     </div>
-                  )}
+                  ) : null}
 
                   <Button
                     variant="outline"
@@ -239,7 +264,8 @@ export const AnalystQueuePage: React.FC = () => {
                 </div>
               </div>
             </Card>
-          ))
+            );
+          })
         )}
       </div>
     </div>

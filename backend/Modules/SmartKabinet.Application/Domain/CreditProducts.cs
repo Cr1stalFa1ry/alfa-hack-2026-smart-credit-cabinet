@@ -5,8 +5,9 @@ public static class CreditProductCodes
     public const string WorkingCapital = "WC";
     public const string Equipment = "EQ";
     public const string Start = "START";
+    public const string Restart = "RESTART";
 
-    public static readonly IReadOnlyList<string> All = [WorkingCapital, Equipment, Start];
+    public static readonly IReadOnlyList<string> All = [WorkingCapital, Equipment, Start, Restart];
 
     public static bool IsValid(string? code) =>
         !string.IsNullOrWhiteSpace(code) && All.Contains(code.Trim().ToUpperInvariant());

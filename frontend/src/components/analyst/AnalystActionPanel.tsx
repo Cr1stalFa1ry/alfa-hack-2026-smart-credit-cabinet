@@ -162,6 +162,11 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
       (h) => h.transitionCode === 'T17' || h.comment?.toLowerCase().includes('отозван')
     );
   const isClosed = application.status === 'closed';
+  const isPaused =
+    application.scenario === 'paused' ||
+    application.productCode === 'RESTART' ||
+    application.clientAnswers?.business === 'paused' ||
+    (application.reasonCodes || []).includes('BUSINESS_RESTART');
 
   const handleDeleteConfirm = async () => {
     if (!onDelete) return;
@@ -293,10 +298,19 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
       <Modal
         isOpen={activeModal === 'approve'}
         onClose={() => setActiveModal(null)}
-        title="Одобрение кредитной заявки (T12)"
-        description="Сформируйте финальные параметры индивидуальной оферты для предпринимателя"
+        title={isPaused ? 'Индивидуальное предложение: Перезапуск бизнеса (T12)' : 'Одобрение кредитной заявки (T12)'}
+        description={
+          isPaused
+            ? 'Сформируйте адаптированные параметры оферты (льготный период, лизинг оборудования или залог)'
+            : 'Сформируйте финальные параметры индивидуальной оферты для предпринимателя'
+        }
       >
         <form onSubmit={handleApproveSubmit} className="space-y-4 text-[#141414]">
+          {isPaused && (
+            <div className="p-3.5 rounded-[12px] bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+              <strong>Индивидуальный подбор условий:</strong> Для бизнеса на перезапуске рекомендуются адаптивный график погашения, льготный период на 3–6 месяцев либо лизинг оборудования через ООО «Альфа-Лизинг».
+            </div>
+          )}
           <div>
             <label className="block font-bold text-[14px] mb-2">Одобренная сумма (₽)</label>
             <input
@@ -426,12 +440,20 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
               Быстрые шаблоны запроса:
             </span>
             <div className="flex flex-col gap-1.5">
-              {[
-                'Предоставьте выписку по расчётному счёту за последние 6 месяцев для подтверждения оборотов',
-                'Приложите договор аренды коммерческого помещения или свидетельство о собственности',
-                'Предоставьте спецификацию или счёт на оплату оборудования от выбранного поставщика',
-                'Поясните расхождение между заявленной выручкой и данными налоговой отчётности',
-              ].map((templateText, i) => (
+              {(isPaused
+                ? [
+                    'Уточните бизнес-план перезапуска и прогнозируемые сроки выхода на продажи',
+                    'Предоставьте документы на залог недвижимости или поручительство для обеспечения кредита',
+                    'Предоставьте коммерческое предложение / спецификацию на оборудование для оформления через Альфа-Лизинг',
+                    'Уточните подтверждение заявленного источника платежей (справка о доходах, выписка по сбережениям)',
+                  ]
+                : [
+                    'Предоставьте выписку по расчётному счёту за последние 6 месяцев для подтверждения оборотов',
+                    'Приложите договор аренды коммерческого помещения или свидетельство о собственности',
+                    'Предоставьте спецификацию или счёт на оплату оборудования от выбранного поставщика',
+                    'Поясните расхождение между заявленной выручкой и данными налоговой отчётности',
+                  ]
+              ).map((templateText, i) => (
                 <button
                   key={i}
                   type="button"

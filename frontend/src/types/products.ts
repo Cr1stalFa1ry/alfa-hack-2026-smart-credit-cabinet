@@ -1,4 +1,4 @@
-export type ProductCode = 'EQ' | 'WC' | 'START';
+export type ProductCode = 'EQ' | 'WC' | 'START' | 'RESTART';
 export type BusinessStage = 'operating' | 'prelaunch';
 export type LoanPurpose = 'equipment' | 'working_capital';
 

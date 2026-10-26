@@ -76,6 +76,16 @@ function getClientExplanation(application: CreditApplication, loadedExplanation?
     return 'Для завершения оценки кредитоспособности банку требуется уточнить несколько параметров или получить подтверждающие документы. Пожалуйста, ознакомьтесь с вопросом специалиста банка выше и отправьте ответ.';
   }
 
+  const isPaused =
+    application.scenario === 'paused' ||
+    application.productCode === 'RESTART' ||
+    application.clientAnswers?.business === 'paused' ||
+    (application.reasonCodes || []).includes('BUSINESS_RESTART');
+
+  if (isPaused && (application.status === 'review' || application.status === 'checking')) {
+    return 'Заявка принята в работу, кредитный специалист свяжется в кабинете для уточнения деталей перезапуска.';
+  }
+
   if (application.status === 'review') {
     return 'Автоматические проверки данных бизнеса пройдены успешно. Заявка передана кредитному эксперту для подготовки индивидуальных условий финансирования.';
   }
@@ -427,9 +437,21 @@ export const ApplicationDetailsPage: React.FC = () => {
       {application.status === 'review' && (
         <Alert
           type="info"
-          title="Заявка на рассмотрении у специалиста банка"
+          title={
+            (application.scenario === 'paused' ||
+              application.productCode === 'RESTART' ||
+              application.clientAnswers?.business === 'paused' ||
+              (application.reasonCodes || []).includes('BUSINESS_RESTART'))
+              ? 'На рассмотрении у специалиста • Индивидуальный подбор'
+              : 'Заявка на рассмотрении у специалиста банка'
+          }
         >
-          Предварительные проверки сведений завершены. Кредитный специалист проверяет результаты расчёта и готовит персональные условия кредитования. Как только сотрудник одобрит условия, оферта появится в вашем кабинете.
+          {(application.scenario === 'paused' ||
+            application.productCode === 'RESTART' ||
+            application.clientAnswers?.business === 'paused' ||
+            (application.reasonCodes || []).includes('BUSINESS_RESTART'))
+            ? 'Заявка принята в работу, кредитный специалист свяжется в кабинете для уточнения деталей перезапуска. Для бизнеса с приостановленной деятельностью мы поможем рассмотреть подходящий вариант финансирования (лизинг оборудования или кредит под залог/поручительство) без стандартного скоринга выручки.'
+            : 'Предварительные проверки сведений завершены. Кредитный специалист проверяет результаты расчёта и готовит персональные условия кредитования. Как только сотрудник одобрит условия, оферта появится в вашем кабинете.'}
         </Alert>
       )}
 
