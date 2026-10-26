@@ -25,6 +25,9 @@ import {
   Sparkles,
   ShieldCheck,
   Download,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
 } from 'lucide-react';
 import { extractInquiriesHistory } from '../../utils/inquiriesHelpers';
 
@@ -39,6 +42,7 @@ export const AnalystReviewPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ReviewTab>('overview');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeConsentType, setActiveConsentType] = useState<ConsentType | null>(null);
+  const [isCommunicationExpanded, setIsCommunicationExpanded] = useState<boolean>(true);
 
   useEffect(() => {
     if (id) {
@@ -1006,138 +1010,182 @@ export const AnalystReviewPage: React.FC = () => {
           {/* ВКЛАДКА 4: ЗАПРОСЫ И АУДИТ (.request-card и .timeline из макет.html) */}
           {(activeTab === 'audit' || activeTab === 'all') && (
             <div className="space-y-6">
-              {/* Запросы дополнительных сведений (.request-card из макет.html) */}
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <h3 className="text-[18px] font-bold text-[#141414] m-0">
-                    Коммуникация и дозапросы сведений (T10 / T11)
-                  </h3>
-                  {inquiriesHistory.length > 0 && (
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                      Всего запросов: {inquiriesHistory.length}
-                    </span>
-                  )}
+              {/* Запросы дополнительных сведений */}
+              <div className="p-5 border border-[#e6e8ea] rounded-[16px] bg-white shadow-xs space-y-4">
+                <div
+                  className="flex items-center justify-between cursor-pointer select-none"
+                  onClick={() => setIsCommunicationExpanded(!isCommunicationExpanded)}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-[#fff6e4] text-[#885215] flex items-center justify-center">
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[17px] font-bold text-[#141414] m-0">
+                        История дозапроса сведений
+                      </h3>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#f0f2f4] text-[#141414]">
+                        {inquiriesHistory.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    {inquiriesHistory.some((i) => i.isCurrentOpen) ? (
+                      <span className="inline-block rounded-[7px] bg-[#fff0ed] text-[#EF3124] px-[9px] py-[3px] text-[11px] font-semibold border border-[#fedcd5]">
+                        Ожидает ответа от клиента (T11)
+                      </span>
+                    ) : (
+                      <span className="inline-block rounded-[7px] bg-[#edf7f0] text-[#176b45] px-[9px] py-[3px] text-[11px] font-medium border border-[#c6e6cd]">
+                        ✓ Сведения предоставлены (T10)
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="p-1 text-[#686b70] hover:text-[#141414] rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
+                      aria-label={isCommunicationExpanded ? 'Свернуть' : 'Развернуть'}
+                    >
+                      <span>{isCommunicationExpanded ? 'Свернуть' : 'Развернуть'}</span>
+                      {isCommunicationExpanded ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
-                {inquiriesHistory.length > 0 ? (
-                  <div className="space-y-3">
-                    {inquiriesHistory.map((inquiry, idx) => (
-                      <div
-                        key={inquiry.id || idx}
-                        className="p-5 border border-[#e6e8ea] rounded-[14px] bg-white space-y-3 shadow-xs"
-                      >
-                        <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#f0f2f4]">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-block rounded-[7px] bg-[#fff6e4] text-[#885215] px-[9px] py-[3px] text-[11px] font-bold">
-                              Запрос #{idx + 1}
-                            </span>
-                            <span className="text-[12px] font-bold text-[#141414]">
-                              {inquiry.actorName || 'Кредитный аналитик'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {inquiry.isCurrentOpen ? (
-                              <span className="inline-block rounded-[7px] bg-[#fff0ed] text-[#EF3124] px-[9px] py-[3px] text-[11px] font-semibold border border-[#fedcd5]">
-                                Ожидает ответа от клиента (T11)
-                              </span>
-                            ) : (
-                              <span className="inline-block rounded-[7px] bg-[#edf7f0] text-[#176b45] px-[9px] py-[3px] text-[11px] font-medium">
-                                ✓ Сведения предоставлены (T10)
-                              </span>
-                            )}
-                            {inquiry.promptAt && (
-                              <span className="text-[11px] text-[#686b70]">
-                                {formatDateTime(inquiry.promptAt)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                {!isCommunicationExpanded && inquiriesHistory.length > 0 && (
+                  <div className="text-xs text-[#686b70] pl-3 border-l-2 border-[#EF3124] py-0.5 flex flex-wrap items-center justify-between gap-2">
+                    <span className="truncate max-w-xl">
+                      <strong className="text-[#141414] font-semibold">Последний запрос: </strong>
+                      {inquiriesHistory[inquiriesHistory.length - 1]?.prompt}
+                    </span>
+                    {inquiriesHistory[inquiriesHistory.length - 1]?.promptAt && (
+                      <span className="text-[11px] text-[#686b70] whitespace-nowrap">
+                        {formatDateTime(inquiriesHistory[inquiriesHistory.length - 1].promptAt!)}
+                      </span>
+                    )}
+                  </div>
+                )}
 
-                        <div>
-                          <strong className="text-[13px] text-[#686b70] block mb-1">
-                            Вопрос специалиста банка:
-                          </strong>
-                          <p className="text-[13px] text-[#141414] whitespace-pre-wrap m-0 font-medium">
-                            {inquiry.prompt}
-                          </p>
-                        </div>
-
-                        {inquiry.response ? (
-                          <div className="p-3.5 rounded-[11px] bg-[#eef8f1] border border-[#d2edd8] space-y-2">
-                            <div className="flex items-center justify-between text-[11px] text-[#176b45] font-bold">
-                              <span>Ответ клиента (ИП):</span>
-                              {inquiry.responseAt && (
-                                <span className="font-normal text-[#686b70]">
-                                  {formatDateTime(inquiry.responseAt)}
+                {isCommunicationExpanded && (
+                  <div className="space-y-3 pt-1">
+                    {inquiriesHistory.length > 0 ? (
+                      inquiriesHistory.map((inquiry, idx) => (
+                        <div
+                          key={inquiry.id || idx}
+                          className="p-4 border border-[#e6e8ea] rounded-[14px] bg-[#fafbfc] space-y-3"
+                        >
+                          <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#e6e8ea]">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-block rounded-[7px] bg-[#fff6e4] text-[#885215] px-[9px] py-[3px] text-[11px] font-bold">
+                                Запрос #{idx + 1}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {inquiry.isCurrentOpen ? (
+                                <span className="inline-block rounded-[7px] bg-[#fff0ed] text-[#EF3124] px-[9px] py-[3px] text-[11px] font-semibold border border-[#fedcd5]">
+                                  Ожидает ответа от клиента (T11)
+                                </span>
+                              ) : (
+                                <span className="inline-block rounded-[7px] bg-[#edf7f0] text-[#176b45] px-[9px] py-[3px] text-[11px] font-medium">
+                                  ✓ Сведения предоставлены (T10)
+                                </span>
+                              )}
+                              {inquiry.promptAt && (
+                                <span className="text-[11px] text-[#686b70]">
+                                  {formatDateTime(inquiry.promptAt)}
                                 </span>
                               )}
                             </div>
-                            <p className="m-0 whitespace-pre-wrap text-[13px] text-[#141414]">
-                              {inquiry.response}
-                            </p>
+                          </div>
 
-                            {/* Прикрепленные клиентом файлы */}
-                            {inquiry.files && inquiry.files.length > 0 && (
-                              <div className="mt-2.5 pt-2 border-t border-[#c6e6cd] space-y-1.5">
-                                <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#176b45]">
-                                  <FileText className="w-3.5 h-3.5" />
-                                  <span>Прикрепленные файлы ({inquiry.files.length}):</span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  {inquiry.files.map((file) => {
-                                    const downloadHref =
-                                      file.downloadUrl ||
-                                      (file.fileKey ? `/api/infrastructure/storage/${file.fileKey}` : undefined);
-                                    return (
-                                      <div
-                                        key={file.id}
-                                        className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-[#d2edd8] text-[12px] shadow-xs"
-                                      >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                          <div className="p-1 rounded bg-[#edf7f0] text-[#176b45] shrink-0">
-                                            <FileText className="w-3.5 h-3.5" />
-                                          </div>
-                                          <div className="min-w-0">
-                                            <p className="font-bold text-[#141414] truncate m-0" title={file.fileName}>
-                                              {file.fileName}
-                                            </p>
-                                            <span className="text-[10px] text-[#686b70]">
-                                              {file.fileSizeBytes ? `${(file.fileSizeBytes / 1024 / 1024).toFixed(2)} МБ` : 'Документ'}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        {downloadHref && (
-                                          <a
-                                            href={downloadHref}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            download={file.fileName}
-                                            className="inline-flex items-center gap-1 text-[#EF3124] hover:text-[#cd2017] font-bold text-[11px] shrink-0 no-underline p-1 hover:bg-[#fff0ed] rounded"
-                                            title="Скачать файл"
-                                          >
-                                            <Download className="w-3.5 h-3.5" />
-                                            <span>Скачать</span>
-                                          </a>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
+                          <div>
+                            <strong className="text-[13px] text-[#686b70] block mb-1">
+                              Вопрос специалиста банка:
+                            </strong>
+                            <p className="text-[13px] text-[#141414] whitespace-pre-wrap m-0 font-medium">
+                              {inquiry.prompt}
+                            </p>
+                          </div>
+
+                          {inquiry.response ? (
+                            <div className="p-3.5 rounded-[11px] bg-[#eef8f1] border border-[#d2edd8] space-y-2">
+                              <div className="flex items-center justify-between text-[11px] text-[#176b45] font-bold">
+                                <span>Ответ клиента (ИП):</span>
+                                {inquiry.responseAt && (
+                                  <span className="font-normal text-[#686b70]">
+                                    {formatDateTime(inquiry.responseAt)}
+                                  </span>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-[12px] text-[#885215] italic bg-[#fffaf0] p-2.5 rounded-lg border border-[#f5e6cc]">
-                            Запрос отправлен клиенту, ожидается предоставление пояснений или подтверждающих документов
-                          </div>
-                        )}
+                              <p className="m-0 whitespace-pre-wrap text-[13px] text-[#141414]">
+                                {inquiry.response}
+                              </p>
+
+                              {/* Прикрепленные клиентом файлы */}
+                              {inquiry.files && inquiry.files.length > 0 && (
+                                <div className="mt-2.5 pt-2 border-t border-[#c6e6cd] space-y-1.5">
+                                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#176b45]">
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>Прикрепленные файлы ({inquiry.files.length}):</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {inquiry.files.map((file) => {
+                                      const downloadHref =
+                                        file.downloadUrl ||
+                                        (file.fileKey ? `/api/infrastructure/storage/${file.fileKey}` : undefined);
+                                      return (
+                                        <div
+                                          key={file.id}
+                                          className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-[#d2edd8] text-[12px] shadow-xs"
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <div className="p-1 rounded bg-[#edf7f0] text-[#176b45] shrink-0">
+                                              <FileText className="w-3.5 h-3.5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="font-bold text-[#141414] truncate m-0" title={file.fileName}>
+                                                {file.fileName}
+                                              </p>
+                                              <span className="text-[10px] text-[#686b70]">
+                                                {file.fileSizeBytes ? `${(file.fileSizeBytes / 1024 / 1024).toFixed(2)} МБ` : 'Документ'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          {downloadHref && (
+                                            <a
+                                              href={downloadHref}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              download={file.fileName}
+                                              className="inline-flex items-center gap-1 text-[#EF3124] hover:text-[#cd2017] font-bold text-[11px] shrink-0 no-underline p-1 hover:bg-[#fff0ed] rounded"
+                                              title="Скачать файл"
+                                            >
+                                              <Download className="w-3.5 h-3.5" />
+                                              <span>Скачать</span>
+                                            </a>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-[12px] text-[#885215] italic bg-[#fffaf0] p-2.5 rounded-lg border border-[#f5e6cc]">
+                              Запрос отправлен клиенту, ожидается предоставление пояснений или подтверждающих документов
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 rounded-[12px] bg-[#f5f6f7] text-[#686b70] text-[13px]">
+                        Активных дозапросов по данной заявке нет. Вы можете инициировать запрос через кнопку «Запросить сведения (T11)».
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-5 rounded-[14px] bg-[#f5f6f7] text-[#686b70] text-[13px]">
-                    Активных дозапросов по данной заявке нет. Вы можете инициировать запрос через кнопку «Запросить
-                    сведения (T11)».
+                    )}
                   </div>
                 )}
               </div>
