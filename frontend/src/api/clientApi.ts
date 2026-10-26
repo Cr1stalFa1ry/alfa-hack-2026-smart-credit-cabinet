@@ -313,16 +313,27 @@ export const clientApi = {
   },
 
   respondNeedInfo: async (id: string, response: string, files?: UploadedDocument[]): Promise<CreditApplication> => {
+    const fileSuffix = files && files.length > 0
+      ? `\nПрикрепленные документы (${files.length}): ${files.map((f) => f.fileName).join(', ')}`
+      : '';
+    const fullComment = `${response}${fileSuffix}`;
+
     try {
       await apiClient.post<any>(`/client/applications/${id}/respond-info`, {
-        comment: response,
-        responseComment: response,
+        comment: fullComment,
+        responseComment: fullComment,
       }, { timeout: 5000 });
 
       // Попытка сразу получить актуализированную заявку из бэкенда
       try {
         const freshApp = await clientApi.getApplicationById(id);
         if (freshApp) {
+          if (files && files.length > 0) {
+            freshApp.needInfoFiles = [...(freshApp.needInfoFiles || []), ...files];
+            const existingIds = new Set((freshApp.documents || []).map((d) => d.id));
+            const newFiles = files.filter((f) => !existingIds.has(f.id));
+            freshApp.documents = [...(freshApp.documents || []), ...newFiles];
+          }
           applicationStore.saveApp(freshApp);
           return freshApp;
         }
@@ -337,7 +348,13 @@ export const clientApi = {
     if (openReq) {
       applicationStore.replyClientRequest(id, openReq.id, response, files);
     } else {
-      applicationStore.setStatus(id, 'checking', `Ответ клиента: ${response}`);
+      if (app && files && files.length > 0) {
+        app.needInfoFiles = [...(app.needInfoFiles || []), ...files];
+        const existingIds = new Set((app.documents || []).map((d) => d.id));
+        const newFiles = files.filter((f) => !existingIds.has(f.id));
+        app.documents = [...(app.documents || []), ...newFiles];
+      }
+      applicationStore.setStatus(id, 'checking', fullComment);
     }
     return applicationStore.getById(id)!;
   },

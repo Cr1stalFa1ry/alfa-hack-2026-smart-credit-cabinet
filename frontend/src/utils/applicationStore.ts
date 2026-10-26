@@ -180,7 +180,14 @@ class ApplicationStore {
     }
 
     app.needInfoResponse = response;
+    if (files && files.length > 0) {
+      app.needInfoFiles = [...(app.needInfoFiles || []), ...files];
+    }
     this.addEvent(app.id, `Ответ клиента на запрос: ${r?.title || requestId}`, true, 'Клиент');
+
+    const fileSuffix = files && files.length > 0
+      ? ` (Прикреплено файлов: ${files.map((f) => f.fileName).join(', ')})`
+      : '';
 
     app.history = app.history || [];
     app.history.push({
@@ -190,7 +197,7 @@ class ApplicationStore {
       toStatus: 'checking',
       actor: 'client',
       actorName: app.clientName || 'Клиент',
-      comment: `Ответ клиента: ${response}`,
+      comment: `Ответ клиента: ${response}${fileSuffix}`,
       timestamp: stamp(),
     });
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CreditApplication } from '../../types/application';
 import { Modal } from '../common/Modal';
 import { formatRubles, formatPercent, calculateMonthlyPayment } from '../../utils/formatters';
-import { Check, X, HelpCircle, RefreshCw, Ban, Sparkles, Calculator } from 'lucide-react';
+import { Check, X, HelpCircle, RefreshCw, Ban, Sparkles, Calculator, AlertTriangle } from 'lucide-react';
 
 interface AnalystActionPanelProps {
   application: CreditApplication;
@@ -26,9 +26,9 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
   onReturnToChecking,
   onCloseNonCredit,
 }) => {
-  const [activeModal, setActiveModal] = useState<'approve' | 'decline' | 'need_info' | 'recheck' | 'close' | null>(
-    null
-  );
+  const [activeModal, setActiveModal] = useState<
+    'approve' | 'decline' | 'need_info' | 'recheck' | 'close' | 'confirm_approve' | 'confirm_decline' | 'confirm_close' | null
+  >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultAmount =
@@ -77,8 +77,12 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
   const currentMonthlyPayment = calculateMonthlyPayment(approveAmount, approveRate, approveTerm);
   const totalRepayment = currentMonthlyPayment * Number(approveTerm || 0);
 
-  const handleApproveSubmit = async (e: React.FormEvent) => {
+  const handleApproveSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setActiveModal('confirm_approve');
+  };
+
+  const handleFinalApprove = async () => {
     setIsSubmitting(true);
     try {
       await onApprove({
@@ -93,11 +97,15 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
     }
   };
 
-  const handleDeclineSubmit = async (e: React.FormEvent) => {
+  const handleDeclineSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setActiveModal('confirm_decline');
+  };
+
+  const handleFinalDecline = async () => {
     setIsSubmitting(true);
     try {
-      await onDecline(reasonCode, comment || 'Отказ по результатам экспертной оценки андеррайтера');
+      await onDecline(reasonCode, comment || 'Отказ по результатам экспертной оценки аналитика');
       setActiveModal(null);
     } finally {
       setIsSubmitting(false);
@@ -126,8 +134,12 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
     }
   };
 
-  const handleCloseSubmit = async (e: React.FormEvent) => {
+  const handleCloseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setActiveModal('confirm_close');
+  };
+
+  const handleFinalClose = async () => {
     setIsSubmitting(true);
     try {
       await onCloseNonCredit(
@@ -149,18 +161,12 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
       <div className="bg-[#f5f6f7] rounded-[14px] p-[22px] border border-[#e6e8ea]">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <span className="text-[11px] tracking-[0.12em] uppercase text-[#686b70] font-bold block mb-1">
-              Рабочее место андеррайтера
-            </span>
             <h3 className="text-[18px] font-bold text-[#141414] m-0">
               Принятие экспертного решения по заявке
             </h3>
-            <p className="text-[12px] text-[#686b70] mt-1 mb-0">
-              Доступны регламентные переходы T11–T16 с автоматической записью в журнал аудита
-            </p>
           </div>
 
-          {/* Кнопки действий (.primary, .secondary, .danger из макет.html) */}
+          {/* Кнопки действий: горизонтальное расположение как было изначально */}
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
@@ -216,7 +222,7 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
                 setComment('');
                 setActiveModal('close');
               }}
-              className="rounded-[12px] px-[14px] py-[13px] font-bold text-[13px] inline-flex items-center justify-center gap-1.5 text-[#686b70] hover:text-[#141414] transition-colors cursor-pointer"
+              className="rounded-[12px] px-[14px] py-[13px] font-bold text-[13px] inline-flex items-center justify-center gap-1.5 text-[#686b70] hover:text-[#141414] transition-colors cursor-pointer border border-transparent hover:border-[#e6e8ea]"
             >
               <Ban className="w-4 h-4" />
               Закрыть (T16)
@@ -307,7 +313,7 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
 
           <div>
             <label className="block font-bold text-[14px] mb-2">
-              Комментарий андеррайтера <span className="text-[11px] font-normal text-[#686b70] ml-1">для аудита</span>
+              Комментарий аналитика <span className="text-[11px] font-normal text-[#686b70] ml-1">для аудита</span>
             </label>
             <textarea
               className={inputClass}
@@ -521,6 +527,159 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Окно подтверждения T12: Одобрение */}
+      <Modal
+        isOpen={activeModal === 'confirm_approve'}
+        onClose={() => setActiveModal('approve')}
+        title="Подтверждение одобрения кредита (T12)"
+        description="Вы уверены, что хотите утвердить оферту? Проверьте итоговые параметры перед отправкой клиенту"
+      >
+        <div className="space-y-4 text-[#141414]">
+          <div className="p-4 rounded-[12px] bg-[#fff8f6] border border-[#efddd8] flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-[#EF3124] shrink-0 mt-0.5" />
+            <div className="text-[13px] leading-relaxed">
+              <strong className="block text-[#141414] mb-1">Внимание: это действие сформирует обязательство банка</strong>
+              После подтверждения заявка перейдёт в статус «Одобрено (Оферта)». Предприниматель получит уведомление в личном кабинете и сможет акцептовать условия и подписать кредитный договор.
+            </div>
+          </div>
+
+          <div className="p-4 rounded-[12px] bg-[#f5f6f7] border border-[#e6e8ea] space-y-2 text-[13px]">
+            <div className="flex justify-between">
+              <span className="text-[#686b70]">Сумма кредита:</span>
+              <strong className="text-[15px] text-[#141414]">{formatRubles(approveAmount)}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#686b70]">Срок:</span>
+              <strong className="text-[#141414]">{approveTerm} мес.</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#686b70]">Процентная ставка:</span>
+              <strong className="text-[#141414]">{approveRate}% годовых</strong>
+            </div>
+            <div className="flex justify-between pt-2 border-t border-[#e6e8ea]">
+              <span className="text-[#686b70]">Ежемесячный платёж:</span>
+              <strong className="text-[#176b45] text-[15px]">{formatRubles(currentMonthlyPayment)} / мес</strong>
+            </div>
+            {comment && (
+              <div className="pt-2 border-t border-[#e6e8ea]">
+                <span className="text-[#686b70] block text-[11px] mb-0.5">Комментарий аналитика:</span>
+                <span className="text-[#141414] italic">«{comment}»</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e8ea]">
+            <button
+              type="button"
+              onClick={() => setActiveModal('approve')}
+              className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] hover:bg-[#e6e8ea] cursor-pointer"
+            >
+              Вернуться к редактированию
+            </button>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleFinalApprove}
+              className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
+            >
+              {isSubmitting ? 'Одобрение...' : 'Да, подтверждаю одобрение'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Окно подтверждения T13: Отказ */}
+      <Modal
+        isOpen={activeModal === 'confirm_decline'}
+        onClose={() => setActiveModal('decline')}
+        title="Подтверждение отказа по заявке (T13)"
+        description="Вы уверены, что хотите отклонить эту заявку?"
+      >
+        <div className="space-y-4 text-[#141414]">
+          <div className="p-4 rounded-[12px] bg-[#fff1ef] border border-[#fac6c2] flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-[#EF3124] shrink-0 mt-0.5" />
+            <div className="text-[13px] leading-relaxed">
+              <strong className="block text-[#141414] mb-1">Решение об отказе окончательное</strong>
+              Заявка будет переведена в статус «Отклонено (T13)». Клиент увидит причину отказа в личном кабинете. Повторная подача заявки будет ограничена регламентным сроком (30 дней).
+            </div>
+          </div>
+
+          <div className="p-4 rounded-[12px] bg-[#f5f6f7] border border-[#e6e8ea] space-y-2 text-[13px]">
+            <div>
+              <span className="text-[#686b70] block text-[11px] mb-0.5">Код причины:</span>
+              <strong className="text-[#141414]">{reasonCode}</strong>
+            </div>
+            {comment && (
+              <div className="pt-2 border-t border-[#e6e8ea]">
+                <span className="text-[#686b70] block text-[11px] mb-0.5">Пояснение клиенту:</span>
+                <span className="text-[#141414] italic">«{comment}»</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e8ea]">
+            <button
+              type="button"
+              onClick={() => setActiveModal('decline')}
+              className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] hover:bg-[#e6e8ea] cursor-pointer"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleFinalDecline}
+              className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
+            >
+              {isSubmitting ? 'Отклонение...' : 'Да, подтверждаю отказ'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Окно подтверждения T16: Некредитное закрытие */}
+      <Modal
+        isOpen={activeModal === 'confirm_close'}
+        onClose={() => setActiveModal('close')}
+        title="Подтверждение закрытия заявки (T16)"
+        description="Вы уверены, что хотите закрыть эту заявку?"
+      >
+        <div className="space-y-4 text-[#141414]">
+          <div className="p-4 rounded-[12px] bg-[#fff7e8] border border-[#f3dfc1] flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-[#885215] shrink-0 mt-0.5" />
+            <div className="text-[13px] leading-relaxed text-[#714817]">
+              <strong className="block text-[#141414] mb-1">Некредитное препятствие (T16)</strong>
+              Заявка будет закрыта без вынесения кредитного решения и переведена в архивный статус.
+            </div>
+          </div>
+
+          {comment && (
+            <div className="p-4 rounded-[12px] bg-[#f5f6f7] border border-[#e6e8ea] text-[13px]">
+              <span className="text-[#686b70] block text-[11px] mb-0.5">Причина закрытия:</span>
+              <span className="text-[#141414] italic">«{comment}»</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e8ea]">
+            <button
+              type="button"
+              onClick={() => setActiveModal('close')}
+              className="rounded-[12px] px-[18px] py-[12px] font-bold text-[14px] bg-[#f5f6f7] text-[#141414] border border-[#e6e8ea] hover:bg-[#e6e8ea] cursor-pointer"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleFinalClose}
+              className="rounded-[12px] px-[21px] py-[12px] font-bold text-[14px] bg-[#EF3124] hover:bg-[#cd2017] text-white cursor-pointer disabled:opacity-45"
+            >
+              {isSubmitting ? 'Закрытие...' : 'Да, закрыть заявку'}
+            </button>
+          </div>
+        </div>
       </Modal>
     </>
   );

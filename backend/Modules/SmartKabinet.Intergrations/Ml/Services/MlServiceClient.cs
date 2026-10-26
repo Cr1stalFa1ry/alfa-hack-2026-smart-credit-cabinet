@@ -198,6 +198,244 @@ public class MlServiceClient : IMlServiceClient
         }
     }
 
+    public async Task<DocumentReadResult> ReadDocumentAsync(
+        Stream fileStream,
+        string fileName,
+        string? documentId = null,
+        string? documentVersion = null,
+        string? expectedSha256 = null,
+        string? asOf = null,
+        string? ownerName = null,
+        bool useLlm = true,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(fileStream);
+            var mimeType = fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
+                ? "application/pdf"
+                : (fileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
+                    ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    : (fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                        ? "image/png"
+                        : (fileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+                            ? "image/jpeg"
+                            : "application/octet-stream")));
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(mimeType);
+            content.Add(fileContent, "file", fileName);
+
+            if (!string.IsNullOrWhiteSpace(documentId)) content.Add(new StringContent(documentId), "document_id");
+            if (!string.IsNullOrWhiteSpace(documentVersion)) content.Add(new StringContent(documentVersion), "document_version");
+            if (!string.IsNullOrWhiteSpace(expectedSha256)) content.Add(new StringContent(expectedSha256), "expected_sha256");
+            if (!string.IsNullOrWhiteSpace(asOf)) content.Add(new StringContent(asOf), "as_of");
+            if (!string.IsNullOrWhiteSpace(ownerName)) content.Add(new StringContent(ownerName), "owner_name");
+            content.Add(new StringContent(useLlm ? "true" : "false"), "use_llm");
+
+            _logger.LogInformation("Отправка документа {FileName} в ML сервис ({BaseAddress}v1/documents/read)",
+                fileName, _httpClient.BaseAddress);
+
+            var response = await _httpClient.PostAsync("v1/documents/read", content, ct);
+            var responseJson = await response.Content.ReadAsStringAsync(ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("ML сервис вернул код {StatusCode}: {Response}", response.StatusCode, responseJson);
+                return new DocumentReadResult(
+                    DocumentType: "UNKNOWN",
+                    Status: "FAILED",
+                    NeedsReview: true,
+                    ErrorMessage: $"Ошибка ML сервиса: {response.StatusCode}"
+                );
+            }
+
+            using var doc = JsonDocument.Parse(responseJson);
+            var root = doc.RootElement;
+
+            var documentType = root.TryGetProperty("document_type", out var dt) ? dt.GetString() ?? "UNKNOWN" : "UNKNOWN";
+            var status = root.TryGetProperty("status", out var st) ? st.GetString() ?? "FAILED" : "FAILED";
+            var needsReview = root.TryGetProperty("needs_review", out var nr) && nr.GetBoolean();
+
+            string? sha256 = null;
+            if (root.TryGetProperty("file", out var fileEl) && fileEl.TryGetProperty("sha256", out var shaEl))
+            {
+                sha256 = shaEl.GetString();
+            }
+
+            string? supplierInn = null;
+            string? supplierName = null;
+            string? buyerInn = null;
+            string? buyerName = null;
+            decimal? totalAmountRub = null;
+            string? documentNumber = null;
+            string? documentDate = null;
+
+            if (root.TryGetProperty("fields", out var fieldsEl) && fieldsEl.ValueKind == JsonValueKind.Object)
+            {
+                supplierInn = GetFieldValueString(fieldsEl, "supplier_inn");
+                supplierName = GetFieldValueString(fieldsEl, "supplier_name");
+                buyerInn = GetFieldValueString(fieldsEl, "buyer_inn");
+                buyerName = GetFieldValueString(fieldsEl, "buyer_name");
+                documentNumber = GetFieldValueString(fieldsEl, "document_number");
+                documentDate = GetFieldValueString(fieldsEl, "document_date");
+                totalAmountRub = GetFieldValueDecimal(fieldsEl, "total_amount_rub");
+            }
+
+            var lineItems = new List<InvoiceLineItemDto>();
+            if (root.TryGetProperty("line_items", out var linesEl) && linesEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in linesEl.EnumerateArray())
+                {
+                    lineItems.Add(new InvoiceLineItemDto(
+                        Description: item.TryGetProperty("description", out var d) ? d.GetString() : null,
+                        Quantity: item.TryGetProperty("quantity", out var q) && q.TryGetDecimal(out var qVal) ? qVal : null,
+                        Unit: item.TryGetProperty("unit", out var u) ? u.GetString() : null,
+                        UnitPriceRub: item.TryGetProperty("unit_price_rub", out var up) && up.TryGetDecimal(out var upVal) ? upVal : null,
+                        AmountRub: item.TryGetProperty("amount_rub", out var a) && a.TryGetDecimal(out var aVal) ? aVal : null,
+                        Page: item.TryGetProperty("page", out var pg) && pg.TryGetInt32(out var pgVal) ? pgVal : null,
+                        Quote: item.TryGetProperty("quote", out var qu) ? qu.GetString() : null
+                    ));
+                }
+            }
+
+            var issues = new List<DocumentIssueDto>();
+            if (root.TryGetProperty("issues", out var issuesEl) && issuesEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var issue in issuesEl.EnumerateArray())
+                {
+                    var code = issue.TryGetProperty("code", out var c) ? c.GetString() ?? "UNKNOWN_ISSUE" : "UNKNOWN_ISSUE";
+                    var msg = issue.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+                    var page = issue.TryGetProperty("page", out var ipg) && ipg.TryGetInt32(out var pVal) ? pVal : (int?)null;
+                    var field = issue.TryGetProperty("field", out var f) ? f.GetString() : null;
+                    issues.Add(new DocumentIssueDto(code, msg, page, field));
+                }
+            }
+
+            return new DocumentReadResult(
+                DocumentType: documentType,
+                Status: status,
+                NeedsReview: needsReview || issues.Count > 0,
+                SupplierInn: supplierInn,
+                SupplierName: supplierName,
+                BuyerInn: buyerInn,
+                BuyerName: buyerName,
+                TotalAmountRub: totalAmountRub,
+                DocumentNumber: documentNumber,
+                DocumentDate: documentDate,
+                LineItems: lineItems,
+                Issues: issues,
+                Sha256: sha256
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "ML сервис недоступен при чтении документа: {Message}", ex.Message);
+            return new DocumentReadResult(
+                DocumentType: "UNKNOWN",
+                Status: "FAILED",
+                NeedsReview: true,
+                ErrorMessage: $"ML сервис временно недоступен: {ex.Message}"
+            );
+        }
+    }
+
+    public InvoiceVerificationResult VerifyInvoiceAgainstApplication(
+        DocumentReadResult doc,
+        decimal? expectedEquipmentPrice,
+        string expectedBuyerInn,
+        string? expectedSupplierInn = null)
+    {
+        var discrepancies = new List<string>();
+
+        // 1. Сверка суммы счёта со СТОИМОСТЬЮ ОБОРУДОВАНИЯ (equipment_price), а не с суммой кредита!
+        if (expectedEquipmentPrice.HasValue && expectedEquipmentPrice.Value > 0)
+        {
+            if (!doc.TotalAmountRub.HasValue)
+            {
+                discrepancies.Add("AMOUNT_MISSING: В счёте не удалось распознать общую сумму к оплате.");
+            }
+            else if (Math.Abs(doc.TotalAmountRub.Value - expectedEquipmentPrice.Value) > 1.00m)
+            {
+                discrepancies.Add($"AMOUNT_MISMATCH: Итоговая сумма по счёту ({doc.TotalAmountRub.Value:N2} ₽) не совпадает со стоимостью оборудования в заявке ({expectedEquipmentPrice.Value:N2} ₽).");
+            }
+        }
+
+        // 2. Сверка покупателя по ИНН
+        if (!string.IsNullOrWhiteSpace(expectedBuyerInn))
+        {
+            if (string.IsNullOrWhiteSpace(doc.BuyerInn))
+            {
+                discrepancies.Add("BUYER_MISSING: В счёте не найден или не распознан ИНН покупателя.");
+            }
+            else if (!doc.BuyerInn.Trim().Equals(expectedBuyerInn.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                discrepancies.Add($"BUYER_MISMATCH: ИНН покупателя в счёте ({doc.BuyerInn}) не совпадает с ИНН заявителя ({expectedBuyerInn}).");
+            }
+        }
+
+        // 3. Сверка поставщика по ИНН (если указан в заявке)
+        if (!string.IsNullOrWhiteSpace(expectedSupplierInn) && !string.IsNullOrWhiteSpace(doc.SupplierInn))
+        {
+            if (!doc.SupplierInn.Trim().Equals(expectedSupplierInn.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                discrepancies.Add($"SUPPLIER_MISMATCH: ИНН поставщика в счёте ({doc.SupplierInn}) отличается от указанного в заявке ({expectedSupplierInn}).");
+            }
+        }
+
+        var needsReview = doc.NeedsReview 
+            || doc.Status != "EXTRACTED" 
+            || discrepancies.Count > 0 
+            || (doc.Issues != null && doc.Issues.Count > 0);
+
+        var isMatched = discrepancies.Count == 0 && doc.Status == "EXTRACTED" && !doc.NeedsReview;
+
+        return new InvoiceVerificationResult(
+            IsMatched: isMatched,
+            NeedsReview: needsReview,
+            ExpectedEquipmentPrice: expectedEquipmentPrice,
+            InvoiceTotalAmount: doc.TotalAmountRub,
+            ExpectedBuyerInn: expectedBuyerInn,
+            InvoiceBuyerInn: doc.BuyerInn,
+            ExpectedSupplierInn: expectedSupplierInn,
+            InvoiceSupplierInn: doc.SupplierInn,
+            Discrepancies: discrepancies,
+            DocumentRead: doc
+        );
+    }
+
+    private static string? GetFieldValueString(JsonElement fieldsEl, string fieldName)
+    {
+        if (fieldsEl.TryGetProperty(fieldName, out var fieldObj) && fieldObj.ValueKind == JsonValueKind.Object)
+        {
+            // По контракту ML: брать value только при status == "ok"
+            if (fieldObj.TryGetProperty("status", out var st) && st.GetString() == "ok")
+            {
+                if (fieldObj.TryGetProperty("value", out var val) && val.ValueKind == JsonValueKind.String)
+                {
+                    return val.GetString();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static decimal? GetFieldValueDecimal(JsonElement fieldsEl, string fieldName)
+    {
+        if (fieldsEl.TryGetProperty(fieldName, out var fieldObj) && fieldObj.ValueKind == JsonValueKind.Object)
+        {
+            // По контракту ML: брать value только при status == "ok"
+            if (fieldObj.TryGetProperty("status", out var st) && st.GetString() == "ok")
+            {
+                if (fieldObj.TryGetProperty("value", out var val))
+                {
+                    if (val.ValueKind == JsonValueKind.Number && val.TryGetDecimal(out var d)) return d;
+                    if (val.ValueKind == JsonValueKind.String && decimal.TryParse(val.GetString(), System.Globalization.CultureInfo.InvariantCulture, out var parsed)) return parsed;
+                }
+            }
+        }
+        return null;
+    }
+
     private static decimal GetDecimal(JsonElement el, params string[] names)
     {
         foreach (var name in names)

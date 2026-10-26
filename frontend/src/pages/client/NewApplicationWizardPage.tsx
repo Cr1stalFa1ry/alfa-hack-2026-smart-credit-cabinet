@@ -1632,7 +1632,7 @@ export const NewApplicationWizardPage: React.FC<NewApplicationWizardPageProps> =
             Обращение № {submittedAppId} сформировано
           </h1>
           <p className="text-[#686b70] text-base max-w-[540px] mx-auto mb-8">
-            Сведения успешно переданы на рассмотрение. Андеррайтер банка проверит актуальность досье,
+            Сведения успешно переданы на рассмотрение. Аналитик банка проверит актуальность досье,
             источник платежей и подготовит окончательное решение.
           </p>
 

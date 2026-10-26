@@ -8,6 +8,7 @@ using SmartKabinet.Application.Domain;
 using SmartKabinet.Application.Infrastructure.Persistence;
 using SmartKabinet.Auth.Infrastructure.Security;
 using SmartKabinet.Infrastructure.Contracts;
+using SmartKabinet.Intergrations.Ml.Services;
 
 namespace SmartKabinet.Client.Features.Applications.Documents;
 
@@ -23,6 +24,7 @@ public static class DocumentEndpoints
             IUserContext userContext,
             ApplicationDbContext appDb,
             IS3StorageService storageService,
+            IMlServiceClient mlClient,
             CancellationToken ct) =>
         {
             if (!userContext.UserId.HasValue) return Results.Unauthorized();
@@ -76,7 +78,38 @@ public static class DocumentEndpoints
                     ? "bank_statement"
                     : "other";
 
-            // 3. Сохранение метаданных в БД
+            // 3. Автоматическая сверка счета с заявкой через ML /v1/documents/read при наличии счета на оборудование
+            var initialStatus = "uploaded";
+            if (resolvedType == "equipment_invoice" || resolvedType.Contains("invoice", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    using var mlStream = file.OpenReadStream();
+                    var docRead = await mlClient.ReadDocumentAsync(
+                        fileStream: mlStream,
+                        fileName: file.FileName,
+                        documentId: id.ToString(),
+                        documentVersion: "1",
+                        ct: ct
+                    );
+
+                    var verification = mlClient.VerifyInvoiceAgainstApplication(
+                        doc: docRead,
+                        expectedEquipmentPrice: app.EquipmentPrice,
+                        expectedBuyerInn: app.Inn,
+                        expectedSupplierInn: app.EquipmentSupplier
+                    );
+
+                    initialStatus = verification.IsMatched ? "verified" : (verification.NeedsReview ? "needs_review" : "uploaded");
+                }
+                catch
+                {
+                    // Фоллбэк: если ML сервис временно недоступен, документ все равно прикрепляется
+                    initialStatus = "uploaded";
+                }
+            }
+
+            // 4. Сохранение метаданных в БД
             var doc = new ApplicationDocument
             {
                 Id = Guid.NewGuid(),
@@ -85,7 +118,7 @@ public static class DocumentEndpoints
                 FileKey = fileKey,
                 FileType = resolvedType,
                 FileSizeBytes = file.Length,
-                Status = "uploaded",
+                Status = initialStatus,
                 UploadedAt = DateTimeOffset.UtcNow
             };
 
@@ -149,6 +182,67 @@ public static class DocumentEndpoints
         .RequireAuthorization(AuthPolicies.ClientOnly)
         .WithName("GetApplicationDocuments")
         .WithSummary("Получение списка всех прикрепленных документов по заявке из БД");
+
+        // POST /api/client/applications/{id}/documents/{documentId:guid}/verify-invoice
+        group.MapPost("/{id:guid}/documents/{documentId:guid}/verify-invoice", async (
+            Guid id,
+            Guid documentId,
+            IUserContext userContext,
+            ApplicationDbContext appDb,
+            IS3StorageService storageService,
+            IMlServiceClient mlClient,
+            CancellationToken ct) =>
+        {
+            if (!userContext.UserId.HasValue) return Results.Unauthorized();
+            if (!userContext.IsClient) return Results.Forbid();
+
+            var app = await appDb.Applications
+                .FirstOrDefaultAsync(a => a.Id == id && a.ClientId == userContext.UserId.Value, ct);
+
+            if (app is null)
+            {
+                return Results.NotFound(new { error = "Заявка не найдена." });
+            }
+
+            var doc = await appDb.ApplicationDocuments
+                .FirstOrDefaultAsync(d => d.Id == documentId && d.ApplicationId == id, ct);
+
+            if (doc is null)
+            {
+                return Results.NotFound(new { error = "Документ не найден." });
+            }
+
+            var downloadRes = await storageService.DownloadAsync(doc.FileKey, ct);
+            if (!downloadRes.IsSuccess || downloadRes.Value?.Stream is null)
+            {
+                return Results.BadRequest(new { error = "Не удалось получить файл документа из хранилища." });
+            }
+
+            using var stream = downloadRes.Value.Stream;
+            var docRead = await mlClient.ReadDocumentAsync(
+                fileStream: stream,
+                fileName: doc.FileName,
+                documentId: doc.Id.ToString(),
+                documentVersion: "1",
+                ct: ct
+            );
+
+            var verification = mlClient.VerifyInvoiceAgainstApplication(
+                doc: docRead,
+                expectedEquipmentPrice: app.EquipmentPrice,
+                expectedBuyerInn: app.Inn,
+                expectedSupplierInn: app.EquipmentSupplier
+            );
+
+            doc.Status = verification.IsMatched ? "verified" : (verification.NeedsReview ? "needs_review" : "uploaded");
+            app.UpdatedAt = DateTimeOffset.UtcNow;
+            await appDb.SaveChangesAsync(ct);
+
+            return Results.Ok(verification);
+        })
+        .RequireAuthorization(AuthPolicies.ClientOnly)
+        .WithName("VerifyApplicationDocumentInvoice")
+        .WithSummary("Автоматическая проверка и сверка загруженного счёта со стоимостью оборудования (equipment_price) и ИНН заявителя через ML /v1/documents/read");
 
         // DELETE /api/client/applications/{id}/documents/{documentId:guid}
         group.MapDelete("/{id:guid}/documents/{documentId:guid}", async (

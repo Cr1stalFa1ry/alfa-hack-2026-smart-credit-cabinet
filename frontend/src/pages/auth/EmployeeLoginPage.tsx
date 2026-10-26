@@ -117,6 +117,25 @@ export const EmployeeLoginPage: React.FC = () => {
           <div className="text-center text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
             Служебный доступ предназначен исключительно для сотрудников банка
           </div>
+
+          {/* Quick account for Jury */}
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Быстрый вход для жюри:</span>
+              <span className="text-[11px] font-mono text-slate-400">пароль: password123</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setUsername('analyst'); setPassword('password123'); }}
+              className="w-full text-left p-2.5 rounded-lg border border-purple-200 dark:border-purple-800/60 bg-purple-50/60 dark:bg-purple-950/30 hover:bg-purple-100/70 transition-all text-slate-700 dark:text-slate-300"
+            >
+              <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                <span>analyst</span>
+                <span className="text-[11px] text-purple-700 dark:text-purple-300 font-semibold">Специалист андеррайтинга</span>
+              </div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Доступ к очереди заявок, досье и принятию кредитных решений</div>
+            </button>
+          </div>
         </Card>
       </div>
     </div>

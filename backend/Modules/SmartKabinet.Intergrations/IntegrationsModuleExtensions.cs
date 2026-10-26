@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -167,6 +168,69 @@ public static class IntegrationsModuleExtensions
         })
         .WithName("ExplainDecisionDirect")
         .WithSummary("Генерация клиентского объяснения решения кредитного кабинета через ML (Qwen LLM / Fallback)");
+
+        // POST /api/integrations/ml/documents/read
+        mlGroup.MapPost("/documents/read", async (
+            IFormFile file,
+            [FromForm] string? documentId,
+            [FromForm] string? documentVersion,
+            [FromForm] string? expectedSha256,
+            [FromForm] string? asOf,
+            [FromForm] string? ownerName,
+            [FromForm] bool? useLlm,
+            IMlServiceClient mlClient,
+            CancellationToken ct) =>
+        {
+            if (file == null || file.Length == 0)
+            {
+                return Results.BadRequest(new { error = "Файл документа не передан или пуст." });
+            }
+
+            using var stream = file.OpenReadStream();
+            var result = await mlClient.ReadDocumentAsync(
+                stream,
+                file.FileName,
+                documentId,
+                documentVersion,
+                expectedSha256,
+                asOf,
+                ownerName,
+                useLlm ?? true,
+                ct);
+
+            return Results.Ok(result);
+        })
+        .DisableAntiforgery()
+        .WithName("ReadDocumentDirect")
+        .WithSummary("Чтение документа (счёт, КП, выписка: PDF/скан/фото/CSV) через ML микросервис");
+
+        // POST /api/integrations/ml/documents/verify-invoice
+        mlGroup.MapPost("/documents/verify-invoice", async (
+            IFormFile file,
+            [FromForm] decimal expectedEquipmentPrice,
+            [FromForm] string expectedBuyerInn,
+            [FromForm] string? expectedSupplierInn,
+            IMlServiceClient mlClient,
+            CancellationToken ct) =>
+        {
+            if (file == null || file.Length == 0)
+            {
+                return Results.BadRequest(new { error = "Файл счёта не передан или пуст." });
+            }
+
+            using var stream = file.OpenReadStream();
+            var docRead = await mlClient.ReadDocumentAsync(stream, file.FileName, ct: ct);
+            var verification = mlClient.VerifyInvoiceAgainstApplication(
+                docRead,
+                expectedEquipmentPrice,
+                expectedBuyerInn,
+                expectedSupplierInn);
+
+            return Results.Ok(verification);
+        })
+        .DisableAntiforgery()
+        .WithName("VerifyInvoiceDirect")
+        .WithSummary("Автоматическая сверка счёта на оборудование со стоимостью оборудования (equipment_price) и ИНН заявителя");
 
         return app;
     }

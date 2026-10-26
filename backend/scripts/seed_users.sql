@@ -91,6 +91,126 @@ BEGIN
             NOW()
         ),
         (
+            'a160108c-fc90-47ad-b98c-0917189db9c2',
+            'client6',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Виктор',
+            'Захаров',
+            'Сергеевич',
+            '992934509242',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
+            'ee6c39e8-2462-4da0-8823-db25d9a07c98',
+            'client7',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Алексей',
+            'Соловьёв',
+            'Андреевич',
+            '990750786404',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
+            '5aea8404-da47-4d2e-883d-ffc9b1157df3',
+            'client8',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Екатерина',
+            'Николаева',
+            'Петровна',
+            '998575834946',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
+            '8404810d-bd0e-4160-85f9-df7e8ffd1a80',
+            'client9',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Дарья',
+            'Кузьмина',
+            'Юрьевна',
+            '997237475355',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
+            '7c05c8f1-65f7-4e31-b4d5-6762d1a53250',
+            'client10',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Татьяна',
+            'Воробьёва',
+            'Сергеевна',
+            '994209132544',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
+            '8685faff-b338-48e7-a0f7-109c743017e3',
+            'client11',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Павел',
+            'Лебедев',
+            'Викторович',
+            '991802424801',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
+            '66cb62bf-2ecc-4b73-aec8-705942437bc7',
+            'client12',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Светлана',
+            'Попова',
+            'Андреевна',
+            '992136717200',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
+            'c6c29661-9eb2-4bfe-ac18-5f111512c381',
+            'client13',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Виктор',
+            'Соловьёв',
+            'Сергеевич',
+            '998924531779',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
+            'd85b88ad-d296-4818-9e66-bc66102f6cdd',
+            'client14',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Илья',
+            'Морозов',
+            'Олегович',
+            '995940119912',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
+            '728802f8-3014-41c8-abac-22248a0b7445',
+            'client15',
+            '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
+            'Илья',
+            'Семёнов',
+            'Владимирович',
+            '991126723717',
+            2, -- Client
+            true,
+            NOW()
+        ),
+        (
             'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
             'analyst',
             '$2a$11$qAakg2S8bGJxB0IQA0/kV.40T1h5Nd.qsilkqbYAjkhTbUn3N44iO',
@@ -148,6 +268,16 @@ BEGIN
         ('33333333-c333-3333-c333-333333333333', '33333333-3333-3333-3333-333333333333', 'client3', '500100000033', 'Алексей', 'Кузнецов', NOW()),
         ('44444444-c444-4444-c444-444444444444', '44444444-4444-4444-4444-444444444444', 'client4', '500100000077', 'Михаил', 'Петров', NOW()),
         ('55555555-c555-5555-c555-555555555555', '55555555-5555-5555-5555-555555555555', 'client5', '990000000115', 'Сергей', 'Иванов', NOW()),
+        ('66666666-c666-6666-c666-666666666666', 'a160108c-fc90-47ad-b98c-0917189db9c2', 'client6', '992934509242', 'Виктор', 'Захаров', NOW()),
+        ('77777777-c777-7777-c777-777777777777', 'ee6c39e8-2462-4da0-8823-db25d9a07c98', 'client7', '990750786404', 'Алексей', 'Соловьёв', NOW()),
+        ('88888888-c888-8888-c888-888888888888', '5aea8404-da47-4d2e-883d-ffc9b1157df3', 'client8', '998575834946', 'Екатерина', 'Николаева', NOW()),
+        ('99999999-c999-9999-c999-999999999999', '8404810d-bd0e-4160-85f9-df7e8ffd1a80', 'client9', '997237475355', 'Дарья', 'Кузьмина', NOW()),
+        ('aaaaaaaa-c100-aaaa-c100-aaaaaaaaaaaa', '7c05c8f1-65f7-4e31-b4d5-6762d1a53250', 'client10', '994209132544', 'Татьяна', 'Воробьёва', NOW()),
+        ('bbbbbbbb-c110-bbbb-c110-bbbbbbbbbbbb', '8685faff-b338-48e7-a0f7-109c743017e3', 'client11', '991802424801', 'Павел', 'Лебедев', NOW()),
+        ('cccccccc-c120-cccc-c120-cccccccccccc', '66cb62bf-2ecc-4b73-aec8-705942437bc7', 'client12', '992136717200', 'Светлана', 'Попова', NOW()),
+        ('dddddddd-c130-dddd-c130-dddddddddddd', 'c6c29661-9eb2-4bfe-ac18-5f111512c381', 'client13', '998924531779', 'Виктор', 'Соловьёв', NOW()),
+        ('eeeeeeee-c140-eeee-c140-eeeeeeeeeeee', 'd85b88ad-d296-4818-9e66-bc66102f6cdd', 'client14', '995940119912', 'Илья', 'Морозов', NOW()),
+        ('ffffffff-c150-ffff-c150-ffffffffffff', '728802f8-3014-41c8-abac-22248a0b7445', 'client15', '991126723717', 'Илья', 'Семёнов', NOW()),
         ('bbbbbbbb-cbbb-bbbb-cbbb-bbbbbbbbbbbb', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'client_test', '500100000011', 'Иван', 'Иванов', NOW())
         ON CONFLICT ("UserId") DO UPDATE SET
             "Username" = EXCLUDED."Username",

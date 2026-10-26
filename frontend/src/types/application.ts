@@ -153,6 +153,7 @@ export interface CreditApplication {
   needInfoResponse?: string;
   needInfoRequestedAt?: string;
   needInfoActorName?: string;
+  needInfoFiles?: UploadedDocument[];
   declineReason?: string;
   reasonCodes?: string[];
   offer?: CreditOffer;

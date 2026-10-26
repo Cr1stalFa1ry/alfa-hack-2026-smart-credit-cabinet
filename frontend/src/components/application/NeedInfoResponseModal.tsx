@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { FileUpload } from '../common/FileUpload';
 import { UploadedDocument } from '../../types/application';
@@ -7,9 +7,9 @@ interface NeedInfoResponseModalProps {
   isOpen: boolean;
   onClose: () => void;
   promptText: string;
-  onSubmit: (response: string) => Promise<void>;
-  onFileUpload: (file: File) => void;
-  uploadedDocuments: UploadedDocument[];
+  onSubmit: (response: string, attachedFiles?: UploadedDocument[]) => Promise<void>;
+  onFileUpload: (file: File) => Promise<UploadedDocument | undefined>;
+  uploadedDocuments?: UploadedDocument[];
 }
 
 export const NeedInfoResponseModal: React.FC<NeedInfoResponseModalProps> = ({
@@ -18,10 +18,33 @@ export const NeedInfoResponseModal: React.FC<NeedInfoResponseModalProps> = ({
   promptText,
   onSubmit,
   onFileUpload,
-  uploadedDocuments,
 }) => {
   const [response, setResponse] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<UploadedDocument[]>([]);
+
+  // Сброс полей при закрытии или открытии
+  useEffect(() => {
+    if (!isOpen) {
+      setResponse('');
+      setAttachedFiles([]);
+    }
+  }, [isOpen]);
+
+  const handleUploadWrapper = async (file: File) => {
+    const doc = await onFileUpload(file);
+    if (doc) {
+      setAttachedFiles((prev) => {
+        if (prev.some((d) => d.id === doc.id || d.fileName === doc.fileName)) return prev;
+        return [...prev, doc];
+      });
+    }
+    return doc;
+  };
+
+  const handleDeleteAttached = (docId: string) => {
+    setAttachedFiles((prev) => prev.filter((d) => d.id !== docId));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +52,9 @@ export const NeedInfoResponseModal: React.FC<NeedInfoResponseModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await onSubmit(response.trim());
+      await onSubmit(response.trim(), attachedFiles);
+      setResponse('');
+      setAttachedFiles([]);
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -64,10 +89,21 @@ export const NeedInfoResponseModal: React.FC<NeedInfoResponseModalProps> = ({
         </div>
 
         <div>
-          <label className="block font-bold text-[14px] mb-2">
-            Подтверждающие документы <span className="text-[11px] font-normal text-[#686b70] ml-1">необязательно</span>
+          <label className="block font-bold text-[14px] mb-2 flex items-center justify-between">
+            <span>
+              Подтверждающие документы <span className="text-[11px] font-normal text-[#686b70] ml-1">необязательно</span>
+            </span>
+            {attachedFiles.length > 0 && (
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                Прикреплено файлов: {attachedFiles.length}
+              </span>
+            )}
           </label>
-          <FileUpload onFileUploaded={onFileUpload} existingDocuments={uploadedDocuments} />
+          <FileUpload
+            onFileUploaded={handleUploadWrapper}
+            onDeleteDocument={handleDeleteAttached}
+            existingDocuments={attachedFiles}
+          />
         </div>
 
         <div className="pt-4 border-t border-[#e6e8ea] flex items-center justify-end gap-3">

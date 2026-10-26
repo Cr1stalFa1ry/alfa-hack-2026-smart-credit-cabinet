@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Download,
 } from 'lucide-react';
+import { extractInquiriesHistory } from '../../utils/inquiriesHelpers';
 
 type ReviewTab = 'overview' | 'scoring' | 'dossier' | 'audit' | 'all';
 
@@ -248,6 +249,7 @@ export const AnalystReviewPage: React.FC = () => {
   }
 
   const isPrelaunch = application.businessType === 'prelaunch' || application.stage === 'prelaunch';
+  const inquiriesHistory = extractInquiriesHistory(application);
 
   return (
     <div className="max-w-[1320px] mx-auto text-[#141414] font-sans pb-16">
@@ -580,17 +582,14 @@ export const AnalystReviewPage: React.FC = () => {
                 </div>
               )}
 
-              {/* AI-ассистент андеррайтера (ML Qwen) в стиле .panel.soft из макет.html */}
+              {/* AI-ассистент в стиле .panel.soft из макет.html */}
               <div className="p-6 rounded-[16px] bg-[#f5f6f7] border border-[#e6e8ea]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-[#EF3124]" />
                     <h3 className="text-[16px] font-bold text-[#141414] m-0">
-                      AI-ассистент андеррайтера (ML Explain Engine)
+                      AI-ассистент
                     </h3>
-                    <span className="inline-block rounded-[7px] bg-white border border-[#e6e8ea] px-[8px] py-[2px] text-[11px] font-medium text-[#141414]">
-                      {application.mlExplanationSource === 'ml' ? 'Qwen2.5 14B' : 'ML Rule Engine'}
-                    </span>
                   </div>
                   <span className="text-[11px] text-[#686b70]">
                     Автоматическая интерпретация факторов риска
@@ -602,39 +601,110 @@ export const AnalystReviewPage: React.FC = () => {
                     'Заёмщик демонстрирует стабильные операционные обороты. Критических стоп-факторов по линии ФНС и БКИ не зафиксировано. Показатель долговой нагрузки находится в допустимом диапазоне.'}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[12px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-[12px]">
+                  <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
+                    <span className="text-[#686b70] text-[11px] block">Скоринговый балл</span>
+                    <strong className="text-[#141414] font-bold text-[13px] block">
+                      {effectiveScoring?.score ?? 80} / 100
+                    </strong>
+                    <span className="text-[11px] text-[#176b45] font-medium block truncate">
+                      {(effectiveScoring?.score ?? 80) >= 80
+                        ? 'Низкий риск дефолта'
+                        : (effectiveScoring?.score ?? 80) >= 60
+                        ? 'Умеренный риск'
+                        : 'Повышенный риск'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
+                    <span className="text-[#686b70] text-[11px] block">Покрытие долга (DSCR)</span>
+                    <strong className="text-[#141414] font-bold text-[13px] block">
+                      {isPrelaunch ? 'Моделируемый' : `${(effectiveScoring?.dscr ?? 0).toFixed(2)}x`}
+                    </strong>
+                    <span className="text-[11px] text-[#686b70] block truncate">
+                      {isPrelaunch
+                        ? 'Расчёт для нового бизнеса'
+                        : (effectiveScoring?.dscr ?? 0) >= 1.5
+                        ? 'Норма ≥ 1.50 (Запас есть)'
+                        : 'Допустимо (≥ 1.25)'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
+                    <span className="text-[#686b70] text-[11px] block">Чистый поток (NCF)</span>
+                    <strong className="text-[#176b45] font-bold text-[13px] block">
+                      {formatRubles(
+                        effectiveScoring?.netCashFlow ||
+                          Math.max(
+                            0,
+                            application.monthlyRevenue -
+                              application.monthlyExpenses -
+                              (application.existingMonthlyObligations || 0)
+                          )
+                      )} / мес
+                    </strong>
+                    <span className="text-[11px] text-[#686b70] block truncate">Свободный остаток</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
+                    <span className="text-[#686b70] text-[11px] block">Рекомендуемый платёж</span>
+                    <strong className="text-[#141414] font-bold text-[13px] block">
+                      {formatRubles(
+                        effectiveScoring?.recommendedMaxPayment ||
+                          Math.max(0, (effectiveScoring?.netCashFlow || 0) * 0.7)
+                      )} / мес
+                    </strong>
+                    <span className="text-[11px] text-[#686b70] block truncate">Лимит до 70% NCF</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
+                    <span className="text-[#686b70] text-[11px] block">Кредитная история (БКИ)</span>
+                    <strong className="text-[#141414] font-bold text-[13px] block">
+                      {effectiveScoring?.bki?.rating ? `${effectiveScoring.bki.rating} баллов` : 'Без просрочек'}
+                    </strong>
+                    <span className="text-[11px] text-[#686b70] block truncate">
+                      {effectiveScoring?.bki?.maxOverdueDays
+                        ? `Просрочка: ${effectiveScoring.bki.maxOverdueDays} дн.`
+                        : '0 дней просрочки (чистая КИ)'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
+                    <span className="text-[#686b70] text-[11px] block">ФНС и ЗСК</span>
+                    <strong className="text-[#141414] font-bold text-[13px] block">
+                      {effectiveScoring?.stopFactors?.some((sf) => sf.isTriggered)
+                        ? 'Выявлены замечания'
+                        : '0 стоп-факторов'}
+                    </strong>
+                    <span className="text-[11px] text-[#176b45] font-medium block truncate">
+                      {effectiveScoring?.stopFactors?.some((sf) => sf.isTriggered)
+                        ? 'Требуется проверка'
+                        : 'Зелёная зона (блокировок нет)'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
+                    <span className="text-[#686b70] text-[11px] block">Анализ документов</span>
+                    <strong className="text-[#141414] font-bold text-[13px] block">
+                      {application.documents?.some(
+                        (d) => d.fileName?.endsWith('.csv') || d.fileName?.endsWith('.xlsx')
+                      )
+                        ? 'Выписка верифицирована'
+                        : application.documents.length > 0
+                        ? `${application.documents.length} док. в досье`
+                        : 'По заявленным оборотам'}
+                    </strong>
+                    <span className="text-[11px] text-[#686b70] block truncate">Сверка с банком</span>
+                  </div>
+
                   <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
                     <span className="text-[#686b70] text-[11px] block">Ключевой фактор</span>
-                    <strong className="text-[#141414] font-bold">
+                    <strong className="text-[#141414] font-bold text-[13px] block truncate">
                       {application.scoring?.issues?.[0] ||
                         application.reasonCodes?.[0] ||
                         'Соответствие регламенту риска'}
                     </strong>
-                  </div>
-                  <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
-                    <span className="text-[#686b70] text-[11px] block">Анализ банковской выписки</span>
-                    <strong className="text-[#141414] font-bold">
-                      {application.documents?.some(
-                        (d) => d.fileName?.endsWith('.csv') || d.fileName?.endsWith('.xlsx')
-                      )
-                        ? 'Выписка верифицирована ML'
-                        : 'По заявленным оборотам'}
-                    </strong>
-                  </div>
-                  <div className="p-3 bg-white rounded-[11px] border border-[#e6e8ea]">
-                    <span className="text-[#686b70] text-[11px] block">Рентабельность потока</span>
-                    <strong className="text-[#176b45] font-bold">
-                      Чистый доход:{' '}
-                      {formatRubles(
-                        Math.max(
-                          0,
-                          application.monthlyRevenue -
-                            application.monthlyExpenses -
-                            (application.existingMonthlyObligations || 0)
-                        )
-                      )}{' '}
-                      / мес
-                    </strong>
+                    <span className="text-[11px] text-[#686b70] block truncate">Определяющий признак</span>
                   </div>
                 </div>
               </div>
@@ -938,32 +1008,131 @@ export const AnalystReviewPage: React.FC = () => {
             <div className="space-y-6">
               {/* Запросы дополнительных сведений (.request-card из макет.html) */}
               <div>
-                <h3 className="text-[18px] font-bold text-[#141414] mb-3">
-                  Коммуникация и дозапросы сведений (T10 / T11)
-                </h3>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h3 className="text-[18px] font-bold text-[#141414] m-0">
+                    Коммуникация и дозапросы сведений (T10 / T11)
+                  </h3>
+                  {inquiriesHistory.length > 0 && (
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                      Всего запросов: {inquiriesHistory.length}
+                    </span>
+                  )}
+                </div>
 
-                {application.needInfoPrompt || application.needInfoResponse ? (
-                  <div className="p-5 border border-[#e6e8ea] rounded-[14px] mb-4 bg-white">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="inline-block rounded-[7px] bg-[#fff6e4] text-[#885215] px-[9px] py-[4px] text-[11px] font-medium">
-                        Запрос дополнительного пояснения
-                      </span>
-                      <span className="text-[11px] text-[#686b70]">Переход T11 → T10</span>
-                    </div>
-                    {application.needInfoPrompt && (
-                      <div className="mb-3">
-                        <h4 className="text-[14px] font-bold text-[#141414] my-1">Вопрос банка:</h4>
-                        <p className="text-[13px] text-[#141414] whitespace-pre-wrap m-0">
-                          {application.needInfoPrompt}
-                        </p>
+                {inquiriesHistory.length > 0 ? (
+                  <div className="space-y-3">
+                    {inquiriesHistory.map((inquiry, idx) => (
+                      <div
+                        key={inquiry.id || idx}
+                        className="p-5 border border-[#e6e8ea] rounded-[14px] bg-white space-y-3 shadow-xs"
+                      >
+                        <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#f0f2f4]">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-block rounded-[7px] bg-[#fff6e4] text-[#885215] px-[9px] py-[3px] text-[11px] font-bold">
+                              Запрос #{idx + 1}
+                            </span>
+                            <span className="text-[12px] font-bold text-[#141414]">
+                              {inquiry.actorName || 'Кредитный аналитик'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {inquiry.isCurrentOpen ? (
+                              <span className="inline-block rounded-[7px] bg-[#fff0ed] text-[#EF3124] px-[9px] py-[3px] text-[11px] font-semibold border border-[#fedcd5]">
+                                Ожидает ответа от клиента (T11)
+                              </span>
+                            ) : (
+                              <span className="inline-block rounded-[7px] bg-[#edf7f0] text-[#176b45] px-[9px] py-[3px] text-[11px] font-medium">
+                                ✓ Сведения предоставлены (T10)
+                              </span>
+                            )}
+                            {inquiry.promptAt && (
+                              <span className="text-[11px] text-[#686b70]">
+                                {formatDateTime(inquiry.promptAt)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <strong className="text-[13px] text-[#686b70] block mb-1">
+                            Вопрос специалиста банка:
+                          </strong>
+                          <p className="text-[13px] text-[#141414] whitespace-pre-wrap m-0 font-medium">
+                            {inquiry.prompt}
+                          </p>
+                        </div>
+
+                        {inquiry.response ? (
+                          <div className="p-3.5 rounded-[11px] bg-[#eef8f1] border border-[#d2edd8] space-y-2">
+                            <div className="flex items-center justify-between text-[11px] text-[#176b45] font-bold">
+                              <span>Ответ клиента (ИП):</span>
+                              {inquiry.responseAt && (
+                                <span className="font-normal text-[#686b70]">
+                                  {formatDateTime(inquiry.responseAt)}
+                                </span>
+                              )}
+                            </div>
+                            <p className="m-0 whitespace-pre-wrap text-[13px] text-[#141414]">
+                              {inquiry.response}
+                            </p>
+
+                            {/* Прикрепленные клиентом файлы */}
+                            {inquiry.files && inquiry.files.length > 0 && (
+                              <div className="mt-2.5 pt-2 border-t border-[#c6e6cd] space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#176b45]">
+                                  <FileText className="w-3.5 h-3.5" />
+                                  <span>Прикрепленные файлы ({inquiry.files.length}):</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {inquiry.files.map((file) => {
+                                    const downloadHref =
+                                      file.downloadUrl ||
+                                      (file.fileKey ? `/api/infrastructure/storage/${file.fileKey}` : undefined);
+                                    return (
+                                      <div
+                                        key={file.id}
+                                        className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-[#d2edd8] text-[12px] shadow-xs"
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <div className="p-1 rounded bg-[#edf7f0] text-[#176b45] shrink-0">
+                                            <FileText className="w-3.5 h-3.5" />
+                                          </div>
+                                          <div className="min-w-0">
+                                            <p className="font-bold text-[#141414] truncate m-0" title={file.fileName}>
+                                              {file.fileName}
+                                            </p>
+                                            <span className="text-[10px] text-[#686b70]">
+                                              {file.fileSizeBytes ? `${(file.fileSizeBytes / 1024 / 1024).toFixed(2)} МБ` : 'Документ'}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        {downloadHref && (
+                                          <a
+                                            href={downloadHref}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            download={file.fileName}
+                                            className="inline-flex items-center gap-1 text-[#EF3124] hover:text-[#cd2017] font-bold text-[11px] shrink-0 no-underline p-1 hover:bg-[#fff0ed] rounded"
+                                            title="Скачать файл"
+                                          >
+                                            <Download className="w-3.5 h-3.5" />
+                                            <span>Скачать</span>
+                                          </a>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-[12px] text-[#885215] italic bg-[#fffaf0] p-2.5 rounded-lg border border-[#f5e6cc]">
+                            Запрос отправлен клиенту, ожидается предоставление пояснений или подтверждающих документов
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {application.needInfoResponse && (
-                      <div className="p-3.5 rounded-[11px] bg-[#eef8f1] text-[#176b45] text-[13px]">
-                        <strong className="block mb-1">Ответ клиента (ИП):</strong>
-                        <p className="m-0 whitespace-pre-wrap">{application.needInfoResponse}</p>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 ) : (
                   <div className="p-5 rounded-[14px] bg-[#f5f6f7] text-[#686b70] text-[13px]">

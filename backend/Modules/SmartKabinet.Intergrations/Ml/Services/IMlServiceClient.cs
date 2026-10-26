@@ -17,5 +17,22 @@ public interface IMlServiceClient
         string? actor = null,
         CancellationToken ct = default);
 
+    Task<DocumentReadResult> ReadDocumentAsync(
+        Stream fileStream,
+        string fileName,
+        string? documentId = null,
+        string? documentVersion = null,
+        string? expectedSha256 = null,
+        string? asOf = null,
+        string? ownerName = null,
+        bool useLlm = true,
+        CancellationToken ct = default);
+
+    InvoiceVerificationResult VerifyInvoiceAgainstApplication(
+        DocumentReadResult doc,
+        decimal? expectedEquipmentPrice,
+        string expectedBuyerInn,
+        string? expectedSupplierInn = null);
+
     Task<bool> HealthCheckAsync(CancellationToken ct = default);
 }
