@@ -7,7 +7,7 @@ import pandas as pd
 
 from .categories import RU_NAMES, Category, allowed_for_sign
 from .llm import OllamaClient
-from .rules import classify_by_rules, owner_matcher
+from .rules import REVIEW_RULES, classify_by_rules, owner_matcher
 
 LLM_BATCH = 15
 LLM_BUDGET_S = 25.0  # общий лимит на нейросеть в одном запросе, чтобы сервис отвечал быстро
@@ -32,7 +32,8 @@ SYSTEM_PROMPT = """Ты классифицируешь операции по б�
 Правила:
 - revenue только для прихода от покупателей и заказчиков за товары, работы, услуги.
 - Кредиты, займы, переводы своих денег и возвраты — НЕ выручка.
-- Погашение кредита и проценты по нему — loan_payment, это не расход бизнеса.
+- Погашение кредита, проценты по нему и лизинг — loan_payment, это не расход бизнеса.
+- Личные траты владельца (продукты, ЖКУ квартиры, лечение) — personal, это не расход бизнеса.
 - Если не уверен или данных мало (например, просто «Перевод» от физлица) — ставь unclear. Ничего не выдумывай.
 Отвечай только JSON по схеме, без пояснений.
 
@@ -87,9 +88,11 @@ def _llm_classify(items: list[tuple[str, str, float]], llm: OllamaClient,
 
 
 def classify(df: pd.DataFrame, llm: OllamaClient | None = None, owner_name: str | None = None) -> pd.DataFrame:
-    """Добавляет колонки category, source (rules|llm|none), rule_id.
+    """Добавляет колонки category, source (rules|llm|none), rule_id и needs_review.
 
     owner_name — ФИО владельца ИП из профиля: непонятный перевод от/на его имя = свои средства.
+    needs_review — операцию смотрит сотрудник: правила не поняли её, категорию предложила нейросеть
+    или правило помечено как неоднозначное (REVIEW_RULES).
     """
     is_owner = owner_matcher(owner_name)
     res = []
@@ -116,4 +119,4 @@ def classify(df: pd.DataFrame, llm: OllamaClient | None = None, owner_name: str 
             for i in keys[uniq[j]]:
                 df.at[i, "category"] = cat.value
                 df.at[i, "source"] = "llm"
-    return df
+    return df.assign(needs_review=(df["source"] != "rules") | df["rule_id"].isin(REVIEW_RULES))

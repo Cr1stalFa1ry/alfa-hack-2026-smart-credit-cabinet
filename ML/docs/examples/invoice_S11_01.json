@@ -1,0 +1,145 @@
+{
+ "document": {
+  "document_id": "demo-S11_01",
+  "document_version": "1",
+  "sha256": "0757b39cf9ff262b5fd77ebf36cd42acb31c2b829441742729a06e7d2bcb7280"
+ },
+ "run": {
+  "run_id": "run-example",
+  "processed_at": "2026-10-24T12:00:00+00:00"
+ },
+ "schema_version": "documents-1",
+ "pipeline_version": "0.2.0",
+ "file": {
+  "sha256": "0757b39cf9ff262b5fd77ebf36cd42acb31c2b829441742729a06e7d2bcb7280",
+  "bytes": 77485,
+  "name": "S11_01.pdf",
+  "format": "pdf",
+  "pages": 1,
+  "pages_declared": 1
+ },
+ "document_type": "INVOICE",
+ "status": "EXTRACTED",
+ "needs_review": false,
+ "fields": {
+  "document_number": {
+   "value": "СЧ-S11-01",
+   "status": "ok",
+   "page": 1,
+   "quote": "СЧ-S11-01 от 23.10.2026",
+   "bbox": [
+    32.0,
+    95.8,
+    239.4,
+    113.8
+   ],
+   "confidence": null
+  },
+  "document_date": {
+   "value": "2026-10-23",
+   "status": "ok",
+   "page": 1,
+   "quote": "СЧ-S11-01 от 23.10.2026",
+   "bbox": [
+    32.0,
+    95.8,
+    239.4,
+    113.8
+   ],
+   "confidence": null
+  },
+  "supplier_name": {
+   "value": "ООО «Техно-Комплект 571»",
+   "status": "ok",
+   "page": 1,
+   "quote": "ООО «Техно-Комплект 571»",
+   "bbox": [
+    32.0,
+    152.4,
+    177.0,
+    163.4
+   ],
+   "confidence": null
+  },
+  "supplier_inn": {
+   "value": "9937546571",
+   "status": "ok",
+   "page": 1,
+   "quote": "ИНН 9937546571",
+   "bbox": [
+    32.0,
+    174.1,
+    112.0,
+    184.1
+   ],
+   "confidence": null
+  },
+  "buyer_name": {
+   "value": "ИП Семёнов Илья Владимирович",
+   "status": "ok",
+   "page": 1,
+   "quote": "ИП Семёнов Илья Владимирович",
+   "bbox": [
+    310.0,
+    152.4,
+    482.9,
+    163.4
+   ],
+   "confidence": null
+  },
+  "buyer_inn": {
+   "value": "991126723717",
+   "status": "ok",
+   "page": 1,
+   "quote": "ИНН 991126723717",
+   "bbox": [
+    310.0,
+    174.1,
+    401.1,
+    184.1
+   ],
+   "confidence": null
+  },
+  "total_amount_rub": {
+   "value": 3431000.0,
+   "status": "ok",
+   "page": 1,
+   "quote": "Всего к оплате: 3 431 000,00 руб.",
+   "bbox": [
+    32.0,
+    312.1,
+    295.0,
+    329.1
+   ],
+   "confidence": null
+  }
+ },
+ "issues": [],
+ "pages": [
+  {
+   "page": 1,
+   "text_source": "text",
+   "dpi": null,
+   "ocr_confidence": null
+  }
+ ],
+ "line_items": [
+  {
+   "description": "Цифровая печатная машина",
+   "quantity": 1,
+   "unit": "шт.",
+   "unit_price_rub": 3431000.0,
+   "amount_rub": 3431000.0,
+   "page": 1,
+   "quote": "Цифровая печатная машина 1 шт. 3 431 000,00",
+   "bbox": [
+    40.0,
+    265.3,
+    457.5,
+    274.3
+   ],
+   "confidence": null
+  }
+ ],
+ "cached": false
+}

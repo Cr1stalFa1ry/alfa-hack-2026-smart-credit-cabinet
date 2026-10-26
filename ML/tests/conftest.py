@@ -8,6 +8,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 DEMO = ROOT / "data" / "demo"
 BAD = ROOT / "data" / "bad"
+DOCS = ROOT / "data" / "documents" / "documents"
 
 
 class FakeLLM:

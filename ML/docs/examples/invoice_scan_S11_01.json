@@ -1,0 +1,147 @@
+{
+ "document": {
+  "document_id": "demo-S11_01_scan",
+  "document_version": "2",
+  "sha256": "4d1c977c1f4dd483f6c48ebfa48d850b64cbdfbce350c11fa9c89efffbd6d848"
+ },
+ "run": {
+  "run_id": "run-example",
+  "processed_at": "2026-10-24T12:00:00+00:00"
+ },
+ "schema_version": "documents-1",
+ "pipeline_version": "0.2.0",
+ "file": {
+  "sha256": "4d1c977c1f4dd483f6c48ebfa48d850b64cbdfbce350c11fa9c89efffbd6d848",
+  "bytes": 119842,
+  "name": "S11_01_scan.pdf",
+  "format": "pdf",
+  "pages": 1,
+  "pages_declared": 1
+ },
+ "document_type": "INVOICE",
+ "status": "EXTRACTED",
+ "needs_review": false,
+ "fields": {
+  "document_number": {
+   "value": "СЧ-511-01",
+   "status": "ok",
+   "page": 1,
+   "quote": "СЧ-511-01 от 23.10.2026",
+   "bbox": [
+    32.6,
+    97.0,
+    238.1,
+    110.4
+   ],
+   "confidence": 0.764,
+   "note": "Номер прочитан OCR: похожие символы (S/5, M/М, O/0) могли перепутаться."
+  },
+  "document_date": {
+   "value": "2026-10-23",
+   "status": "ok",
+   "page": 1,
+   "quote": "СЧ-511-01 от 23.10.2026",
+   "bbox": [
+    32.6,
+    97.0,
+    238.1,
+    110.4
+   ],
+   "confidence": 0.916
+  },
+  "supplier_name": {
+   "value": "ООО «Техно-Комплект 571»",
+   "status": "ok",
+   "page": 1,
+   "quote": "ООО «Техно-Комплект 571»",
+   "bbox": [
+    32.6,
+    152.6,
+    176.2,
+    160.8
+   ],
+   "confidence": 0.905
+  },
+  "supplier_inn": {
+   "value": "9937546571",
+   "status": "ok",
+   "page": 1,
+   "quote": "ИНН 9937546571",
+   "bbox": [
+    32.6,
+    174.7,
+    110.4,
+    181.9
+   ],
+   "confidence": 0.945
+  },
+  "buyer_name": {
+   "value": "ИП Семёнов Илья Владимирович",
+   "status": "ok",
+   "page": 1,
+   "quote": "ИП Семёнов Илья Владимирович",
+   "bbox": [
+    310.3,
+    152.6,
+    482.2,
+    163.2
+   ],
+   "confidence": 0.916
+  },
+  "buyer_inn": {
+   "value": "991126723717",
+   "status": "ok",
+   "page": 1,
+   "quote": "ИНН 9911267237117",
+   "bbox": [
+    310.3,
+    174.7,
+    400.6,
+    181.9
+   ],
+   "confidence": null,
+   "note": "Первое чтение «9911267237117» не прошло проверку ИНН; перечитано 3 раза, контрольное число верно."
+  },
+  "total_amount_rub": {
+   "value": 3431000.0,
+   "status": "ok",
+   "page": 1,
+   "quote": "Всего к оплате: 3 431 000,00 руб.",
+   "bbox": [
+    33.1,
+    313.0,
+    293.3,
+    328.8
+   ],
+   "confidence": 0.852
+  }
+ },
+ "issues": [],
+ "pages": [
+  {
+   "page": 1,
+   "text_source": "ocr",
+   "dpi": 150.1,
+   "ocr_confidence": 0.894
+  }
+ ],
+ "line_items": [
+  {
+   "description": "Цифровая печатная машина",
+   "quantity": 1,
+   "unit": "шт.",
+   "unit_price_rub": 3431000.0,
+   "amount_rub": 3431000.0,
+   "page": 1,
+   "quote": "Цифровая печатная машина 1 шт. 3 431 000,00",
+   "bbox": [
+    40.8,
+    265.4,
+    456.7,
+    274.1
+   ],
+   "confidence": 0.788
+  }
+ ],
+ "cached": false
+}

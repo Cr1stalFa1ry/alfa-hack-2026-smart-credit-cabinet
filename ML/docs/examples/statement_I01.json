@@ -1,0 +1,3397 @@
+{
+ "document": {
+  "document_id": "demo-I01_statement",
+  "document_version": "1",
+  "sha256": "48706b284aae8ad4c0add9981d0f04d82981c7b2d792befc324400e0afe0cc54"
+ },
+ "run": {
+  "run_id": "run-example",
+  "processed_at": "2026-10-24T12:00:00+00:00"
+ },
+ "schema_version": "documents-1",
+ "pipeline_version": "0.2.0",
+ "file": {
+  "sha256": "48706b284aae8ad4c0add9981d0f04d82981c7b2d792befc324400e0afe0cc54",
+  "bytes": 102938,
+  "name": "I01_statement.pdf",
+  "format": "pdf",
+  "pages": 6,
+  "pages_declared": 6
+ },
+ "document_type": "BANK_STATEMENT",
+ "status": "EXTRACTED",
+ "needs_review": true,
+ "fields": {
+  "account_holder_name": {
+   "value": "ИП Иванов Сергей Петрович",
+   "status": "ok",
+   "page": 1,
+   "quote": "Владелец: ИП Иванов Сергей Петрович",
+   "bbox": [
+    28.0,
+    90.5,
+    265.4,
+    102.5
+   ],
+   "confidence": null
+  },
+  "account_holder_inn": {
+   "value": "990000000115",
+   "status": "ok",
+   "page": 1,
+   "quote": "ИНН 990000000115 | Тестовый идентификатор счёта: DEMO-ACC-001",
+   "bbox": [
+    28.0,
+    111.1,
+    323.0,
+    120.1
+   ],
+   "confidence": null
+  },
+  "period_from": {
+   "value": "2025-10-01",
+   "status": "ok",
+   "page": 1,
+   "quote": "Период: 01.10.2025 - 30.09.2026. Валюта: RUB. Дата формирования: 23.10.2026.",
+   "bbox": [
+    28.0,
+    128.0,
+    329.8,
+    136.0
+   ],
+   "confidence": null
+  },
+  "period_to": {
+   "value": "2026-09-30",
+   "status": "ok",
+   "page": 1,
+   "quote": "Период: 01.10.2025 - 30.09.2026. Валюта: RUB. Дата формирования: 23.10.2026.",
+   "bbox": [
+    28.0,
+    128.0,
+    329.8,
+    136.0
+   ],
+   "confidence": null
+  },
+  "account_number": {
+   "value": null,
+   "status": "not_found",
+   "page": null,
+   "quote": null,
+   "bbox": null,
+   "confidence": null
+  },
+  "credit_total_rub": {
+   "value": 8719117.0,
+   "status": "ok",
+   "page": 1,
+   "quote": "Поступления: 8 719 117,00 | Списания: 3 775 956,94",
+   "bbox": [
+    28.0,
+    147.0,
+    254.1,
+    156.0
+   ],
+   "confidence": null
+  },
+  "debit_total_rub": {
+   "value": 3775956.94,
+   "status": "ok",
+   "page": 1,
+   "quote": "Поступления: 8 719 117,00 | Списания: 3 775 956,94",
+   "bbox": [
+    28.0,
+    147.0,
+    254.1,
+    156.0
+   ],
+   "confidence": null
+  },
+  "opening_balance_rub": {
+   "value": 200000.0,
+   "status": "ok",
+   "page": 1,
+   "quote": "Начальный остаток*: 200 000,00 | Конечный остаток: 5 143 160,06",
+   "bbox": [
+    28.0,
+    164.0,
+    273.2,
+    172.0
+   ],
+   "confidence": null
+  },
+  "closing_balance_rub": {
+   "value": 5143160.06,
+   "status": "ok",
+   "page": 1,
+   "quote": "Начальный остаток*: 200 000,00 | Конечный остаток: 5 143 160,06",
+   "bbox": [
+    28.0,
+    164.0,
+    273.2,
+    172.0
+   ],
+   "confidence": null
+  }
+ },
+ "issues": [
+  {
+   "code": "TRANSACTIONS_NEED_REVIEW",
+   "message": "8 операций нужно проверить сотруднику: неоднозначное назначение или неуверенное чтение."
+  }
+ ],
+ "pages": [
+  {
+   "page": 1,
+   "text_source": "text",
+   "dpi": null,
+   "ocr_confidence": null
+  },
+  {
+   "page": 2,
+   "text_source": "text",
+   "dpi": null,
+   "ocr_confidence": null
+  },
+  {
+   "page": 3,
+   "text_source": "text",
+   "dpi": null,
+   "ocr_confidence": null
+  },
+  {
+   "page": 4,
+   "text_source": "text",
+   "dpi": null,
+   "ocr_confidence": null
+  },
+  {
+   "page": 5,
+   "text_source": "text",
+   "dpi": null,
+   "ocr_confidence": null
+  },
+  {
+   "page": 6,
+   "text_source": "text",
+   "dpi": null,
+   "ocr_confidence": null
+  }
+ ],
+ "transactions": [
+  {
+   "date": "2025-10-03",
+   "amount": -19839.57,
+   "counterparty": "ООО \"Аренда-Центр\"",
+   "description": "Оплата транспортных услуг по счету № 1866",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 1,
+   "page": 1,
+   "quote": "1 03.10.2025 -19 839,57 ООО \"Аренда-Центр\" Оплата транспортных услуг по счету № 1866",
+   "bbox": [
+    33.0,
+    224.6,
+    484.9,
+    232.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-05",
+   "amount": -7470.97,
+   "counterparty": "",
+   "description": "Оплата покупки ПЯТЕРОЧКА",
+   "category": "personal",
+   "category_ru": "личный расход",
+   "source": "rules",
+   "needs_review": true,
+   "row": 2,
+   "page": 1,
+   "quote": "2 05.10.2025 -7 470,97 - Оплата покупки ПЯТЕРОЧКА",
+   "bbox": [
+    33.0,
+    245.6,
+    428.3,
+    253.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-06",
+   "amount": 140334.37,
+   "counterparty": "ООО \"ТехноЛайн\"",
+   "description": "Оплата по счету № 6348 от 06.10.2025 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 3,
+   "page": 1,
+   "quote": "3 06.10.2025 +140 334,37 ООО \"ТехноЛайн\" Оплата по счету № 6348 от 06.10.2025 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    266.6,
+    526.1,
+    284.6
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-09",
+   "amount": -33154.53,
+   "counterparty": "ООО \"ЛогистикПро\"",
+   "description": "Оплата транспортных услуг по счету № 3057",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 4,
+   "page": 1,
+   "quote": "4 09.10.2025 -33 154,53 ООО \"ЛогистикПро\" Оплата транспортных услуг по счету № 3057",
+   "bbox": [
+    33.0,
+    297.2,
+    484.9,
+    304.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-14",
+   "amount": 9333.0,
+   "counterparty": "ООО \"Упаковка\"",
+   "description": "Возврат излишне перечисленных средств по счету № 9629",
+   "category": "refund",
+   "category_ru": "возврат платежа",
+   "source": "rules",
+   "needs_review": false,
+   "row": 5,
+   "page": 1,
+   "quote": "5 14.10.2025 +9 333,00 ООО \"Упаковка\" Возврат излишне перечисленных средств по счету № 9629",
+   "bbox": [
+    33.0,
+    318.2,
+    536.0,
+    325.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-16",
+   "amount": -1427.17,
+   "counterparty": "ИП Соколов П. В.",
+   "description": "Оплата транспортных услуг по счету № 5933",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 6,
+   "page": 1,
+   "quote": "6 16.10.2025 -1 427,17 ИП Соколов П. В. Оплата транспортных услуг по счету № 5933",
+   "bbox": [
+    33.0,
+    339.2,
+    484.9,
+    346.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-17",
+   "amount": 17979.71,
+   "counterparty": "ПАО \"Банк-Эквайер\"",
+   "description": "Зачисление средств по операциям эквайринга за 17.10.2025",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 7,
+   "page": 1,
+   "quote": "7 17.10.2025 +17 979,71 ПАО \"Банк-Эквайер\" Зачисление средств по операциям эквайринга за 17.10.2025",
+   "bbox": [
+    33.0,
+    360.2,
+    541.1,
+    367.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-19",
+   "amount": 43114.48,
+   "counterparty": "ПАО \"Банк-Эквайер\"",
+   "description": "Зачисление средств по операциям эквайринга за 19.10.2025",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 8,
+   "page": 1,
+   "quote": "8 19.10.2025 +43 114,48 ПАО \"Банк-Эквайер\" Зачисление средств по операциям эквайринга за 19.10.2025",
+   "bbox": [
+    33.0,
+    381.2,
+    541.1,
+    388.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-19",
+   "amount": 151628.42,
+   "counterparty": "ИП Белова Е. С.",
+   "description": "Оплата по договору поставки № 2896, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 9,
+   "page": 1,
+   "quote": "9 19.10.2025 +151 628,42 ИП Белова Е. С. Оплата по договору поставки № 2896, без НДС",
+   "bbox": [
+    33.0,
+    402.2,
+    493.5,
+    409.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-22",
+   "amount": -55395.41,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 10,
+   "page": 1,
+   "quote": "10 22.10.2025 -55 395,41 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    423.2,
+    419.5,
+    430.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-24",
+   "amount": -30000.0,
+   "counterparty": "ПАО \"Банк-Кредитор\"",
+   "description": "Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 11,
+   "page": 1,
+   "quote": "11 24.10.2025 -30 000,00 ПАО \"Банк-Кредитор\" Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    444.2,
+    523.8,
+    462.2
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-26",
+   "amount": -118769.0,
+   "counterparty": "Иванов С. П.",
+   "description": "Перевод собственных средств на личный счет",
+   "category": "own_transfer",
+   "category_ru": "перевод собственных средств",
+   "source": "rules",
+   "needs_review": false,
+   "row": 12,
+   "page": 1,
+   "quote": "12 26.10.2025 -118 769,00 Иванов С. П. Перевод собственных средств на личный счет",
+   "bbox": [
+    33.0,
+    474.8,
+    490.6,
+    482.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-26",
+   "amount": 96591.95,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 26.10.2025",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 13,
+   "page": 1,
+   "quote": "13 26.10.2025 +96 591,95 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 26.10.2025",
+   "bbox": [
+    33.0,
+    495.8,
+    541.1,
+    503.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-28",
+   "amount": -183.32,
+   "counterparty": "ООО \"ОптТорг\"",
+   "description": "Арендная плата за октябрь по договору № 830",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 14,
+   "page": 1,
+   "quote": "14 28.10.2025 -183,32 ООО \"ОптТорг\" Арендная плата за октябрь по договору № 830",
+   "bbox": [
+    33.0,
+    516.8,
+    491.7,
+    524.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-28",
+   "amount": 62179.78,
+   "counterparty": "ПАО \"Банк-Эквайер\"",
+   "description": "Зачисление средств по операциям эквайринга за 28.10.2025",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 15,
+   "page": 1,
+   "quote": "15 28.10.2025 +62 179,78 ПАО \"Банк-Эквайер\" Зачисление средств по операциям эквайринга за 28.10.2025",
+   "bbox": [
+    33.0,
+    537.8,
+    541.1,
+    545.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-10-29",
+   "amount": 48171.29,
+   "counterparty": "ПАО \"Банк-Эквайер\"",
+   "description": "Зачисление средств по операциям эквайринга за 29.10.2025",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 16,
+   "page": 1,
+   "quote": "16 29.10.2025 +48 171,29 ПАО \"Банк-Эквайер\" Зачисление средств по операциям эквайринга за 29.10.2025",
+   "bbox": [
+    33.0,
+    558.8,
+    541.1,
+    566.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-11-04",
+   "amount": 22886.75,
+   "counterparty": "ООО \"ТехноЛайн\"",
+   "description": "Оплата по договору поставки № 7484, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 17,
+   "page": 1,
+   "quote": "17 04.11.2025 +22 886,75 ООО \"ТехноЛайн\" Оплата по договору поставки № 7484, без НДС",
+   "bbox": [
+    33.0,
+    579.8,
+    493.5,
+    587.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-11-06",
+   "amount": -47353.04,
+   "counterparty": "ИП Соколов П. В.",
+   "description": "Оплата по счету № 847 от 06.11.2025 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 18,
+   "page": 1,
+   "quote": "18 06.11.2025 -47 353,04 ИП Соколов П. В. Оплата по счету № 847 от 06.11.2025 за материалы",
+   "bbox": [
+    33.0,
+    600.8,
+    510.4,
+    608.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-11-10",
+   "amount": -7241.93,
+   "counterparty": "ООО \"СтройМатериалы\"",
+   "description": "Арендная плата за ноябрь по договору № 3086",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 19,
+   "page": 1,
+   "quote": "19 10.11.2025 -7 241,93 ООО \"СтройМатериалы\" Арендная плата за ноябрь по договору № 3086",
+   "bbox": [
+    33.0,
+    621.8,
+    493.3,
+    629.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-11-12",
+   "amount": -219680.78,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 20,
+   "page": 1,
+   "quote": "20 12.11.2025 -219 680,78 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    642.8,
+    419.5,
+    650.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-11-12",
+   "amount": 13112.0,
+   "counterparty": "Иванов С. П.",
+   "description": "Перевод собственных средств",
+   "category": "own_transfer",
+   "category_ru": "перевод собственных средств",
+   "source": "rules",
+   "needs_review": false,
+   "row": 21,
+   "page": 1,
+   "quote": "21 12.11.2025 +13 112,00 Иванов С. П. Перевод собственных средств",
+   "bbox": [
+    33.0,
+    663.8,
+    433.1,
+    671.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-11-13",
+   "amount": -115724.25,
+   "counterparty": "ИП Соколов П. В.",
+   "description": "Арендная плата за ноябрь по договору № 3694",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 22,
+   "page": 1,
+   "quote": "22 13.11.2025 -115 724,25 ИП Соколов П. В. Арендная плата за ноябрь по договору № 3694",
+   "bbox": [
+    33.0,
+    684.8,
+    493.3,
+    692.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-11-17",
+   "amount": -30000.0,
+   "counterparty": "АО \"МСП Финанс\"",
+   "description": "Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 23,
+   "page": 1,
+   "quote": "23 17.11.2025 -30 000,00 АО \"МСП Финанс\" Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    705.8,
+    523.8,
+    723.8
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-11-28",
+   "amount": 386825.88,
+   "counterparty": "ИП Белова Е. С.",
+   "description": "Оплата по счету № 9441 от 28.11.2025 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 24,
+   "page": 1,
+   "quote": "24 28.11.2025 +386 825,88 ИП Белова Е. С. Оплата по счету № 9441 от 28.11.2025 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    736.4,
+    526.1,
+    754.4
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-11-28",
+   "amount": 430287.37,
+   "counterparty": "ООО \"Вектор\"",
+   "description": "Оплата по счету № 1532 от 28.11.2025 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 25,
+   "page": 1,
+   "quote": "25 28.11.2025 +430 287,37 ООО \"Вектор\" Оплата по счету № 1532 от 28.11.2025 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    767.0,
+    526.1,
+    785.0
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-01",
+   "amount": -37461.62,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 26,
+   "page": 2,
+   "quote": "26 01.12.2025 -37 461,62 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    224.6,
+    419.5,
+    232.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-01",
+   "amount": 103756.89,
+   "counterparty": "ПАО \"Банк-Эквайер\"",
+   "description": "Зачисление средств по операциям эквайринга за 01.12.2025",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 27,
+   "page": 2,
+   "quote": "27 01.12.2025 +103 756,89 ПАО \"Банк-Эквайер\" Зачисление средств по операциям эквайринга за 01.12.2025",
+   "bbox": [
+    33.0,
+    245.6,
+    541.1,
+    253.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-03",
+   "amount": -30000.0,
+   "counterparty": "АО \"МСП Финанс\"",
+   "description": "Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 28,
+   "page": 2,
+   "quote": "28 03.12.2025 -30 000,00 АО \"МСП Финанс\" Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    266.6,
+    523.8,
+    284.6
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-03",
+   "amount": 47142.05,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 03.12.2025",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 29,
+   "page": 2,
+   "quote": "29 03.12.2025 +47 142,05 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 03.12.2025",
+   "bbox": [
+    33.0,
+    297.2,
+    541.1,
+    304.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-10",
+   "amount": -16224.98,
+   "counterparty": "ООО \"Аренда-Центр\"",
+   "description": "Оплата транспортных услуг по счету № 7289",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 30,
+   "page": 2,
+   "quote": "30 10.12.2025 -16 224,98 ООО \"Аренда-Центр\" Оплата транспортных услуг по счету № 7289",
+   "bbox": [
+    33.0,
+    318.2,
+    484.9,
+    325.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-13",
+   "amount": 95228.99,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 13.12.2025",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 31,
+   "page": 2,
+   "quote": "31 13.12.2025 +95 228,99 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 13.12.2025",
+   "bbox": [
+    33.0,
+    339.2,
+    541.1,
+    346.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-14",
+   "amount": 63476.68,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 14.12.2025",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 32,
+   "page": 2,
+   "quote": "32 14.12.2025 +63 476,68 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 14.12.2025",
+   "bbox": [
+    33.0,
+    360.2,
+    541.1,
+    367.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-18",
+   "amount": 250395.39,
+   "counterparty": "АО \"Ритейл Плюс\"",
+   "description": "Оплата по счету № 3884 от 18.12.2025 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 33,
+   "page": 2,
+   "quote": "33 18.12.2025 +250 395,39 АО \"Ритейл Плюс\" Оплата по счету № 3884 от 18.12.2025 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    381.2,
+    526.1,
+    399.2
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-24",
+   "amount": -56313.4,
+   "counterparty": "АО \"Энергосбыт\"",
+   "description": "Арендная плата за декабрь по договору № 5056",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 34,
+   "page": 2,
+   "quote": "34 24.12.2025 -56 313,40 АО \"Энергосбыт\" Арендная плата за декабрь по договору № 5056",
+   "bbox": [
+    33.0,
+    411.8,
+    497.0,
+    419.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2025-12-30",
+   "amount": -6530.35,
+   "counterparty": "",
+   "description": "Оплата покупки ПЯТЕРОЧКА",
+   "category": "personal",
+   "category_ru": "личный расход",
+   "source": "rules",
+   "needs_review": true,
+   "row": 35,
+   "page": 2,
+   "quote": "35 30.12.2025 -6 530,35 - Оплата покупки ПЯТЕРОЧКА",
+   "bbox": [
+    33.0,
+    432.8,
+    428.3,
+    440.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-05",
+   "amount": -49385.97,
+   "counterparty": "ООО \"ОптТорг\"",
+   "description": "Арендная плата за январь по договору № 5061",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 36,
+   "page": 2,
+   "quote": "36 05.01.2026 -49 385,97 ООО \"ОптТорг\" Арендная плата за январь по договору № 5061",
+   "bbox": [
+    33.0,
+    453.8,
+    493.0,
+    461.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-06",
+   "amount": -213270.87,
+   "counterparty": "ООО \"ЛогистикПро\"",
+   "description": "Оплата по счету № 8454 от 06.01.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 37,
+   "page": 2,
+   "quote": "37 06.01.2026 -213 270,87 ООО \"ЛогистикПро\" Оплата по счету № 8454 от 06.01.2026 за материалы",
+   "bbox": [
+    33.0,
+    474.8,
+    514.7,
+    482.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-09",
+   "amount": -127343.16,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 38,
+   "page": 2,
+   "quote": "38 09.01.2026 -127 343,16 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    495.8,
+    419.5,
+    503.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-10",
+   "amount": 509117.41,
+   "counterparty": "АО \"Ритейл Плюс\"",
+   "description": "Оплата по договору поставки № 8646, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 39,
+   "page": 2,
+   "quote": "39 10.01.2026 +509 117,41 АО \"Ритейл Плюс\" Оплата по договору поставки № 8646, без НДС",
+   "bbox": [
+    33.0,
+    516.8,
+    493.5,
+    524.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-11",
+   "amount": 12693.97,
+   "counterparty": "ИП Белова Е. С.",
+   "description": "Оплата по договору поставки № 5359, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 40,
+   "page": 2,
+   "quote": "40 11.01.2026 +12 693,97 ИП Белова Е. С. Оплата по договору поставки № 5359, без НДС",
+   "bbox": [
+    33.0,
+    537.8,
+    493.5,
+    545.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-15",
+   "amount": 26791.01,
+   "counterparty": "ООО \"Вектор\"",
+   "description": "Оплата по договору поставки № 7520, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 41,
+   "page": 2,
+   "quote": "41 15.01.2026 +26 791,01 ООО \"Вектор\" Оплата по договору поставки № 7520, без НДС",
+   "bbox": [
+    33.0,
+    558.8,
+    493.5,
+    566.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-16",
+   "amount": -5314.58,
+   "counterparty": "",
+   "description": "Оплата покупки ПЯТЕРОЧКА",
+   "category": "personal",
+   "category_ru": "личный расход",
+   "source": "rules",
+   "needs_review": true,
+   "row": 42,
+   "page": 2,
+   "quote": "42 16.01.2026 -5 314,58 - Оплата покупки ПЯТЕРОЧКА",
+   "bbox": [
+    33.0,
+    579.8,
+    428.3,
+    587.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-18",
+   "amount": -30000.0,
+   "counterparty": "АО \"МСП Финанс\"",
+   "description": "Уплата процентов по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 43,
+   "page": 2,
+   "quote": "43 18.01.2026 -30 000,00 АО \"МСП Финанс\" Уплата процентов по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    600.8,
+    530.3,
+    608.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-21",
+   "amount": -145775.0,
+   "counterparty": "Иванов С. П.",
+   "description": "Перевод собственных средств на личный счет",
+   "category": "own_transfer",
+   "category_ru": "перевод собственных средств",
+   "source": "rules",
+   "needs_review": false,
+   "row": 44,
+   "page": 2,
+   "quote": "44 21.01.2026 -145 775,00 Иванов С. П. Перевод собственных средств на личный счет",
+   "bbox": [
+    33.0,
+    621.8,
+    490.6,
+    629.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-23",
+   "amount": 107128.14,
+   "counterparty": "ПАО \"Банк-Эквайер\"",
+   "description": "Зачисление средств по операциям эквайринга за 23.01.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 45,
+   "page": 2,
+   "quote": "45 23.01.2026 +107 128,14 ПАО \"Банк-Эквайер\" Зачисление средств по операциям эквайринга за 23.01.2026",
+   "bbox": [
+    33.0,
+    642.8,
+    541.1,
+    650.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-26",
+   "amount": 118389.91,
+   "counterparty": "ООО \"Альфа-Снаб\"",
+   "description": "Оплата по договору поставки № 2793, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 46,
+   "page": 2,
+   "quote": "46 26.01.2026 +118 389,91 ООО \"Альфа-Снаб\" Оплата по договору поставки № 2793, без НДС",
+   "bbox": [
+    33.0,
+    663.8,
+    493.5,
+    671.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-27",
+   "amount": 45535.0,
+   "counterparty": "АО \"Ритейл Плюс\"",
+   "description": "Оплата по договору поставки № 2994, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 47,
+   "page": 2,
+   "quote": "47 27.01.2026 +45 535,00 АО \"Ритейл Плюс\" Оплата по договору поставки № 2994, без НДС",
+   "bbox": [
+    33.0,
+    684.8,
+    493.5,
+    692.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-01-31",
+   "amount": 20344.56,
+   "counterparty": "ПАО \"Банк-Эквайер\"",
+   "description": "Зачисление средств по операциям эквайринга за 31.01.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 48,
+   "page": 2,
+   "quote": "48 31.01.2026 +20 344,56 ПАО \"Банк-Эквайер\" Зачисление средств по операциям эквайринга за 31.01.2026",
+   "bbox": [
+    33.0,
+    705.8,
+    541.1,
+    713.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-01",
+   "amount": 79140.62,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 01.02.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 49,
+   "page": 2,
+   "quote": "49 01.02.2026 +79 140,62 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 01.02.2026",
+   "bbox": [
+    33.0,
+    726.8,
+    541.1,
+    734.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-03",
+   "amount": -5113.22,
+   "counterparty": "АО \"Энергосбыт\"",
+   "description": "Оплата по счету № 2024 от 03.02.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 50,
+   "page": 2,
+   "quote": "50 03.02.2026 -5 113,22 АО \"Энергосбыт\" Оплата по счету № 2024 от 03.02.2026 за материалы",
+   "bbox": [
+    33.0,
+    747.8,
+    514.7,
+    755.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-03",
+   "amount": 74840.73,
+   "counterparty": "АО \"Ритейл Плюс\"",
+   "description": "Оплата по договору поставки № 4568, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 51,
+   "page": 2,
+   "quote": "51 03.02.2026 +74 840,73 АО \"Ритейл Плюс\" Оплата по договору поставки № 4568, без НДС",
+   "bbox": [
+    33.0,
+    768.8,
+    493.5,
+    776.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-08",
+   "amount": 12216.59,
+   "counterparty": "АО \"Ритейл Плюс\"",
+   "description": "Оплата по счету № 4017 от 08.02.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 52,
+   "page": 3,
+   "quote": "52 08.02.2026 +12 216,59 АО \"Ритейл Плюс\" Оплата по счету № 4017 от 08.02.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    224.6,
+    526.1,
+    242.6
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-11",
+   "amount": -5704.05,
+   "counterparty": "",
+   "description": "Оплата ЖКУ за февраль",
+   "category": "personal",
+   "category_ru": "личный расход",
+   "source": "rules",
+   "needs_review": true,
+   "row": 53,
+   "page": 3,
+   "quote": "53 11.02.2026 -5 704,05 - Оплата ЖКУ за февраль",
+   "bbox": [
+    33.0,
+    255.2,
+    412.2,
+    262.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-14",
+   "amount": -22627.73,
+   "counterparty": "ООО \"Упаковка\"",
+   "description": "Арендная плата за февраль по договору № 285",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 54,
+   "page": 3,
+   "quote": "54 14.02.2026 -22 627,73 ООО \"Упаковка\" Арендная плата за февраль по договору № 285",
+   "bbox": [
+    33.0,
+    276.2,
+    495.4,
+    283.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-15",
+   "amount": -3026.64,
+   "counterparty": "ООО \"ЛогистикПро\"",
+   "description": "Оплата транспортных услуг по счету № 3351",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 55,
+   "page": 3,
+   "quote": "55 15.02.2026 -3 026,64 ООО \"ЛогистикПро\" Оплата транспортных услуг по счету № 3351",
+   "bbox": [
+    33.0,
+    297.2,
+    484.9,
+    304.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-19",
+   "amount": -22465.31,
+   "counterparty": "ООО \"СтройМатериалы\"",
+   "description": "Оплата по счету № 1247 от 19.02.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 56,
+   "page": 3,
+   "quote": "56 19.02.2026 -22 465,31 ООО \"СтройМатериалы\" Оплата по счету № 1247 от 19.02.2026 за материалы",
+   "bbox": [
+    33.0,
+    318.2,
+    514.7,
+    325.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-22",
+   "amount": 58825.21,
+   "counterparty": "ООО \"ТехноЛайн\"",
+   "description": "Оплата по счету № 3060 от 22.02.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 57,
+   "page": 3,
+   "quote": "57 22.02.2026 +58 825,21 ООО \"ТехноЛайн\" Оплата по счету № 3060 от 22.02.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    339.2,
+    526.1,
+    357.2
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-25",
+   "amount": -30000.0,
+   "counterparty": "АО \"МСП Финанс\"",
+   "description": "Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 58,
+   "page": 3,
+   "quote": "58 25.02.2026 -30 000,00 АО \"МСП Финанс\" Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    369.8,
+    523.8,
+    387.8
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-25",
+   "amount": 16056.25,
+   "counterparty": "ООО \"Вектор\"",
+   "description": "Оплата по счету № 4993 от 25.02.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 59,
+   "page": 3,
+   "quote": "59 25.02.2026 +16 056,25 ООО \"Вектор\" Оплата по счету № 4993 от 25.02.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    400.4,
+    526.1,
+    418.4
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-26",
+   "amount": -28226.87,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 60,
+   "page": 3,
+   "quote": "60 26.02.2026 -28 226,87 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    431.0,
+    419.5,
+    438.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-27",
+   "amount": -28540.23,
+   "counterparty": "ИП Соколов П. В.",
+   "description": "Оплата по счету № 7225 от 27.02.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 61,
+   "page": 3,
+   "quote": "61 27.02.2026 -28 540,23 ИП Соколов П. В. Оплата по счету № 7225 от 27.02.2026 за материалы",
+   "bbox": [
+    33.0,
+    452.0,
+    514.7,
+    459.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-27",
+   "amount": 162698.91,
+   "counterparty": "ООО \"Альфа-Снаб\"",
+   "description": "Оплата по договору поставки № 3369, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 62,
+   "page": 3,
+   "quote": "62 27.02.2026 +162 698,91 ООО \"Альфа-Снаб\" Оплата по договору поставки № 3369, без НДС",
+   "bbox": [
+    33.0,
+    473.0,
+    493.5,
+    480.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-02-28",
+   "amount": 156221.69,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 28.02.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 63,
+   "page": 3,
+   "quote": "63 28.02.2026 +156 221,69 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 28.02.2026",
+   "bbox": [
+    33.0,
+    494.0,
+    541.1,
+    501.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-03-01",
+   "amount": 173599.7,
+   "counterparty": "ООО \"Вектор\"",
+   "description": "Оплата по счету № 7095 от 01.03.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 64,
+   "page": 3,
+   "quote": "64 01.03.2026 +173 599,70 ООО \"Вектор\" Оплата по счету № 7095 от 01.03.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    515.0,
+    526.1,
+    533.0
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-03-04",
+   "amount": 94428.0,
+   "counterparty": "Иванов С. П.",
+   "description": "Перевод собственных средств",
+   "category": "own_transfer",
+   "category_ru": "перевод собственных средств",
+   "source": "rules",
+   "needs_review": false,
+   "row": 65,
+   "page": 3,
+   "quote": "65 04.03.2026 +94 428,00 Иванов С. П. Перевод собственных средств",
+   "bbox": [
+    33.0,
+    545.6,
+    433.1,
+    553.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-03-09",
+   "amount": -1985.41,
+   "counterparty": "ООО \"ЛогистикПро\"",
+   "description": "Оплата транспортных услуг по счету № 4900",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 66,
+   "page": 3,
+   "quote": "66 09.03.2026 -1 985,41 ООО \"ЛогистикПро\" Оплата транспортных услуг по счету № 4900",
+   "bbox": [
+    33.0,
+    566.6,
+    484.9,
+    574.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-03-10",
+   "amount": -215283.49,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 67,
+   "page": 3,
+   "quote": "67 10.03.2026 -215 283,49 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    587.6,
+    419.5,
+    595.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-03-12",
+   "amount": -18492.0,
+   "counterparty": "Иванов С. П.",
+   "description": "Перевод собственных средств на личный счет",
+   "category": "own_transfer",
+   "category_ru": "перевод собственных средств",
+   "source": "rules",
+   "needs_review": false,
+   "row": 68,
+   "page": 3,
+   "quote": "68 12.03.2026 -18 492,00 Иванов С. П. Перевод собственных средств на личный счет",
+   "bbox": [
+    33.0,
+    608.6,
+    490.6,
+    616.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-03-15",
+   "amount": -35857.24,
+   "counterparty": "ООО \"Упаковка\"",
+   "description": "Оплата транспортных услуг по счету № 1459",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 69,
+   "page": 3,
+   "quote": "69 15.03.2026 -35 857,24 ООО \"Упаковка\" Оплата транспортных услуг по счету № 1459",
+   "bbox": [
+    33.0,
+    629.6,
+    484.9,
+    637.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-03-20",
+   "amount": -136873.86,
+   "counterparty": "ООО \"ОптТорг\"",
+   "description": "Оплата по счету № 336 от 20.03.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 70,
+   "page": 3,
+   "quote": "70 20.03.2026 -136 873,86 ООО \"ОптТорг\" Оплата по счету № 336 от 20.03.2026 за материалы",
+   "bbox": [
+    33.0,
+    650.6,
+    510.4,
+    658.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-03-22",
+   "amount": 666400.3,
+   "counterparty": "ПАО \"Банк-Эквайер\"",
+   "description": "Зачисление средств по операциям эквайринга за 22.03.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 71,
+   "page": 3,
+   "quote": "71 22.03.2026 +666 400,30 ПАО \"Банк-Эквайер\" Зачисление средств по операциям эквайринга за 22.03.2026",
+   "bbox": [
+    33.0,
+    671.6,
+    541.1,
+    679.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-03-25",
+   "amount": -30000.0,
+   "counterparty": "АО \"МСП Финанс\"",
+   "description": "Уплата процентов по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 72,
+   "page": 3,
+   "quote": "72 25.03.2026 -30 000,00 АО \"МСП Финанс\" Уплата процентов по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    692.6,
+    530.3,
+    700.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-01",
+   "amount": -12802.57,
+   "counterparty": "ООО \"Упаковка\"",
+   "description": "Оплата по счету № 4370 от 01.04.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 73,
+   "page": 3,
+   "quote": "73 01.04.2026 -12 802,57 ООО \"Упаковка\" Оплата по счету № 4370 от 01.04.2026 за материалы",
+   "bbox": [
+    33.0,
+    713.6,
+    514.7,
+    721.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-03",
+   "amount": -30000.0,
+   "counterparty": "ПАО \"Банк-Кредитор\"",
+   "description": "Уплата процентов по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 74,
+   "page": 3,
+   "quote": "74 03.04.2026 -30 000,00 ПАО \"Банк-Кредитор\" Уплата процентов по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    734.6,
+    530.3,
+    742.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-04",
+   "amount": 50233.46,
+   "counterparty": "ИП Морозов Д. А.",
+   "description": "Оплата по договору поставки № 1784, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 75,
+   "page": 3,
+   "quote": "75 04.04.2026 +50 233,46 ИП Морозов Д. А. Оплата по договору поставки № 1784, без НДС",
+   "bbox": [
+    33.0,
+    755.6,
+    493.5,
+    763.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-09",
+   "amount": -1282.01,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 76,
+   "page": 3,
+   "quote": "76 09.04.2026 -1 282,01 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    776.6,
+    419.5,
+    784.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-10",
+   "amount": -68065.67,
+   "counterparty": "ООО \"Аренда-Центр\"",
+   "description": "Оплата транспортных услуг по счету № 158",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 77,
+   "page": 4,
+   "quote": "77 10.04.2026 -68 065,67 ООО \"Аренда-Центр\" Оплата транспортных услуг по счету № 158",
+   "bbox": [
+    33.0,
+    224.6,
+    480.6,
+    232.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-10",
+   "amount": 227296.24,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 10.04.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 78,
+   "page": 4,
+   "quote": "78 10.04.2026 +227 296,24 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 10.04.2026",
+   "bbox": [
+    33.0,
+    245.6,
+    541.1,
+    253.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-16",
+   "amount": 115987.27,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 16.04.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 79,
+   "page": 4,
+   "quote": "79 16.04.2026 +115 987,27 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 16.04.2026",
+   "bbox": [
+    33.0,
+    266.6,
+    541.1,
+    274.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-17",
+   "amount": -4493.66,
+   "counterparty": "ИП Соколов П. В.",
+   "description": "Оплата по счету № 1003 от 17.04.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 80,
+   "page": 4,
+   "quote": "80 17.04.2026 -4 493,66 ИП Соколов П. В. Оплата по счету № 1003 от 17.04.2026 за материалы",
+   "bbox": [
+    33.0,
+    287.6,
+    514.7,
+    295.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-17",
+   "amount": 61240.61,
+   "counterparty": "ООО \"ТехноЛайн\"",
+   "description": "Оплата по договору поставки № 4231, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 81,
+   "page": 4,
+   "quote": "81 17.04.2026 +61 240,61 ООО \"ТехноЛайн\" Оплата по договору поставки № 4231, без НДС",
+   "bbox": [
+    33.0,
+    308.6,
+    493.5,
+    316.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-17",
+   "amount": 73566.01,
+   "counterparty": "ООО \"Вектор\"",
+   "description": "Оплата по договору поставки № 6965, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 82,
+   "page": 4,
+   "quote": "82 17.04.2026 +73 566,01 ООО \"Вектор\" Оплата по договору поставки № 6965, без НДС",
+   "bbox": [
+    33.0,
+    329.6,
+    493.5,
+    337.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-23",
+   "amount": -12174.3,
+   "counterparty": "ИП Соколов П. В.",
+   "description": "Оплата по счету № 1977 от 23.04.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 83,
+   "page": 4,
+   "quote": "83 23.04.2026 -12 174,30 ИП Соколов П. В. Оплата по счету № 1977 от 23.04.2026 за материалы",
+   "bbox": [
+    33.0,
+    350.6,
+    514.7,
+    358.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-24",
+   "amount": -11181.79,
+   "counterparty": "ООО \"ЛогистикПро\"",
+   "description": "Арендная плата за апрель по договору № 2431",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 84,
+   "page": 4,
+   "quote": "84 24.04.2026 -11 181,79 ООО \"ЛогистикПро\" Арендная плата за апрель по договору № 2431",
+   "bbox": [
+    33.0,
+    371.6,
+    493.4,
+    379.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-04-25",
+   "amount": 31676.41,
+   "counterparty": "ООО \"Альфа-Снаб\"",
+   "description": "Оплата по счету № 249 от 25.04.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 85,
+   "page": 4,
+   "quote": "85 25.04.2026 +31 676,41 ООО \"Альфа-Снаб\" Оплата по счету № 249 от 25.04.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    392.6,
+    521.9,
+    410.6
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-03",
+   "amount": 89044.21,
+   "counterparty": "ООО \"СеверТорг\"",
+   "description": "Оплата по счету № 7968 от 03.05.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 86,
+   "page": 4,
+   "quote": "86 03.05.2026 +89 044,21 ООО \"СеверТорг\" Оплата по счету № 7968 от 03.05.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    423.2,
+    526.1,
+    441.2
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-05",
+   "amount": 94472.67,
+   "counterparty": "ООО \"СеверТорг\"",
+   "description": "Оплата по договору поставки № 1523, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 87,
+   "page": 4,
+   "quote": "87 05.05.2026 +94 472,67 ООО \"СеверТорг\" Оплата по договору поставки № 1523, без НДС",
+   "bbox": [
+    33.0,
+    453.8,
+    493.5,
+    461.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-07",
+   "amount": -20349.45,
+   "counterparty": "ООО \"ЛогистикПро\"",
+   "description": "Оплата по счету № 6404 от 07.05.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 88,
+   "page": 4,
+   "quote": "88 07.05.2026 -20 349,45 ООО \"ЛогистикПро\" Оплата по счету № 6404 от 07.05.2026 за материалы",
+   "bbox": [
+    33.0,
+    474.8,
+    514.7,
+    482.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-10",
+   "amount": 300751.56,
+   "counterparty": "ООО \"Альфа-Снаб\"",
+   "description": "Оплата по договору поставки № 2472, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 89,
+   "page": 4,
+   "quote": "89 10.05.2026 +300 751,56 ООО \"Альфа-Снаб\" Оплата по договору поставки № 2472, без НДС",
+   "bbox": [
+    33.0,
+    495.8,
+    493.5,
+    503.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-12",
+   "amount": 92617.71,
+   "counterparty": "ИП Морозов Д. А.",
+   "description": "Оплата по счету № 7890 от 12.05.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 90,
+   "page": 4,
+   "quote": "90 12.05.2026 +92 617,71 ИП Морозов Д. А. Оплата по счету № 7890 от 12.05.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    516.8,
+    526.1,
+    534.8
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-13",
+   "amount": -82287.76,
+   "counterparty": "ООО \"ОптТорг\"",
+   "description": "Оплата по счету № 4754 от 13.05.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 91,
+   "page": 4,
+   "quote": "91 13.05.2026 -82 287,76 ООО \"ОптТорг\" Оплата по счету № 4754 от 13.05.2026 за материалы",
+   "bbox": [
+    33.0,
+    547.4,
+    514.7,
+    555.1
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-19",
+   "amount": -107928.29,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 92,
+   "page": 4,
+   "quote": "92 19.05.2026 -107 928,29 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    568.4,
+    419.5,
+    576.1
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-20",
+   "amount": 224597.92,
+   "counterparty": "ИП Морозов Д. А.",
+   "description": "Оплата по договору поставки № 9519, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 93,
+   "page": 4,
+   "quote": "93 20.05.2026 +224 597,92 ИП Морозов Д. А. Оплата по договору поставки № 9519, без НДС",
+   "bbox": [
+    33.0,
+    589.4,
+    493.5,
+    597.1
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-21",
+   "amount": -25447.28,
+   "counterparty": "ООО \"СтройМатериалы\"",
+   "description": "Арендная плата за май по договору № 3780",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 94,
+   "page": 4,
+   "quote": "94 21.05.2026 -25 447,28 ООО \"СтройМатериалы\" Арендная плата за май по договору № 3780",
+   "bbox": [
+    33.0,
+    610.4,
+    481.8,
+    618.1
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-22",
+   "amount": -4685.49,
+   "counterparty": "",
+   "description": "Оплата покупки ВКУСВИЛЛ",
+   "category": "personal",
+   "category_ru": "личный расход",
+   "source": "rules",
+   "needs_review": true,
+   "row": 95,
+   "page": 4,
+   "quote": "95 22.05.2026 -4 685,49 - Оплата покупки ВКУСВИЛЛ",
+   "bbox": [
+    33.0,
+    631.4,
+    422.4,
+    639.1
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-27",
+   "amount": -30000.0,
+   "counterparty": "ПАО \"Банк-Кредитор\"",
+   "description": "Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 96,
+   "page": 4,
+   "quote": "96 27.05.2026 -30 000,00 ПАО \"Банк-Кредитор\" Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    652.4,
+    523.8,
+    670.4
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-27",
+   "amount": 38515.93,
+   "counterparty": "ООО \"Альфа-Снаб\"",
+   "description": "Оплата по договору поставки № 5483, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 97,
+   "page": 4,
+   "quote": "97 27.05.2026 +38 515,93 ООО \"Альфа-Снаб\" Оплата по договору поставки № 5483, без НДС",
+   "bbox": [
+    33.0,
+    683.0,
+    493.5,
+    690.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-29",
+   "amount": -125108.85,
+   "counterparty": "АО \"Энергосбыт\"",
+   "description": "Оплата транспортных услуг по счету № 5382",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 98,
+   "page": 4,
+   "quote": "98 29.05.2026 -125 108,85 АО \"Энергосбыт\" Оплата транспортных услуг по счету № 5382",
+   "bbox": [
+    33.0,
+    704.0,
+    484.9,
+    711.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-05-29",
+   "amount": -28878.37,
+   "counterparty": "ООО \"ОптТорг\"",
+   "description": "Арендная плата за май по договору № 5227",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 99,
+   "page": 4,
+   "quote": "99 29.05.2026 -28 878,37 ООО \"ОптТорг\" Арендная плата за май по договору № 5227",
+   "bbox": [
+    33.0,
+    725.0,
+    481.8,
+    732.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-08",
+   "amount": 55035.22,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 08.06.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 100,
+   "page": 4,
+   "quote": "100 08.06.2026 +55 035,22 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 08.06.2026",
+   "bbox": [
+    33.0,
+    746.0,
+    541.1,
+    753.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-11",
+   "amount": -33537.12,
+   "counterparty": "АО \"Энергосбыт\"",
+   "description": "Арендная плата за июнь по договору № 2805",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 101,
+   "page": 4,
+   "quote": "101 11.06.2026 -33 537,12 АО \"Энергосбыт\" Арендная плата за июнь по договору № 2805",
+   "bbox": [
+    33.0,
+    767.0,
+    486.2,
+    774.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-15",
+   "amount": -4357.11,
+   "counterparty": "ООО \"СтройМатериалы\"",
+   "description": "Оплата транспортных услуг по счету № 282",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 102,
+   "page": 5,
+   "quote": "102 15.06.2026 -4 357,11 ООО \"СтройМатериалы\" Оплата транспортных услуг по счету № 282",
+   "bbox": [
+    33.0,
+    224.6,
+    480.6,
+    232.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-22",
+   "amount": -30000.0,
+   "counterparty": "АО \"МСП Финанс\"",
+   "description": "Уплата процентов по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 103,
+   "page": 5,
+   "quote": "103 22.06.2026 -30 000,00 АО \"МСП Финанс\" Уплата процентов по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    245.6,
+    530.3,
+    253.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-22",
+   "amount": 118780.87,
+   "counterparty": "ООО \"Вектор\"",
+   "description": "Оплата по договору поставки № 5120, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 104,
+   "page": 5,
+   "quote": "104 22.06.2026 +118 780,87 ООО \"Вектор\" Оплата по договору поставки № 5120, без НДС",
+   "bbox": [
+    33.0,
+    266.6,
+    493.5,
+    274.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-25",
+   "amount": -39055.27,
+   "counterparty": "ООО \"ОптТорг\"",
+   "description": "Арендная плата за июнь по договору № 2700",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 105,
+   "page": 5,
+   "quote": "105 25.06.2026 -39 055,27 ООО \"ОптТорг\" Арендная плата за июнь по договору № 2700",
+   "bbox": [
+    33.0,
+    287.6,
+    486.2,
+    295.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-25",
+   "amount": -24200.0,
+   "counterparty": "Иванов С. П.",
+   "description": "Перевод собственных средств на личный счет",
+   "category": "own_transfer",
+   "category_ru": "перевод собственных средств",
+   "source": "rules",
+   "needs_review": false,
+   "row": 106,
+   "page": 5,
+   "quote": "106 25.06.2026 -24 200,00 Иванов С. П. Перевод собственных средств на личный счет",
+   "bbox": [
+    33.0,
+    308.6,
+    490.6,
+    316.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-25",
+   "amount": 17126.53,
+   "counterparty": "ООО \"Альфа-Снаб\"",
+   "description": "Оплата по счету № 1550 от 25.06.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 107,
+   "page": 5,
+   "quote": "107 25.06.2026 +17 126,53 ООО \"Альфа-Снаб\" Оплата по счету № 1550 от 25.06.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    329.6,
+    526.1,
+    347.6
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-26",
+   "amount": -33050.5,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 108,
+   "page": 5,
+   "quote": "108 26.06.2026 -33 050,50 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    360.2,
+    419.5,
+    367.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-26",
+   "amount": 94489.0,
+   "counterparty": "Иванов С. П.",
+   "description": "Перевод собственных средств",
+   "category": "own_transfer",
+   "category_ru": "перевод собственных средств",
+   "source": "rules",
+   "needs_review": false,
+   "row": 109,
+   "page": 5,
+   "quote": "109 26.06.2026 +94 489,00 Иванов С. П. Перевод собственных средств",
+   "bbox": [
+    33.0,
+    381.2,
+    433.1,
+    388.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-26",
+   "amount": 178781.22,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 26.06.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 110,
+   "page": 5,
+   "quote": "110 26.06.2026 +178 781,22 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 26.06.2026",
+   "bbox": [
+    33.0,
+    402.2,
+    541.1,
+    409.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-26",
+   "amount": 190276.16,
+   "counterparty": "ИП Белова Е. С.",
+   "description": "Оплата по договору поставки № 9323, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 111,
+   "page": 5,
+   "quote": "111 26.06.2026 +190 276,16 ИП Белова Е. С. Оплата по договору поставки № 9323, без НДС",
+   "bbox": [
+    33.0,
+    423.2,
+    493.5,
+    430.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-06-28",
+   "amount": -7943.78,
+   "counterparty": "",
+   "description": "Оплата ЖКУ за июнь",
+   "category": "personal",
+   "category_ru": "личный расход",
+   "source": "rules",
+   "needs_review": true,
+   "row": 112,
+   "page": 5,
+   "quote": "112 28.06.2026 -7 943,78 - Оплата ЖКУ за июнь",
+   "bbox": [
+    33.0,
+    444.2,
+    398.8,
+    451.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-01",
+   "amount": -30067.64,
+   "counterparty": "АО \"Энергосбыт\"",
+   "description": "Арендная плата за июль по договору № 549",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 113,
+   "page": 5,
+   "quote": "113 01.07.2026 -30 067,64 АО \"Энергосбыт\" Арендная плата за июль по договору № 549",
+   "bbox": [
+    33.0,
+    465.2,
+    482.2,
+    472.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-03",
+   "amount": -182476.88,
+   "counterparty": "ИП Соколов П. В.",
+   "description": "Оплата по счету № 30 от 03.07.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 114,
+   "page": 5,
+   "quote": "114 03.07.2026 -182 476,88 ИП Соколов П. В. Оплата по счету № 30 от 03.07.2026 за материалы",
+   "bbox": [
+    33.0,
+    486.2,
+    506.1,
+    493.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-07",
+   "amount": 23708.63,
+   "counterparty": "ПАО \"Банк-Эквайер\"",
+   "description": "Зачисление средств по операциям эквайринга за 07.07.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 115,
+   "page": 5,
+   "quote": "115 07.07.2026 +23 708,63 ПАО \"Банк-Эквайер\" Зачисление средств по операциям эквайринга за 07.07.2026",
+   "bbox": [
+    33.0,
+    507.2,
+    541.1,
+    514.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-09",
+   "amount": -30000.0,
+   "counterparty": "ПАО \"Банк-Кредитор\"",
+   "description": "Уплата процентов по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 116,
+   "page": 5,
+   "quote": "116 09.07.2026 -30 000,00 ПАО \"Банк-Кредитор\" Уплата процентов по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    528.2,
+    530.3,
+    535.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-10",
+   "amount": 196109.01,
+   "counterparty": "ООО \"СеверТорг\"",
+   "description": "Оплата по счету № 6177 от 10.07.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 117,
+   "page": 5,
+   "quote": "117 10.07.2026 +196 109,01 ООО \"СеверТорг\" Оплата по счету № 6177 от 10.07.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    549.2,
+    526.1,
+    567.2
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-11",
+   "amount": 135894.74,
+   "counterparty": "ООО \"Дом и Сад\"",
+   "description": "Оплата по договору поставки № 2149, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 118,
+   "page": 5,
+   "quote": "118 11.07.2026 +135 894,74 ООО \"Дом и Сад\" Оплата по договору поставки № 2149, без НДС",
+   "bbox": [
+    33.0,
+    579.8,
+    493.5,
+    587.5
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-13",
+   "amount": 103958.0,
+   "counterparty": "ООО \"СеверТорг\"",
+   "description": "Оплата по счету № 7212 от 13.07.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 119,
+   "page": 5,
+   "quote": "119 13.07.2026 +103 958,00 ООО \"СеверТорг\" Оплата по счету № 7212 от 13.07.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    600.8,
+    526.1,
+    618.8
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-18",
+   "amount": 348110.68,
+   "counterparty": "ООО \"ТехноЛайн\"",
+   "description": "Оплата по счету № 9276 от 18.07.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 120,
+   "page": 5,
+   "quote": "120 18.07.2026 +348 110,68 ООО \"ТехноЛайн\" Оплата по счету № 9276 от 18.07.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    631.4,
+    526.1,
+    649.4
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-22",
+   "amount": -177455.48,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 121,
+   "page": 5,
+   "quote": "121 22.07.2026 -177 455,48 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    662.0,
+    419.5,
+    669.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-22",
+   "amount": 32218.94,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 22.07.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 122,
+   "page": 5,
+   "quote": "122 22.07.2026 +32 218,94 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 22.07.2026",
+   "bbox": [
+    33.0,
+    683.0,
+    541.1,
+    690.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-07-29",
+   "amount": 39169.0,
+   "counterparty": "ООО \"ОптТорг\"",
+   "description": "Возврат излишне перечисленных средств по счету № 2012",
+   "category": "refund",
+   "category_ru": "возврат платежа",
+   "source": "rules",
+   "needs_review": false,
+   "row": 123,
+   "page": 5,
+   "quote": "123 29.07.2026 +39 169,00 ООО \"ОптТорг\" Возврат излишне перечисленных средств по счету № 2012",
+   "bbox": [
+    33.0,
+    704.0,
+    536.0,
+    711.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-01",
+   "amount": -55889.0,
+   "counterparty": "Иванов С. П.",
+   "description": "Перевод собственных средств на личный счет",
+   "category": "own_transfer",
+   "category_ru": "перевод собственных средств",
+   "source": "rules",
+   "needs_review": false,
+   "row": 124,
+   "page": 5,
+   "quote": "124 01.08.2026 -55 889,00 Иванов С. П. Перевод собственных средств на личный счет",
+   "bbox": [
+    33.0,
+    725.0,
+    490.6,
+    732.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-03",
+   "amount": 2730.08,
+   "counterparty": "ООО \"Альфа-Снаб\"",
+   "description": "Оплата по счету № 5479 от 03.08.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 125,
+   "page": 5,
+   "quote": "125 03.08.2026 +2 730,08 ООО \"Альфа-Снаб\" Оплата по счету № 5479 от 03.08.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    746.0,
+    526.1,
+    764.0
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-07",
+   "amount": 136921.92,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 07.08.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 126,
+   "page": 5,
+   "quote": "126 07.08.2026 +136 921,92 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 07.08.2026",
+   "bbox": [
+    33.0,
+    776.6,
+    541.1,
+    784.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-13",
+   "amount": -32097.28,
+   "counterparty": "АО \"Энергосбыт\"",
+   "description": "Оплата по счету № 9714 от 13.08.2026 за материалы",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 127,
+   "page": 6,
+   "quote": "127 13.08.2026 -32 097,28 АО \"Энергосбыт\" Оплата по счету № 9714 от 13.08.2026 за материалы",
+   "bbox": [
+    33.0,
+    224.6,
+    514.7,
+    232.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-13",
+   "amount": -8497.7,
+   "counterparty": "",
+   "description": "Оплата покупки ПЕРЕКРЕСТОК",
+   "category": "personal",
+   "category_ru": "личный расход",
+   "source": "rules",
+   "needs_review": true,
+   "row": 128,
+   "page": 6,
+   "quote": "128 13.08.2026 -8 497,70 - Оплата покупки ПЕРЕКРЕСТОК",
+   "bbox": [
+    33.0,
+    245.6,
+    438.0,
+    253.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-14",
+   "amount": -77902.72,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 129,
+   "page": 6,
+   "quote": "129 14.08.2026 -77 902,72 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    266.6,
+    419.5,
+    274.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-15",
+   "amount": 407255.22,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 15.08.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 130,
+   "page": 6,
+   "quote": "130 15.08.2026 +407 255,22 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 15.08.2026",
+   "bbox": [
+    33.0,
+    287.6,
+    541.1,
+    295.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-24",
+   "amount": -30000.0,
+   "counterparty": "АО \"МСП Финанс\"",
+   "description": "Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 131,
+   "page": 6,
+   "quote": "131 24.08.2026 -30 000,00 АО \"МСП Финанс\" Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    308.6,
+    523.8,
+    326.6
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-24",
+   "amount": 20110.0,
+   "counterparty": "Иванов С. П.",
+   "description": "Перевод собственных средств",
+   "category": "own_transfer",
+   "category_ru": "перевод собственных средств",
+   "source": "rules",
+   "needs_review": false,
+   "row": 132,
+   "page": 6,
+   "quote": "132 24.08.2026 +20 110,00 Иванов С. П. Перевод собственных средств",
+   "bbox": [
+    33.0,
+    339.2,
+    433.1,
+    346.9
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-08-31",
+   "amount": 13092.78,
+   "counterparty": "ИП Белова Е. С.",
+   "description": "Оплата по счету № 9960 от 31.08.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 133,
+   "page": 6,
+   "quote": "133 31.08.2026 +13 092,78 ИП Белова Е. С. Оплата по счету № 9960 от 31.08.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    360.2,
+    526.1,
+    378.2
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-02",
+   "amount": -30000.0,
+   "counterparty": "АО \"МСП Финанс\"",
+   "description": "Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "category": "loan_payment",
+   "category_ru": "платёж по кредиту/лизингу",
+   "source": "rules",
+   "needs_review": false,
+   "row": 134,
+   "page": 6,
+   "quote": "134 02.09.2026 -30 000,00 АО \"МСП Финанс\" Погашение основного долга по кредитному договору № DEBT-S1-A",
+   "bbox": [
+    33.0,
+    390.8,
+    523.8,
+    408.8
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-03",
+   "amount": 357653.66,
+   "counterparty": "ООО \"Дом и Сад\"",
+   "description": "Оплата по счету № 3662 от 03.09.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 135,
+   "page": 6,
+   "quote": "135 03.09.2026 +357 653,66 ООО \"Дом и Сад\" Оплата по счету № 3662 от 03.09.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    421.4,
+    526.1,
+    439.4
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-06",
+   "amount": 48476.0,
+   "counterparty": "АО \"Энергосбыт\"",
+   "description": "Возврат излишне перечисленных средств по счету № 8159",
+   "category": "refund",
+   "category_ru": "возврат платежа",
+   "source": "rules",
+   "needs_review": false,
+   "row": 136,
+   "page": 6,
+   "quote": "136 06.09.2026 +48 476,00 АО \"Энергосбыт\" Возврат излишне перечисленных средств по счету № 8159",
+   "bbox": [
+    33.0,
+    452.0,
+    536.0,
+    459.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-16",
+   "amount": 126430.64,
+   "counterparty": "АО \"ПроцессингЦентр\"",
+   "description": "Зачисление средств по операциям эквайринга за 16.09.2026",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 137,
+   "page": 6,
+   "quote": "137 16.09.2026 +126 430,64 АО \"ПроцессингЦентр\" Зачисление средств по операциям эквайринга за 16.09.2026",
+   "bbox": [
+    33.0,
+    473.0,
+    541.1,
+    480.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-17",
+   "amount": -30584.16,
+   "counterparty": "ООО \"Упаковка\"",
+   "description": "Арендная плата за сентябрь по договору № 6290",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 138,
+   "page": 6,
+   "quote": "138 17.09.2026 -30 584,16 ООО \"Упаковка\" Арендная плата за сентябрь по договору № 6290",
+   "bbox": [
+    33.0,
+    494.0,
+    500.7,
+    501.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-20",
+   "amount": -77900.44,
+   "counterparty": "УФК (ФНС России)",
+   "description": "Единый налоговый платеж",
+   "category": "tax",
+   "category_ru": "налог / взнос",
+   "source": "rules",
+   "needs_review": false,
+   "row": 139,
+   "page": 6,
+   "quote": "139 20.09.2026 -77 900,44 УФК (ФНС России) Единый налоговый платеж",
+   "bbox": [
+    33.0,
+    515.0,
+    419.5,
+    522.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-21",
+   "amount": -67637.53,
+   "counterparty": "АО \"Энергосбыт\"",
+   "description": "Арендная плата за сентябрь по договору № 563",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 140,
+   "page": 6,
+   "quote": "140 21.09.2026 -67 637,53 АО \"Энергосбыт\" Арендная плата за сентябрь по договору № 563",
+   "bbox": [
+    33.0,
+    536.0,
+    496.4,
+    543.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-21",
+   "amount": -6685.02,
+   "counterparty": "",
+   "description": "Оплата покупки ПЯТЕРОЧКА",
+   "category": "personal",
+   "category_ru": "личный расход",
+   "source": "rules",
+   "needs_review": true,
+   "row": 141,
+   "page": 6,
+   "quote": "141 21.09.2026 -6 685,02 - Оплата покупки ПЯТЕРОЧКА",
+   "bbox": [
+    33.0,
+    557.0,
+    428.3,
+    564.7
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-21",
+   "amount": 178134.75,
+   "counterparty": "ООО \"ТехноЛайн\"",
+   "description": "Оплата по счету № 192 от 21.09.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 142,
+   "page": 6,
+   "quote": "142 21.09.2026 +178 134,75 ООО \"ТехноЛайн\" Оплата по счету № 192 от 21.09.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    578.0,
+    521.9,
+    596.0
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-22",
+   "amount": -213877.87,
+   "counterparty": "ООО \"СтройМатериалы\"",
+   "description": "Арендная плата за сентябрь по договору № 7196",
+   "category": "expense",
+   "category_ru": "операционный расход",
+   "source": "rules",
+   "needs_review": false,
+   "row": 143,
+   "page": 6,
+   "quote": "143 22.09.2026 -213 877,87 ООО \"СтройМатериалы\" Арендная плата за сентябрь по договору № 7196",
+   "bbox": [
+    33.0,
+    608.6,
+    500.7,
+    616.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-23",
+   "amount": 114109.23,
+   "counterparty": "ИП Белова Е. С.",
+   "description": "Оплата по договору поставки № 4965, без НДС",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 144,
+   "page": 6,
+   "quote": "144 23.09.2026 +114 109,23 ИП Белова Е. С. Оплата по договору поставки № 4965, без НДС",
+   "bbox": [
+    33.0,
+    629.6,
+    493.5,
+    637.3
+   ],
+   "confidence": null
+  },
+  {
+   "date": "2026-09-28",
+   "amount": 63671.72,
+   "counterparty": "ООО \"СеверТорг\"",
+   "description": "Оплата по счету № 8218 от 28.09.2026 за товар. НДС не облагается",
+   "category": "revenue",
+   "category_ru": "выручка",
+   "source": "rules",
+   "needs_review": false,
+   "row": 145,
+   "page": 6,
+   "quote": "145 28.09.2026 +63 671,72 ООО \"СеверТорг\" Оплата по счету № 8218 от 28.09.2026 за товар. НДС не облагается",
+   "bbox": [
+    33.0,
+    650.6,
+    526.1,
+    668.6
+   ],
+   "confidence": null
+  }
+ ],
+ "analysis": {
+  "status": "ok",
+  "display": "показатели рассчитаны",
+  "reason": null,
+  "period": {
+   "from": "2025-10",
+   "to": "2026-09",
+   "months": 12,
+   "as_of": "2026-10-24",
+   "excluded_not_closed": [],
+   "dropped_older": [],
+   "empty_months": []
+  },
+  "metrics": {
+   "avgMonthlyRevenueRub": {
+    "value": 700000.0,
+    "status": "ok",
+    "display": "700 000,00 ₽",
+    "note": null
+   },
+   "revenueCV": {
+    "value": 0.2,
+    "status": "ok",
+    "display": "20,0%",
+    "note": "σ/среднее по месяцам; ≤0,3 — стабильно, >0,6 — сильно скачет"
+   },
+   "annualRevenueRub": {
+    "value": 8400000.0,
+    "status": "ok",
+    "display": "8 400 000,00 ₽",
+    "note": null
+   },
+   "avgMonthlyExpensesRub": {
+    "value": 250000.0,
+    "status": "ok",
+    "display": "250 000,00 ₽",
+    "note": "аренда, зарплата, закупки, услуги и налоги"
+   },
+   "avgMonthlyNetRub": {
+    "value": 450000.0,
+    "status": "ok",
+    "display": "450 000,00 ₽",
+    "note": null
+   },
+   "avgMonthlyLoanPaymentsRub": {
+    "value": 30000.0,
+    "status": "ok",
+    "display": "30 000,00 ₽",
+    "note": null
+   },
+   "monthsCount": {
+    "value": 12,
+    "status": "ok",
+    "display": "12 мес.",
+    "note": null
+   },
+   "avgMonthlyTaxesRub": {
+    "value": 96575.9,
+    "status": "ok",
+    "display": "96 575,90 ₽",
+    "note": null
+   },
+   "loanProceedsTotalRub": {
+    "value": null,
+    "status": "not_found",
+    "display": "не найдено",
+    "note": null
+   }
+  },
+  "monthly": [
+   {
+    "month": "2025-10",
+    "revenue": 560000.0,
+    "expenses": 54604.59,
+    "taxes": 55395.41,
+    "operating_outflow": 110000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 7470.97,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 0.0,
+    "own_transfers_out": 118769.0,
+    "refunds_in": 9333.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 16
+   },
+   {
+    "month": "2025-11",
+    "revenue": 840000.0,
+    "expenses": 170319.22,
+    "taxes": 219680.78,
+    "operating_outflow": 390000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 0.0,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 13112.0,
+    "own_transfers_out": 0.0,
+    "refunds_in": 0.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 9
+   },
+   {
+    "month": "2025-12",
+    "revenue": 560000.0,
+    "expenses": 72538.38,
+    "taxes": 37461.62,
+    "operating_outflow": 110000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 6530.35,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 0.0,
+    "own_transfers_out": 0.0,
+    "refunds_in": 0.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 10
+   },
+   {
+    "month": "2026-01",
+    "revenue": 840000.0,
+    "expenses": 262656.84,
+    "taxes": 127343.16,
+    "operating_outflow": 390000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 5314.58,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 0.0,
+    "own_transfers_out": 145775.0,
+    "refunds_in": 0.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 13
+   },
+   {
+    "month": "2026-02",
+    "revenue": 560000.0,
+    "expenses": 81773.13,
+    "taxes": 28226.87,
+    "operating_outflow": 110000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 5704.05,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 0.0,
+    "own_transfers_out": 0.0,
+    "refunds_in": 0.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 15
+   },
+   {
+    "month": "2026-03",
+    "revenue": 840000.0,
+    "expenses": 174716.51,
+    "taxes": 215283.49,
+    "operating_outflow": 390000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 0.0,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 94428.0,
+    "own_transfers_out": 18492.0,
+    "refunds_in": 0.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 9
+   },
+   {
+    "month": "2026-04",
+    "revenue": 560000.0,
+    "expenses": 108717.99,
+    "taxes": 1282.01,
+    "operating_outflow": 110000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 0.0,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 0.0,
+    "own_transfers_out": 0.0,
+    "refunds_in": 0.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 13
+   },
+   {
+    "month": "2026-05",
+    "revenue": 840000.0,
+    "expenses": 282071.71,
+    "taxes": 107928.29,
+    "operating_outflow": 390000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 4685.49,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 0.0,
+    "own_transfers_out": 0.0,
+    "refunds_in": 0.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 14
+   },
+   {
+    "month": "2026-06",
+    "revenue": 560000.0,
+    "expenses": 76949.5,
+    "taxes": 33050.5,
+    "operating_outflow": 110000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 7943.78,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 94489.0,
+    "own_transfers_out": 24200.0,
+    "refunds_in": 0.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 13
+   },
+   {
+    "month": "2026-07",
+    "revenue": 840000.0,
+    "expenses": 212544.52,
+    "taxes": 177455.48,
+    "operating_outflow": 390000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 0.0,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 0.0,
+    "own_transfers_out": 0.0,
+    "refunds_in": 39169.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 11
+   },
+   {
+    "month": "2026-08",
+    "revenue": 560000.0,
+    "expenses": 32097.28,
+    "taxes": 77902.72,
+    "operating_outflow": 110000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 8497.7,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 20110.0,
+    "own_transfers_out": 55889.0,
+    "refunds_in": 0.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 10
+   },
+   {
+    "month": "2026-09",
+    "revenue": 840000.0,
+    "expenses": 312099.56,
+    "taxes": 77900.44,
+    "operating_outflow": 390000.0,
+    "net": 450000.0,
+    "loan_payments": 30000.0,
+    "personal": 6685.02,
+    "loan_proceeds": 0.0,
+    "own_transfers_in": 0.0,
+    "own_transfers_out": 0.0,
+    "refunds_in": 48476.0,
+    "refunds_out": 0.0,
+    "unclear_in": 0.0,
+    "unclear_out": 0.0,
+    "operations": 12
+   }
+  ],
+  "classification": {
+   "operations": 145,
+   "by_source": {
+    "rules": 145
+   },
+   "by_category": {
+    "revenue": 63,
+    "expense": 38,
+    "tax": 12,
+    "loan_payment": 12,
+    "own_transfer": 9,
+    "personal": 8,
+    "refund": 3
+   },
+   "needs_review": 8,
+   "unclear_inflow_share": 0.0,
+   "unclear_examples": []
+  },
+  "warnings": [],
+  "pipeline_version": "0.2.0",
+  "llm": {
+   "enabled": false,
+   "available": false
+  }
+ },
+ "cached": false
+}

@@ -2,8 +2,8 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Smart Credit Cabinet — ML",
-  "description": "Анализ выписки по счёту ИП и объяснение решения клиенту.",
-  "version": "0.1.0"
+  "description": "Чтение документов анкеты (счёт, КП, выписка), анализ выписки и объяснение решения.",
+  "version": "0.2.0"
  },
  "paths": {
   "/health": {
@@ -93,6 +93,24 @@
        "title": "Include Transactions"
       },
       "description": "Вернуть все операции с категориями"
+     },
+     {
+      "name": "owner_name",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "ФИО владельца ИП (F01): переводы от/на его имя = свои средства",
+       "title": "Owner Name"
+      },
+      "description": "ФИО владельца ИП (F01): переводы от/на его имя = свои средства"
      }
     ],
     "requestBody": {
@@ -114,6 +132,46 @@
          "type": "object",
          "additionalProperties": true,
          "title": "Response Analyze Statement V1 Statement Analyze Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/documents/read": {
+   "post": {
+    "summary": "Read Document",
+    "operationId": "read_document_v1_documents_read_post",
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_read_document_v1_documents_read_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Read Document V1 Documents Read Post"
         }
        }
       }
@@ -180,7 +238,32 @@
       "type": "string",
       "contentMediaType": "application/octet-stream",
       "title": "File",
-      "description": "CSV или XLSX: date, amount, counterparty, description"
+      "description": "Выписка: CSV, XLSX, PDF, скан или фото"
+     },
+     "as_of": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "As Of",
+      "description": "То же, что as_of, полем формы"
+     },
+     "owner_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner Name",
+      "description": "То же, что owner_name, полем формы"
      }
     },
     "type": "object",
@@ -188,6 +271,100 @@
      "file"
     ],
     "title": "Body_analyze_statement_v1_statement_analyze_post"
+   },
+   "Body_read_document_v1_documents_read_post": {
+    "properties": {
+     "file": {
+      "type": "string",
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "description": "Счёт, КП или выписка: PDF, JPG/PNG/TIFF, CSV, XLSX"
+     },
+     "document_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Document Id",
+      "description": "ID документа в бэкенде — возвращается как есть"
+     },
+     "document_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Document Version",
+      "description": "Версия файла в бэкенде — возвращается как есть"
+     },
+     "run_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Run Id",
+      "description": "ID запуска чтения — возвращается как есть"
+     },
+     "expected_sha256": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Sha256",
+      "description": "sha256 версии по данным бэкенда; не совпал — FAILED"
+     },
+     "as_of": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "As Of",
+      "description": "Дата рассмотрения: для показателей выписки"
+     },
+     "owner_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner Name",
+      "description": "ФИО владельца ИП: переводы от/на его имя = свои средства"
+     },
+     "use_llm": {
+      "type": "boolean",
+      "title": "Use Llm",
+      "description": "Спрашивать нейросеть о непонятых операциях выписки",
+      "default": true
+     }
+    },
+    "type": "object",
+    "required": [
+     "file"
+    ],
+    "title": "Body_read_document_v1_documents_read_post"
    },
    "ExplainRequest": {
     "properties": {

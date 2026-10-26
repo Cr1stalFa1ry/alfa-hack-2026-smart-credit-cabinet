@@ -1,0 +1,763 @@
+{
+ "as_of": "2026-10-24",
+ "split": "all",
+ "documents": [
+  {
+   "document_id": "S11_01",
+   "file": "documents/S11_01.pdf",
+   "split": "development",
+   "seconds": 0.03,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": false,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 11
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "S11_02",
+   "file": "documents/S11_02.pdf",
+   "split": "development",
+   "seconds": 0.05,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": false,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 19
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "S11_03",
+   "file": "documents/S11_03.pdf",
+   "split": "development",
+   "seconds": 0.03,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "BUYER_MISMATCH"
+    ],
+    "predicted": [
+     "BUYER_MISMATCH"
+    ],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 11
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "S11_04",
+   "file": "documents/S11_04.pdf",
+   "split": "development",
+   "seconds": 0.09,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "AMOUNT_MISMATCH"
+    ],
+    "predicted": [
+     "AMOUNT_MISMATCH"
+    ],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 19
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "M53_01",
+   "file": "documents/M53_01.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.05,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": false,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 19
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "M53_02",
+   "file": "documents/M53_02.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.03,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": false,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 11
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "M53_03",
+   "file": "documents/M53_03.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.03,
+   "status": {
+    "expected": "PARTIAL",
+    "predicted": "PARTIAL",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "MISSING_PAGE"
+    ],
+    "predicted": [
+     "MISSING_PAGE"
+    ],
+    "ok": true
+   },
+   "issues": [
+    "MISSING_PAGE",
+    "FIELD_NOT_FOUND",
+    "ITEM_PRICES_MISSING"
+   ],
+   "fields": {
+    "ok": 19
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "M53_04",
+   "file": "documents/M53_04.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.02,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "SUPPLIER_MISMATCH"
+    ],
+    "predicted": [
+     "SUPPLIER_MISMATCH"
+    ],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 11
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "I01_statement",
+   "file": "documents/I01_statement.pdf",
+   "split": "development",
+   "seconds": 0.57,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [
+    "TRANSACTIONS_NEED_REVIEW"
+   ],
+   "fields": {
+    "ok": 9
+   },
+   "field_errors": [],
+   "transactions": {
+    "expected": 145,
+    "extracted": 145,
+    "matched": 145,
+    "not_in_document": 0,
+    "category": {
+     "correct": 145
+    },
+    "critical_to_revenue": [],
+    "monthly_ok": "12/12",
+    "errors": []
+   }
+  },
+  {
+   "document_id": "S03_statement",
+   "file": "documents/S03_statement.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.5,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [
+    "TRANSACTIONS_NEED_REVIEW"
+   ],
+   "fields": {
+    "ok": 9
+   },
+   "field_errors": [],
+   "transactions": {
+    "expected": 123,
+    "extracted": 123,
+    "matched": 123,
+    "not_in_document": 0,
+    "category": {
+     "correct": 123
+    },
+    "critical_to_revenue": [],
+    "monthly_ok": "12/12",
+    "errors": []
+   }
+  },
+  {
+   "document_id": "C01_operations",
+   "file": "documents/C01_operations.pdf",
+   "split": "engineered_control_not_blind",
+   "seconds": 0.05,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [
+    "TRANSACTIONS_NEED_REVIEW"
+   ],
+   "fields": {},
+   "field_errors": [],
+   "transactions": {
+    "expected": 12,
+    "extracted": 12,
+    "matched": 12,
+    "not_in_document": 0,
+    "category": {
+     "correct": 12
+    },
+    "critical_to_revenue": [],
+    "monthly_ok": null,
+    "errors": []
+   }
+  },
+  {
+   "document_id": "DOC-002-01",
+   "file": "documents/01_Счет_совпадает.pdf",
+   "split": "seen_regression_only",
+   "seconds": 0.02,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": false,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 8
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "DOC-002-02",
+   "file": "documents/02_Другая_стоимость.pdf",
+   "split": "seen_regression_only",
+   "seconds": 0.02,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "AMOUNT_MISMATCH"
+    ],
+    "predicted": [
+     "AMOUNT_MISMATCH"
+    ],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 8
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "DOC-002-03",
+   "file": "documents/03_Другой_поставщик.pdf",
+   "split": "seen_regression_only",
+   "seconds": 0.02,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "SUPPLIER_MISMATCH"
+    ],
+    "predicted": [
+     "SUPPLIER_MISMATCH"
+    ],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "ok": 8
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "DOC-002-04",
+   "file": "documents/04_Неполный_документ.pdf",
+   "split": "seen_regression_only",
+   "seconds": 0.02,
+   "status": {
+    "expected": "PARTIAL",
+    "predicted": "PARTIAL",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "MISSING_PAGE"
+    ],
+    "predicted": [
+     "MISSING_PAGE"
+    ],
+    "ok": true
+   },
+   "issues": [
+    "MISSING_PAGE",
+    "FIELD_NOT_FOUND",
+    "ITEM_PRICES_MISSING"
+   ],
+   "fields": {
+    "ok": 8
+   },
+   "field_errors": []
+  },
+  {
+   "document_id": "S11_01_scan",
+   "file": "documents/S11_01_scan.pdf",
+   "split": "development",
+   "seconds": 1.47,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": false,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "wrong": 1,
+    "ok": 10
+   },
+   "field_errors": [
+    {
+     "field": "document_number",
+     "expected": "СЧ-S11-01",
+     "predicted": "СЧ-511-01",
+     "outcome": "wrong"
+    }
+   ]
+  },
+  {
+   "document_id": "S03_statement_scan",
+   "file": "documents/S03_statement_scan.pdf",
+   "split": "reserved_template_test",
+   "seconds": 5.25,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [
+    "TRANSACTIONS_NEED_REVIEW"
+   ],
+   "fields": {
+    "ok": 9
+   },
+   "field_errors": [],
+   "transactions": {
+    "expected": 123,
+    "extracted": 123,
+    "matched": 123,
+    "not_in_document": 0,
+    "category": {
+     "correct": 123,
+     "text_errors": 1
+    },
+    "critical_to_revenue": [],
+    "monthly_ok": "12/12",
+    "errors": [
+     {
+      "row": "DEMO-003-014",
+      "error": "counterparty прочитан неверно",
+      "expected": "ООО \"СеверТорг\"",
+      "predicted": "ООО \"СевертТорг\""
+     }
+    ]
+   }
+  },
+  {
+   "document_id": "S11_01_low_resolution",
+   "file": "documents/S11_01_low_resolution.pdf",
+   "split": "development",
+   "seconds": 0.66,
+   "status": {
+    "expected": "NEEDS_REVIEW",
+    "predicted": "NEEDS_REVIEW",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "LOW_RESOLUTION"
+    ],
+    "predicted": [
+     "LOW_RESOLUTION"
+    ],
+    "ok": true
+   },
+   "issues": [
+    "LOW_RESOLUTION",
+    "UNKNOWN_DOCUMENT_TYPE"
+   ],
+   "fields": {
+    "missing": 11
+   },
+   "field_errors": [
+    {
+     "field": "document_number",
+     "expected": "СЧ-S11-01",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "document_date",
+     "expected": "2026-10-23",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "supplier_name",
+     "expected": "ООО «Техно-Комплект 571»",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "supplier_inn",
+     "expected": "9937546571",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "buyer_name",
+     "expected": "ИП Семёнов Илья Владимирович",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "buyer_inn",
+     "expected": "991126723717",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "total_amount_rub",
+     "expected": "3431000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.description",
+     "expected": "Цифровая печатная машина",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.quantity",
+     "expected": "1",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.unit_price_rub",
+     "expected": "3431000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.amount_rub",
+     "expected": "3431000.00",
+     "predicted": null,
+     "outcome": "missing"
+    }
+   ]
+  },
+  {
+   "document_id": "M53_02_photo",
+   "file": "documents/M53_02_photo.jpg",
+   "split": "reserved_template_test",
+   "seconds": 0.81,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": false,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [],
+   "fields": {
+    "wrong": 1,
+    "ok": 10
+   },
+   "field_errors": [
+    {
+     "field": "document_number",
+     "expected": "СЧ-M53-02",
+     "predicted": "СЧ-М53-02",
+     "outcome": "wrong"
+    }
+   ]
+  },
+  {
+   "document_id": "I01_page1_photo",
+   "file": "documents/I01_page1_photo.jpg",
+   "split": "development",
+   "seconds": 2.18,
+   "status": {
+    "expected": "PARTIAL",
+    "predicted": "PARTIAL",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "MISSING_PAGE"
+    ],
+    "predicted": [
+     "MISSING_PAGE"
+    ],
+    "ok": true
+   },
+   "issues": [
+    "MISSING_PAGE",
+    "TOTALS_MISMATCH",
+    "TOTALS_MISMATCH",
+    "BALANCE_MISMATCH",
+    "PERIOD_NOT_COVERED",
+    "TRANSACTIONS_NEED_REVIEW"
+   ],
+   "fields": {
+    "ok": 9
+   },
+   "field_errors": [],
+   "transactions": {
+    "expected": 25,
+    "extracted": 25,
+    "matched": 25,
+    "not_in_document": 0,
+    "category": {
+     "correct": 25,
+     "text_errors": 2
+    },
+    "critical_to_revenue": [],
+    "monthly_ok": null,
+    "errors": [
+     {
+      "row": "DEMO-001-011",
+      "error": "description прочитан неверно",
+      "expected": "Погашение основного долга по кредитному договору № DEBT-S1-A",
+      "predicted": "Погашение основного долга по кредитному договору № ОЕВТ-51-А"
+     },
+     {
+      "row": "DEMO-001-023",
+      "error": "description прочитан неверно",
+      "expected": "Погашение основного долга по кредитному договору № DEBT-S1-A",
+      "predicted": "Погашение основного долга по кредитному договору № РОЕВТ-51-А"
+     }
+    ]
+   }
+  }
+ ],
+ "summary": {
+  "documents": 20,
+  "status_ok": 20,
+  "manual_review_ok": 20,
+  "backend_flags_ok": 20,
+  "fields": {
+   "ok": 208,
+   "wrong": 2,
+   "missing": 11
+  },
+  "critical_to_revenue": 0
+ }
+}

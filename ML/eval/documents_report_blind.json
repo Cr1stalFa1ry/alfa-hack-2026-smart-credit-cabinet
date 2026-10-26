@@ -1,0 +1,454 @@
+{
+ "as_of": "2026-10-24",
+ "split": "reserved_template_test",
+ "documents": [
+  {
+   "document_id": "M53_01",
+   "file": "documents/M53_01.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.04,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "NEEDS_REVIEW",
+    "ok": false
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": true,
+    "ok": false
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [
+    "FIELD_NOT_FOUND",
+    "FIELD_NOT_FOUND",
+    "ITEM_PRICES_MISSING"
+   ],
+   "fields": {
+    "ok": 10,
+    "missing": 9
+   },
+   "field_errors": [
+    {
+     "field": "buyer_name",
+     "expected": "ИП Макаров Илья Александрович",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "buyer_inn",
+     "expected": "998620195652",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "total_amount_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.unit_price_rub",
+     "expected": "1800000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.amount_rub",
+     "expected": "1800000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item2.unit_price_rub",
+     "expected": "40000",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item2.amount_rub",
+     "expected": "40000",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item3.unit_price_rub",
+     "expected": "144000",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item3.amount_rub",
+     "expected": "144000",
+     "predicted": null,
+     "outcome": "missing"
+    }
+   ]
+  },
+  {
+   "document_id": "M53_02",
+   "file": "documents/M53_02.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.02,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "NEEDS_REVIEW",
+    "ok": false
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": true,
+    "ok": false
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [
+    "FIELD_NOT_FOUND",
+    "FIELD_NOT_FOUND",
+    "ITEM_PRICES_MISSING"
+   ],
+   "fields": {
+    "ok": 6,
+    "missing": 5
+   },
+   "field_errors": [
+    {
+     "field": "buyer_name",
+     "expected": "ИП Макаров Илья Александрович",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "buyer_inn",
+     "expected": "998620195652",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "total_amount_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.unit_price_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.amount_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    }
+   ]
+  },
+  {
+   "document_id": "M53_03",
+   "file": "documents/M53_03.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.03,
+   "status": {
+    "expected": "PARTIAL",
+    "predicted": "PARTIAL",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "MISSING_PAGE"
+    ],
+    "predicted": [
+     "MISSING_PAGE"
+    ],
+    "ok": true
+   },
+   "issues": [
+    "MISSING_PAGE",
+    "FIELD_NOT_FOUND",
+    "FIELD_NOT_FOUND",
+    "ITEM_PRICES_MISSING"
+   ],
+   "fields": {
+    "ok": 17,
+    "missing": 2
+   },
+   "field_errors": [
+    {
+     "field": "buyer_name",
+     "expected": "ИП Макаров Илья Александрович",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "buyer_inn",
+     "expected": "998620195652",
+     "predicted": null,
+     "outcome": "missing"
+    }
+   ]
+  },
+  {
+   "document_id": "M53_04",
+   "file": "documents/M53_04.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.02,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "NEEDS_REVIEW",
+    "ok": false
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [
+     "SUPPLIER_MISMATCH"
+    ],
+    "predicted": [
+     "SUPPLIER_MISMATCH"
+    ],
+    "ok": true
+   },
+   "issues": [
+    "FIELD_NOT_FOUND",
+    "FIELD_NOT_FOUND",
+    "ITEM_PRICES_MISSING"
+   ],
+   "fields": {
+    "ok": 6,
+    "missing": 5
+   },
+   "field_errors": [
+    {
+     "field": "buyer_name",
+     "expected": "ИП Макаров Илья Александрович",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "buyer_inn",
+     "expected": "998620195652",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "total_amount_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.unit_price_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.amount_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    }
+   ]
+  },
+  {
+   "document_id": "S03_statement",
+   "file": "documents/S03_statement.pdf",
+   "split": "reserved_template_test",
+   "seconds": 0.44,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "EXTRACTED",
+    "ok": true
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [
+    "TRANSACTIONS_NEED_REVIEW"
+   ],
+   "fields": {
+    "ok": 9
+   },
+   "field_errors": [],
+   "transactions": {
+    "expected": 123,
+    "extracted": 123,
+    "matched": 123,
+    "not_in_document": 0,
+    "category": {
+     "correct": 123
+    },
+    "critical_to_revenue": [],
+    "monthly_ok": "12/12",
+    "errors": []
+   }
+  },
+  {
+   "document_id": "S03_statement_scan",
+   "file": "documents/S03_statement_scan.pdf",
+   "split": "reserved_template_test",
+   "seconds": 4.96,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "NEEDS_REVIEW",
+    "ok": false
+   },
+   "manual_review": {
+    "expected": true,
+    "predicted": true,
+    "ok": true
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [
+    "TOTALS_MISMATCH",
+    "BALANCE_MISMATCH",
+    "ROW_NUMBER_GAP",
+    "TRANSACTIONS_NEED_REVIEW"
+   ],
+   "fields": {
+    "ok": 8,
+    "missing": 1
+   },
+   "field_errors": [
+    {
+     "field": "account_holder_inn",
+     "expected": "990750786404",
+     "predicted": null,
+     "outcome": "missing"
+    }
+   ],
+   "transactions": {
+    "expected": 123,
+    "extracted": 122,
+    "matched": 122,
+    "not_in_document": 0,
+    "category": {
+     "correct": 122,
+     "text_errors": 1
+    },
+    "critical_to_revenue": [],
+    "monthly_ok": null,
+    "errors": [
+     {
+      "row": "DEMO-003-014",
+      "error": "counterparty прочитан неверно",
+      "expected": "ООО \"СеверТорг\"",
+      "predicted": "ООО \"СевертТорг\""
+     },
+     {
+      "row": "DEMO-003-057",
+      "error": "операция не извлечена",
+      "expected": "ОПЛАТА ПО ДОГ 1990 ЗА УСЛУГИ БЕЗ НДС"
+     }
+    ]
+   }
+  },
+  {
+   "document_id": "M53_02_photo",
+   "file": "documents/M53_02_photo.jpg",
+   "split": "reserved_template_test",
+   "seconds": 0.83,
+   "status": {
+    "expected": "EXTRACTED",
+    "predicted": "NEEDS_REVIEW",
+    "ok": false
+   },
+   "manual_review": {
+    "expected": false,
+    "predicted": true,
+    "ok": false
+   },
+   "backend_flags": {
+    "expected": [],
+    "predicted": [],
+    "ok": true
+   },
+   "issues": [
+    "FIELD_NOT_FOUND",
+    "FIELD_NOT_FOUND",
+    "ITEM_PRICES_MISSING"
+   ],
+   "fields": {
+    "wrong": 1,
+    "ok": 5,
+    "missing": 5
+   },
+   "field_errors": [
+    {
+     "field": "document_number",
+     "expected": "СЧ-M53-02",
+     "predicted": "СЧ-М53-02",
+     "outcome": "wrong"
+    },
+    {
+     "field": "buyer_name",
+     "expected": "ИП Макаров Илья Александрович",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "buyer_inn",
+     "expected": "998620195652",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "total_amount_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.unit_price_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    },
+    {
+     "field": "item1.amount_rub",
+     "expected": "1984000.00",
+     "predicted": null,
+     "outcome": "missing"
+    }
+   ]
+  }
+ ],
+ "summary": {
+  "documents": 7,
+  "status_ok": 2,
+  "manual_review_ok": 4,
+  "backend_flags_ok": 7,
+  "fields": {
+   "ok": 61,
+   "missing": 27,
+   "wrong": 1
+  },
+  "critical_to_revenue": 0
+ }
+}
