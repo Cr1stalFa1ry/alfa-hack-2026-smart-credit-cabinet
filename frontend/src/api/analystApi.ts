@@ -167,5 +167,15 @@ export const analystApi = {
     applicationStore.setStatus(id, 'closed', comment);
     return applicationStore.getById(id)!;
   },
+
+  // Удаление заявки аналитиком
+  deleteApplication: async (id: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/employee/applications/${id}`, { timeout: 5000 });
+    } catch (err) {
+      console.warn('Backend deleteApplication error (handled offline):', err);
+    }
+    applicationStore.removeApp(id);
+  },
 };
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CreditApplication } from '../../types/application';
 import { Modal } from '../common/Modal';
 import { formatRubles, formatPercent, calculateMonthlyPayment } from '../../utils/formatters';
-import { Check, X, HelpCircle, RefreshCw, Ban, Sparkles, Calculator, AlertTriangle } from 'lucide-react';
+import { Check, X, HelpCircle, RefreshCw, Ban, Sparkles, Calculator, AlertTriangle, Trash2 } from 'lucide-react';
 
 interface AnalystActionPanelProps {
   application: CreditApplication;
@@ -16,6 +16,7 @@ interface AnalystActionPanelProps {
   onRequestInfo: (prompt: string) => Promise<void>;
   onReturnToChecking: (comment?: string) => Promise<void>;
   onCloseNonCredit: (reasonCode: string, comment: string) => Promise<void>;
+  onDelete?: () => Promise<void>;
 }
 
 export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
@@ -25,11 +26,14 @@ export const AnalystActionPanel: React.FC<AnalystActionPanelProps> = ({
   onRequestInfo,
   onReturnToChecking,
   onCloseNonCredit,
+  onDelete,
 }) => {
   const [activeModal, setActiveModal] = useState<
     'approve' | 'decline' | 'need_info' | 'recheck' | 'close' | 'confirm_approve' | 'confirm_decline' | 'confirm_close' | null
   >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const defaultAmount =
     application.currentOffer?.approvedAmount ||

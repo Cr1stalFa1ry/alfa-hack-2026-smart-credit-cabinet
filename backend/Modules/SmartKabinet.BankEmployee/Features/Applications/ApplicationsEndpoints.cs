@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using SmartKabinet.Auth.Infrastructure.Security;
 using SmartKabinet.BankEmployee.Features.Applications.ApproveApplication;
 using SmartKabinet.BankEmployee.Features.Applications.CloseApplication;
+using SmartKabinet.BankEmployee.Features.Applications.DeleteApplication;
 using SmartKabinet.BankEmployee.Features.Applications.DeclineApplication;
 using SmartKabinet.BankEmployee.Features.Applications.GetApplicationById;
 using SmartKabinet.BankEmployee.Features.Applications.GetQueue;
@@ -27,6 +28,7 @@ public static class ApplicationsEndpoints
         group.MapRequestInfoEndpoint();
         group.MapRecheckApplicationEndpoint();
         group.MapCloseApplicationEndpoint();
+        group.MapDeleteApplicationEndpoint();
 
         return app;
     }

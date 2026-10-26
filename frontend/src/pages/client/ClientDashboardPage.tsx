@@ -133,7 +133,7 @@ export const ClientDashboardPage: React.FC = () => {
               ? 'ring-2 ring-amber-500/50 bg-amber-50/20 dark:bg-amber-950/20'
               : 'hover:border-slate-300 dark:hover:border-slate-700'
           }`}
-          onClick={() => setFilter('in_progress')}
+          onClick={() => setFilter(filter === 'in_progress' ? 'all' : 'in_progress')}
         >
           <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
             <Clock className="w-5 h-5" />
@@ -152,7 +152,7 @@ export const ClientDashboardPage: React.FC = () => {
               ? 'ring-2 ring-emerald-500/50 bg-emerald-50/20 dark:bg-emerald-950/20'
               : 'hover:border-slate-300 dark:hover:border-slate-700'
           }`}
-          onClick={() => setFilter('approved')}
+          onClick={() => setFilter(filter === 'approved' ? 'all' : 'approved')}
         >
           <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <CheckCircle className="w-5 h-5" />
@@ -171,7 +171,7 @@ export const ClientDashboardPage: React.FC = () => {
               ? 'ring-2 ring-slate-400/50 bg-slate-100/40 dark:bg-slate-800/40'
               : 'hover:border-slate-300 dark:hover:border-slate-700'
           }`}
-          onClick={() => setFilter('closed')}
+          onClick={() => setFilter(filter === 'closed' ? 'all' : 'closed')}
         >
           <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0">
             <Archive className="w-5 h-5" />
@@ -187,64 +187,26 @@ export const ClientDashboardPage: React.FC = () => {
 
       {/* Applications list */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Ваши кредитные заявки</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {filter === 'all' && `Отображаются все заявки (${filteredApplications.length})`}
               {filter === 'in_progress' && `Только заявки в обработке (${filteredApplications.length})`}
               {filter === 'approved' && `Только одобренные и выданные заявки (${filteredApplications.length})`}
-              {filter === 'closed' && `Только закрытые и отклоненные заявки (${filteredApplications.length})`}
+              {filter === 'closed' && `Только закрытые и отклонённые заявки (${filteredApplications.length})`}
             </p>
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs font-semibold overflow-x-auto">
+          {filter !== 'all' && (
             <button
               type="button"
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-                filter === 'all'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
+              className="text-xs text-alfa-600 dark:text-alfa-400 hover:text-alfa-700 font-semibold"
             >
-              Все ({totalCount})
+              Сбросить фильтр
             </button>
-            <button
-              type="button"
-              onClick={() => setFilter('in_progress')}
-              className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-                filter === 'in_progress'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              В обработке ({inProgressCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter('approved')}
-              className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-                filter === 'approved'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Одобрено ({approvedCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter('closed')}
-              className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-                filter === 'closed'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Закрыто / Отказ ({closedCount})
-            </button>
-          </div>
+          )}
         </div>
 
         {isLoading ? (
