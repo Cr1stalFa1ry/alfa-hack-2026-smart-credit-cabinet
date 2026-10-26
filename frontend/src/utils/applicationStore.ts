@@ -124,6 +124,7 @@ class ApplicationStore {
     const app = this.getById(appId);
     if (!app) throw new Error('Заявка не найдена');
 
+    const nowIso = stamp();
     const newReq: ClientRequestItem = {
       id: uid('REQ'),
       title: req.title,
@@ -132,13 +133,19 @@ class ApplicationStore {
       period: req.period || '',
       documentPurpose: req.documentPurpose || 'general',
       status: 'open',
-      createdAt: stamp(),
+      createdAt: nowIso,
     };
 
     app.requests = app.requests || [];
     app.requests.push(newReq);
     app.status = 'need_info'; // awaiting_info
-    app.needInfoPrompt = `${newReq.title}${newReq.reason ? ` — ${newReq.reason}` : ''}`;
+    const promptText = req.reason && req.reason.trim() !== req.title.trim()
+      ? `${req.title}. ${req.reason}`
+      : req.title;
+    app.needInfoPrompt = promptText;
+    // Сбрасываем ответ и файлы от предыдущего дозапроса
+    app.needInfoResponse = undefined;
+    app.needInfoFiles = undefined;
 
     this.addEvent(app.id, `Запрос клиенту: ${newReq.title}`, true, 'Специалист');
 
@@ -150,8 +157,8 @@ class ApplicationStore {
       toStatus: 'need_info',
       actor: 'analyst',
       actorName: 'Кредитный аналитик',
-      comment: `Запрос сведений: ${newReq.title}. ${newReq.reason}`,
-      timestamp: stamp(),
+      comment: `Запрос сведений: ${promptText}`,
+      timestamp: nowIso,
     });
 
     this.saveApp(app);
@@ -173,16 +180,16 @@ class ApplicationStore {
       r.status = 'responded';
       r.response = response;
       r.respondedAt = stamp();
+      r.files = files && files.length > 0 ? [...files] : [];
       if (files && files.length > 0) {
-        r.files = [...(r.files || []), ...files];
-        app.documents = [...(app.documents || []), ...files];
+        const existingDocIds = new Set((app.documents || []).map((d) => d.id));
+        const newDocs = files.filter((f) => !existingDocIds.has(f.id));
+        app.documents = [...(app.documents || []), ...newDocs];
       }
     }
 
     app.needInfoResponse = response;
-    if (files && files.length > 0) {
-      app.needInfoFiles = [...(app.needInfoFiles || []), ...files];
-    }
+    app.needInfoFiles = files && files.length > 0 ? [...files] : undefined;
     this.addEvent(app.id, `Ответ клиента на запрос: ${r?.title || requestId}`, true, 'Клиент');
 
     const fileSuffix = files && files.length > 0
@@ -199,6 +206,7 @@ class ApplicationStore {
       actorName: app.clientName || 'Клиент',
       comment: `Ответ клиента: ${response}${fileSuffix}`,
       timestamp: stamp(),
+      files: files && files.length > 0 ? [...files] : [],
     });
 
     this.saveApp(app);

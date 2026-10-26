@@ -328,11 +328,17 @@ export const clientApi = {
       try {
         const freshApp = await clientApi.getApplicationById(id);
         if (freshApp) {
+          const openReq = freshApp.requests?.find((r) => r.status === 'open' || r.status === 'responded');
+          if (openReq) {
+            openReq.files = files && files.length > 0 ? [...files] : [];
+          }
           if (files && files.length > 0) {
-            freshApp.needInfoFiles = [...(freshApp.needInfoFiles || []), ...files];
+            freshApp.needInfoFiles = [...files];
             const existingIds = new Set((freshApp.documents || []).map((d) => d.id));
             const newFiles = files.filter((f) => !existingIds.has(f.id));
             freshApp.documents = [...(freshApp.documents || []), ...newFiles];
+          } else {
+            freshApp.needInfoFiles = undefined;
           }
           applicationStore.saveApp(freshApp);
           return freshApp;
@@ -348,13 +354,18 @@ export const clientApi = {
     if (openReq) {
       applicationStore.replyClientRequest(id, openReq.id, response, files);
     } else {
-      if (app && files && files.length > 0) {
-        app.needInfoFiles = [...(app.needInfoFiles || []), ...files];
-        const existingIds = new Set((app.documents || []).map((d) => d.id));
-        const newFiles = files.filter((f) => !existingIds.has(f.id));
-        app.documents = [...(app.documents || []), ...newFiles];
+      if (app) {
+        app.needInfoFiles = files && files.length > 0 ? [...files] : undefined;
+        if (files && files.length > 0) {
+          const existingIds = new Set((app.documents || []).map((d) => d.id));
+          const newFiles = files.filter((f) => !existingIds.has(f.id));
+          app.documents = [...(app.documents || []), ...newFiles];
+        }
       }
       applicationStore.setStatus(id, 'checking', fullComment);
+      if (app && app.history && app.history.length > 0) {
+        app.history[app.history.length - 1].files = files && files.length > 0 ? [...files] : [];
+      }
     }
     return applicationStore.getById(id)!;
   },

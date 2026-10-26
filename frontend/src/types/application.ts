@@ -50,6 +50,7 @@ export interface StateTransitionRecord {
   reasonCode?: string;
   comment?: string;
   timestamp: string;
+  files?: UploadedDocument[];
 }
 
 export interface CreditOffer {

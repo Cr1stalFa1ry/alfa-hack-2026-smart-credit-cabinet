@@ -11,57 +11,56 @@ export interface InquiryItem {
   files?: UploadedDocument[];
 }
 
-// Извлекаем все взаимодействия (дозапросы банка и ответы клиента) с прикрепленными файлами
+// Извлекаем все взаимодействия (дозапросы банка и ответы клиента) с строго изолированными файлами
 export function extractInquiriesHistory(application: CreditApplication): InquiryItem[] {
   if (!application) return [];
 
   const items: InquiryItem[] = [];
   const allDocs = application.documents || [];
 
-  const findMatchingDocuments = (text?: string, timeIso?: string): UploadedDocument[] => {
-    if (!text && !timeIso) return [];
+  // Сопоставляем документы строго по упоминанию имени файла в тексте ответа / комментария
+  const findMatchingDocuments = (text?: string): UploadedDocument[] => {
+    if (!text || !text.trim()) return [];
     const matched: UploadedDocument[] = [];
     const seen = new Set<string>();
+    const lowerText = text.toLowerCase();
 
     allDocs.forEach((doc) => {
       if (seen.has(doc.id)) return;
-      // Match by exact file name inside text
-      if (text && doc.fileName && text.includes(doc.fileName)) {
+      if (doc.fileName && lowerText.includes(doc.fileName.toLowerCase())) {
         matched.push(doc);
         seen.add(doc.id);
-        return;
-      }
-      // Match by upload time within 15 minutes of response
-      if (timeIso && doc.uploadedAt) {
-        const diffMs = Math.abs(new Date(doc.uploadedAt).getTime() - new Date(timeIso).getTime());
-        if (diffMs <= 15 * 60 * 1000) {
-          if (text && (text.includes('файл') || text.includes('документ') || text.includes('Прикреплено') || text.includes('T10'))) {
-            matched.push(doc);
-            seen.add(doc.id);
-          }
-        }
       }
     });
 
     return matched;
   };
 
+  // Нормализуем текст запроса для сопоставления
+  const normalizePrompt = (str: string): string => {
+    return str
+      .replace(/^Запрос сведений:\s*/i, '')
+      .replace(/^Запрос дополнительных сведений по заявке:\s*/i, '')
+      .trim();
+  };
+
   // 1. Проверяем структурированные запросы application.requests
   if (application.requests && application.requests.length > 0) {
     application.requests.forEach((req) => {
-      let reqFiles = req.files ? [...req.files] : [];
+      let reqFiles = req.files && req.files.length > 0 ? [...req.files] : [];
       if (reqFiles.length === 0 && req.response) {
-        reqFiles = findMatchingDocuments(req.response, req.respondedAt);
+        reqFiles = findMatchingDocuments(req.response);
       }
-      if (reqFiles.length === 0 && application.needInfoFiles && application.needInfoFiles.length > 0) {
-        if (req.response === application.needInfoResponse || req.status === 'responded') {
-          reqFiles = [...application.needInfoFiles];
-        }
+
+      let cleanPrompt = req.title || '';
+      if (req.reason && req.reason.trim() && req.reason.trim() !== req.title.trim()) {
+        cleanPrompt = `${req.title}: ${req.reason}`;
       }
+      cleanPrompt = normalizePrompt(cleanPrompt);
 
       items.push({
         id: req.id,
-        prompt: req.reason ? `${req.title}: ${req.reason}` : req.title,
+        prompt: cleanPrompt || req.title || 'Запрос сведений',
         promptAt: req.createdAt,
         response: req.response,
         responseAt: req.respondedAt,
@@ -98,7 +97,7 @@ export function extractInquiriesHistory(application: CreditApplication): Inquiry
       }
       currentInquiry = {
         id: rec.id || `prompt-${idx}`,
-        prompt: rec.comment || 'Запрос дополнительных сведений по заявке',
+        prompt: normalizePrompt(rec.comment || 'Запрос дополнительных сведений по заявке'),
         promptAt: rec.timestamp,
         actorName: rec.actorName || (rec.actor === 'analyst' ? 'Специалист банка' : 'Автоматическая проверка'),
         isCurrentOpen: false,
@@ -108,9 +107,9 @@ export function extractInquiriesHistory(application: CreditApplication): Inquiry
       currentInquiry.response = rec.comment || 'Сведения предоставлены клиентом';
       currentInquiry.responseAt = rec.timestamp;
 
-      let respFiles = findMatchingDocuments(rec.comment, rec.timestamp);
-      if (respFiles.length === 0 && application.needInfoFiles && application.needInfoFiles.length > 0) {
-        respFiles = [...application.needInfoFiles];
+      let respFiles = rec.files && rec.files.length > 0 ? [...rec.files] : [];
+      if (respFiles.length === 0 && rec.comment) {
+        respFiles = findMatchingDocuments(rec.comment);
       }
       currentInquiry.files = respFiles;
 
@@ -125,15 +124,19 @@ export function extractInquiriesHistory(application: CreditApplication): Inquiry
     items.push(openInq);
   }
 
-  // 3. Фолбэк на needInfoPrompt / needInfoResponse
+  // 3. Фолбэк на needInfoPrompt / needInfoResponse (только если список пуст)
   if (items.length === 0 && (application.needInfoPrompt || application.needInfoResponse)) {
-    let fallbackFiles = application.needInfoFiles ? [...application.needInfoFiles] : [];
-    if (fallbackFiles.length === 0) {
-      fallbackFiles = findMatchingDocuments(application.needInfoResponse, application.updatedAt);
+    let fallbackFiles: UploadedDocument[] = [];
+    if (application.needInfoResponse) {
+      fallbackFiles = findMatchingDocuments(application.needInfoResponse);
     }
+    if (fallbackFiles.length === 0 && application.needInfoFiles && application.needInfoFiles.length > 0) {
+      fallbackFiles = [...application.needInfoFiles];
+    }
+
     items.push({
       id: 'latest-inquiry',
-      prompt: application.needInfoPrompt || 'Запрос дополнительных сведений',
+      prompt: normalizePrompt(application.needInfoPrompt || 'Запрос дополнительных сведений'),
       promptAt: application.updatedAt,
       response: application.needInfoResponse,
       responseAt: application.updatedAt,
@@ -143,20 +146,65 @@ export function extractInquiriesHistory(application: CreditApplication): Inquiry
     });
   }
 
-  // Дедупликация
+  // Сортируем все взаимодействия строго хронологически по времени отправки запроса
+  items.sort((a, b) => {
+    const ta = a.promptAt ? new Date(a.promptAt).getTime() : 0;
+    const tb = b.promptAt ? new Date(b.promptAt).getTime() : 0;
+    return ta - tb;
+  });
+
+  // Дедупликация (объединяем записи, относящиеся к одному и тому же дозапросу)
   const unique: InquiryItem[] = [];
-  const seen = new Set<string>();
   items.forEach((item) => {
-    const key = `${item.prompt.trim()}::${(item.response || '').trim()}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(item);
+    const existing = unique.find((u) => {
+      // 1. Если оба запроса имеют признак текущего открытого дозапроса — это гарантированно один и тот же активный запрос
+      if (item.isCurrentOpen && u.isCurrentOpen) return true;
+
+      // 2. Если временные метки отправки практически совпадают (разница менее 10 секунд)
+      if (item.promptAt && u.promptAt) {
+        const diffMs = Math.abs(new Date(item.promptAt).getTime() - new Date(u.promptAt).getTime());
+        if (diffMs <= 10000) return true;
+      }
+
+      // 3. Если нормализованные тексты вопросов совпадают или один содержит другой
+      const p1 = item.prompt.trim().toLowerCase();
+      const p2 = u.prompt.trim().toLowerCase();
+      if (p1 === p2) return true;
+      if (p1 && p2 && (p1.includes(p2) || p2.includes(p1))) {
+        if ((item.isCurrentOpen && u.isCurrentOpen) || (item.response || '') === (u.response || '')) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+
+    if (!existing) {
+      unique.push({ ...item });
     } else {
-      const existing = unique.find((u) => `${u.prompt.trim()}::${(u.response || '').trim()}` === key);
-      if (existing && (!existing.files || existing.files.length === 0) && item.files && item.files.length > 0) {
+      // Объединяем информацию в существующий элемент
+      if (!existing.response && item.response) {
+        existing.response = item.response;
+        existing.responseAt = item.responseAt;
+      }
+      if (item.isCurrentOpen) {
+        existing.isCurrentOpen = true;
+      }
+      if ((!existing.files || existing.files.length === 0) && item.files && item.files.length > 0) {
         existing.files = item.files;
       }
+      // Оставляем более свежее и полное описание
+      if (item.promptAt && (!existing.promptAt || new Date(item.promptAt) > new Date(existing.promptAt))) {
+        existing.promptAt = item.promptAt;
+      }
     }
+  });
+
+  // Итоговая хронологическая сортировка (самый последний запрос гарантированно будет последним)
+  unique.sort((a, b) => {
+    const ta = a.promptAt ? new Date(a.promptAt).getTime() : 0;
+    const tb = b.promptAt ? new Date(b.promptAt).getTime() : 0;
+    return ta - tb;
   });
 
   return unique;
