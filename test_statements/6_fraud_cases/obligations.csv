@@ -1,0 +1,11 @@
+application_id,source,obligation_ref,kind,monthly_max_payment_rub
+FRAUD-02,declared,DEBT-S3-A,loan,60000.00
+FRAUD-02,bki,DEBT-S3-A,loan,60000.00
+FRAUD-03,declared,DEBT-S3-A,loan,60000.00
+FRAUD-03,bki,DEBT-S3-A,loan,60000.00
+FRAUD-04,declared,DEBT-S3-A,loan,60000.00
+FRAUD-04,bki,DEBT-S3-A,loan,60000.00
+FRAUD-05,declared,DEBT-S1-A,loan,30000.00
+FRAUD-05,bki,DEBT-S1-A,loan,30000.00
+FRAUD-06,declared,DEBT-S3-A,loan,60000.00
+FRAUD-06,bki,DEBT-S3-A,loan,60000.00

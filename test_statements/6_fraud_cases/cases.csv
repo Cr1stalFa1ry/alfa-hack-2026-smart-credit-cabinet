@@ -1,0 +1,7 @@
+application_id,case,label,expected
+FRAUD-01,FR01,Новый ИП + поставщик моложе 6 мес.,review: FRAUD_NEW_IP_NEW_SUPPLIER
+FRAUD-02,FR02,Поставщик на адресе массовой регистрации,review: FRAUD_SUPPLIER_RISK
+FRAUD-03,FR03,Поставщик связан с заёмщиком,review: FRAUD_AFFILIATED_SUPPLIER
+FRAUD-04,FR04,Цена в счёте вдвое выше справочной,review: FRAUD_PRICE_DEVIATION
+FRAUD-05,FR05,Телефон уже указан другим заявителем,review: FRAUD_DUPLICATE_CONTACTS
+FRAUD-06,CLEAN,Контроль: чистая заявка,"offer COUNTER, выдача поставщику"
