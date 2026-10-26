@@ -73,131 +73,142 @@ export function mapBackendApplication(item: any): CreditApplication {
     ? 'START'
     : 'WC';
 
-  return {
-    id: String(item.id || item.applicationId),
-    inn: item.inn || '',
-    companyName: item.companyName || `ИП (ИНН ${item.inn || ''})`,
-    productCode: productCode as any,
-    stage,
-    businessType: stage,
-    purposeCode,
-    requestedAmount: Number(item.requestedAmount || 0),
-    ownContribution: Number(item.ownContribution || 0),
-    equipmentPrice: item.equipmentPrice ? Number(item.equipmentPrice) : undefined,
-    equipmentSupplier: item.equipmentSupplier,
-    equipmentList: item.equipmentList,
-    requestedTermMonths: Number(item.requestedTermMonths || 12),
-    neededByDate: item.neededByDate,
-    expensePeriod: item.expensePeriod,
-    hasContract: item.hasExpenseContract ? 'Да' : (item.hasExpenseContract === false ? 'Нет' : item.hasContract),
-    hasExpenseContract: item.hasExpenseContract,
-    isTaxRegimeActual: item.isTaxRegimeActual,
-    declaredTaxRegime: item.declaredTaxRegime,
-    receiptCoverage: item.receiptCoverage,
-    expensesCoverageStatus: item.expensesCoverageStatus,
-    hasAdditionalIncome: item.hasAdditionalIncome,
-    additionalIncomeAmount: item.additionalIncomeAmount ? Number(item.additionalIncomeAmount) : undefined,
-    debtsVerificationStatus: item.debtsVerificationStatus,
-    repaymentSourceDescription: item.repaymentSourceDescription,
-    householdExpenses: item.householdExpenses ? Number(item.householdExpenses) : undefined,
-    existingMonthlyObligations: item.existingMonthlyObligations ? Number(item.existingMonthlyObligations) : undefined,
-    asSoonAsPossible: item.asSoonAsPossible ?? true,
-    bkiConsent: item.bkiConsent ?? item.clientAnswers?.bkiConsent ?? false,
-    personalDataConsent: item.personalDataConsent ?? item.clientAnswers?.personalDataConsent ?? false,
-    bkiConsentDate: item.bkiConsentDate || item.clientAnswers?.bkiConsentDate,
-    bkiConsentValidUntil: item.bkiConsentValidUntil || item.clientAnswers?.bkiConsentValidUntil,
-    personalDataConsentDate: item.personalDataConsentDate || item.clientAnswers?.personalDataConsentDate,
-    leasingPartnerConsent: item.leasingPartnerConsent ?? item.clientAnswers?.leasingPartnerConsent ?? false,
-    leasingPartnerName: item.leasingPartnerName || item.clientAnswers?.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
-    leasingPartnerConsentDate: item.leasingPartnerConsentDate || item.clientAnswers?.leasingPartnerConsentDate,
-    purpose: item.purpose || 'Кредит на развитие бизнеса',
-    monthlyRevenue: Number(item.monthlyRevenue || 0),
-    monthlyExpenses: Number(item.monthlyExpenses || 0),
-    clientAnswers: item.clientAnswers || applicationStore.getById(String(item.id || item.applicationId))?.clientAnswers || (item.submissionPayload?.clientAnswers),
-    specialistNotes: item.specialistNotes || applicationStore.getById(String(item.id || item.applicationId))?.specialistNotes,
-    scenario: item.scenario || (String(item.productCode).toUpperCase() === 'RESTART' ? 'paused' : undefined) || applicationStore.getById(String(item.id || item.applicationId))?.scenario,
-    submissionPayload: item.submissionPayload || applicationStore.getById(String(item.id || item.applicationId))?.submissionPayload,
-    status: normalizeStatus(item.status),
-    createdAt: item.createdAt || new Date().toISOString(),
-    updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
-    documents: Array.isArray(item.documents)
-      ? item.documents.map((d: any) => ({
-          id: String(d.id),
-          fileName: d.fileName,
-          fileSizeBytes: Number(d.fileSizeBytes || 0),
-          fileType: d.fileType || 'other',
-          uploadedAt: d.uploadedAt || new Date().toISOString(),
-          status: d.status || 'uploaded',
-          downloadUrl: d.downloadUrl || (d.fileKey ? `/api/infrastructure/storage/${d.fileKey}` : undefined),
-        }))
-      : [],
-    history: Array.isArray(item.history)
-      ? item.history
-          .filter((h: any) => {
-            const isAutosave =
-              h.transitionCode === 'T02' ||
-              h.reasonCode === 'T02' ||
-              (h.fromStatus === 'draft' &&
-                h.toStatus === 'draft' &&
-                (h.comment?.includes('T02') || h.comment?.includes('Сохранены изменения')));
-            return !isAutosave;
-          })
-          .map((h: any) => {
-            let code = h.transitionCode || h.reasonCode || 'T00';
-            if (code === 'T00' && h.comment) {
-              const match = h.comment.match(/\b(T\d{2})\b/);
-              if (match) code = match[1];
-            }
-            return {
-              id: String(h.id),
-              transitionCode: code,
-              fromStatus: normalizeStatus(h.fromStatus),
-              toStatus: normalizeStatus(h.toStatus),
-              actor: (h.actor as any) || 'system',
-              actorName:
-                h.actorName ||
-                (h.actor === 'analyst'
-                  ? 'Кредитный аналитик'
-                  : h.actor === 'client'
-                  ? 'Заявитель (ИП)'
-                  : 'Система скоринга'),
-              comment: h.comment,
-              timestamp: h.timestamp || new Date().toISOString(),
-            };
-          })
-      : [],
-    needInfoPrompt: item.needInfoPrompt || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.toStatus === 'need_info' || h.toStatus === 4 || h.reasonCode === 'T11' || h.reasonCode === 'T04') && h.comment).slice(-1)[0]?.comment : undefined),
-    needInfoResponse: item.needInfoResponse || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.fromStatus === 'need_info' || h.toStatus === 'info_received' || h.reasonCode === 'T10') && (h.actor === 'client' || !h.actor) && h.comment).slice(-1)[0]?.comment : undefined),
-    needInfoRequestedAt: item.needInfoRequestedAt || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.toStatus === 'need_info' || h.toStatus === 4 || h.reasonCode === 'T11' || h.reasonCode === 'T04')).slice(-1)[0]?.timestamp : undefined),
-    needInfoActorName: item.needInfoActorName || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.toStatus === 'need_info' || h.toStatus === 4 || h.reasonCode === 'T11' || h.reasonCode === 'T04')).slice(-1)[0]?.actorName : undefined),
-    issues: item.issues || (item.scoring?.issues) || [],
-    scoring: item.scoring,
-    mlExplanation: item.mlExplanation,
-    mlExplanationSource: item.mlExplanationSource,
-    reasonCodes: item.reasonCodes || [],
-    declineReason: item.declineReason,
-    currentOffer: item.currentOffer,
-    recommendedOffer: (item.currentOffer || item.offer) ? {
-      approvedAmount: Number(item.currentOffer?.approvedAmount || item.offer?.approvedAmount || item.requestedAmount),
-      approvedTermMonths: Number(item.currentOffer?.termMonths || item.offer?.approvedTermMonths || 12),
-      annualInterestRate: Number(item.currentOffer?.annualRatePercent || item.offer?.annualInterestRate || 18.5),
-      monthlyPayment: Number(item.currentOffer?.monthlyPayment || item.offer?.monthlyPayment || 0),
-      totalRepayment: Number(item.currentOffer?.totalRepayment || (item.currentOffer?.monthlyPayment ? item.currentOffer.monthlyPayment * (item.currentOffer.termMonths || 12) : 0) || item.offer?.totalRepayment || 0),
-      expirationDate: item.currentOffer?.expirationDate || item.offer?.expirationDate || new Date(Date.now() + 30 * 86400000).toISOString(),
-      alternativeTerms: item.offer?.alternativeTerms,
-      isAccepted: item.offer?.isAccepted || false,
-    } : undefined,
-    offer: ['offer', 'accepted', 'signed_sim', 'disbursed_sim', 'pre_conditions', 'ready_to_disburse'].includes(normalizeStatus(item.status)) && (item.currentOffer || item.offer) ? {
-      approvedAmount: Number(item.currentOffer?.approvedAmount || item.offer?.approvedAmount || item.requestedAmount),
-      approvedTermMonths: Number(item.currentOffer?.termMonths || item.offer?.approvedTermMonths || 12),
-      annualInterestRate: Number(item.currentOffer?.annualRatePercent || item.offer?.annualInterestRate || 18.5),
-      monthlyPayment: Number(item.currentOffer?.monthlyPayment || item.offer?.monthlyPayment || 0),
-      totalRepayment: Number(item.currentOffer?.totalRepayment || (item.currentOffer?.monthlyPayment ? item.currentOffer.monthlyPayment * (item.currentOffer.termMonths || 12) : 0) || item.offer?.totalRepayment || 0),
-      expirationDate: item.currentOffer?.expirationDate || item.offer?.expirationDate || new Date(Date.now() + 30 * 86400000).toISOString(),
-      alternativeTerms: item.offer?.alternativeTerms,
-      isAccepted: item.offer?.isAccepted || false,
-    } : undefined,
-  };
+    const offerSource = item.currentOffer || item.offer;
+    const resolvedTerm = Number(offerSource?.termMonths || offerSource?.approvedTermMonths || item.requestedTermMonths || 12);
+    const resolvedRate = Number(offerSource?.annualRatePercent || offerSource?.annualInterestRate || 18.5);
+    const resolvedPayment = Number(offerSource?.monthlyPayment || 0);
+    const resolvedTotal = Number(
+      offerSource?.totalRepayment ||
+      (resolvedPayment > 0 ? resolvedPayment * resolvedTerm : 0)
+    );
+
+    return {
+      id: String(item.id || item.applicationId),
+      inn: item.inn || '',
+      companyName: item.companyName || `ИП (ИНН ${item.inn || ''})`,
+      productCode: productCode as any,
+      stage,
+      businessType: stage,
+      purposeCode,
+      requestedAmount: Number(item.requestedAmount || 0),
+      ownContribution: Number(item.ownContribution || 0),
+      equipmentPrice: item.equipmentPrice ? Number(item.equipmentPrice) : undefined,
+      equipmentSupplier: item.equipmentSupplier,
+      equipmentList: item.equipmentList,
+      requestedTermMonths: Number(item.requestedTermMonths || 12),
+      neededByDate: item.neededByDate,
+      expensePeriod: item.expensePeriod,
+      hasContract: item.hasExpenseContract ? 'Да' : (item.hasExpenseContract === false ? 'Нет' : item.hasContract),
+      hasExpenseContract: item.hasExpenseContract,
+      isTaxRegimeActual: item.isTaxRegimeActual,
+      declaredTaxRegime: item.declaredTaxRegime,
+      receiptCoverage: item.receiptCoverage,
+      expensesCoverageStatus: item.expensesCoverageStatus,
+      hasAdditionalIncome: item.hasAdditionalIncome,
+      additionalIncomeAmount: item.additionalIncomeAmount ? Number(item.additionalIncomeAmount) : undefined,
+      debtsVerificationStatus: item.debtsVerificationStatus,
+      repaymentSourceDescription: item.repaymentSourceDescription,
+      householdExpenses: item.householdExpenses ? Number(item.householdExpenses) : undefined,
+      existingMonthlyObligations: item.existingMonthlyObligations ? Number(item.existingMonthlyObligations) : undefined,
+      asSoonAsPossible: item.asSoonAsPossible ?? true,
+      bkiConsent: item.bkiConsent ?? item.clientAnswers?.bkiConsent ?? false,
+      personalDataConsent: item.personalDataConsent ?? item.clientAnswers?.personalDataConsent ?? false,
+      bkiConsentDate: item.bkiConsentDate || item.clientAnswers?.bkiConsentDate,
+      bkiConsentValidUntil: item.bkiConsentValidUntil || item.clientAnswers?.bkiConsentValidUntil,
+      personalDataConsentDate: item.personalDataConsentDate || item.clientAnswers?.personalDataConsentDate,
+      leasingPartnerConsent: item.leasingPartnerConsent ?? item.clientAnswers?.leasingPartnerConsent ?? false,
+      leasingPartnerName: item.leasingPartnerName || item.clientAnswers?.leasingPartnerName || 'ООО «Альфа-Лизинг» (ИНН 7707330770)',
+      leasingPartnerConsentDate: item.leasingPartnerConsentDate || item.clientAnswers?.leasingPartnerConsentDate,
+      purpose: item.purpose || 'Кредит на развитие бизнеса',
+      monthlyRevenue: Number(item.monthlyRevenue || 0),
+      monthlyExpenses: Number(item.monthlyExpenses || 0),
+      clientAnswers: item.clientAnswers || applicationStore.getById(String(item.id || item.applicationId))?.clientAnswers || (item.submissionPayload?.clientAnswers),
+      specialistNotes: item.specialistNotes || applicationStore.getById(String(item.id || item.applicationId))?.specialistNotes,
+      scenario: item.scenario || (String(item.productCode).toUpperCase() === 'RESTART' ? 'paused' : undefined) || applicationStore.getById(String(item.id || item.applicationId))?.scenario,
+      submissionPayload: item.submissionPayload || applicationStore.getById(String(item.id || item.applicationId))?.submissionPayload,
+      status: normalizeStatus(item.status),
+      createdAt: item.createdAt || new Date().toISOString(),
+      updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
+      documents: Array.isArray(item.documents)
+        ? item.documents.map((d: any) => ({
+            id: String(d.id),
+            fileName: d.fileName,
+            fileSizeBytes: Number(d.fileSizeBytes || 0),
+            fileType: d.fileType || 'other',
+            uploadedAt: d.uploadedAt || new Date().toISOString(),
+            status: d.status || 'uploaded',
+            downloadUrl: d.downloadUrl || (d.fileKey ? `/api/infrastructure/storage/${d.fileKey}` : undefined),
+          }))
+        : [],
+      history: Array.isArray(item.history)
+        ? item.history
+            .filter((h: any) => {
+              const isAutosave =
+                h.transitionCode === 'T02' ||
+                h.reasonCode === 'T02' ||
+                (h.fromStatus === 'draft' &&
+                  h.toStatus === 'draft' &&
+                  (h.comment?.includes('T02') || h.comment?.includes('Сохранены изменения')));
+              return !isAutosave;
+            })
+            .map((h: any) => {
+              let code = h.transitionCode || h.reasonCode || 'T00';
+              if (code === 'T00' && h.comment) {
+                const match = h.comment.match(/\b(T\d{2})\b/);
+                if (match) code = match[1];
+              }
+              return {
+                id: String(h.id),
+                transitionCode: code,
+                fromStatus: normalizeStatus(h.fromStatus),
+                toStatus: normalizeStatus(h.toStatus),
+                actor: (h.actor as any) || 'system',
+                actorName:
+                  h.actorName ||
+                  (h.actor === 'analyst'
+                    ? 'Кредитный аналитик'
+                    : h.actor === 'client'
+                    ? 'Заявитель (ИП)'
+                    : 'Система скоринга'),
+                comment: h.comment,
+                timestamp: h.timestamp || new Date().toISOString(),
+              };
+            })
+        : [],
+      needInfoPrompt: item.needInfoPrompt || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.toStatus === 'need_info' || h.toStatus === 4 || h.reasonCode === 'T11' || h.reasonCode === 'T04') && h.comment).slice(-1)[0]?.comment : undefined),
+      needInfoResponse: item.needInfoResponse || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.fromStatus === 'need_info' || h.toStatus === 'info_received' || h.reasonCode === 'T10') && (h.actor === 'client' || !h.actor) && h.comment).slice(-1)[0]?.comment : undefined),
+      needInfoRequestedAt: item.needInfoRequestedAt || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.toStatus === 'need_info' || h.toStatus === 4 || h.reasonCode === 'T11' || h.reasonCode === 'T04')).slice(-1)[0]?.timestamp : undefined),
+      needInfoActorName: item.needInfoActorName || (Array.isArray(item.history) ? item.history.filter((h: any) => (h.toStatus === 'need_info' || h.toStatus === 4 || h.reasonCode === 'T11' || h.reasonCode === 'T04')).slice(-1)[0]?.actorName : undefined),
+      issues: item.issues || (item.scoring?.issues) || [],
+      scoring: item.scoring,
+      mlExplanation: item.mlExplanation,
+      mlExplanationSource: item.mlExplanationSource,
+      reasonCodes: item.reasonCodes || [],
+      declineReason: item.declineReason,
+      currentOffer: item.currentOffer,
+      recommendedOffer: offerSource ? {
+        approvedAmount: Number(offerSource.approvedAmount || item.requestedAmount),
+        approvedTermMonths: resolvedTerm,
+        annualInterestRate: resolvedRate,
+        monthlyPayment: resolvedPayment,
+        totalRepayment: resolvedTotal,
+        expirationDate: offerSource.expirationDate || new Date(Date.now() + 30 * 86400000).toISOString(),
+        alternativeTerms: offerSource.alternativeTerms,
+        isAccepted: offerSource.isAccepted || false,
+        isCounterOffer: offerSource.isCounterOffer || false,
+      } : undefined,
+      offer: ['offer', 'accepted', 'signed_sim', 'disbursed_sim', 'pre_conditions', 'ready_to_disburse'].includes(normalizeStatus(item.status)) && offerSource ? {
+        approvedAmount: Number(offerSource.approvedAmount || item.requestedAmount),
+        approvedTermMonths: resolvedTerm,
+        annualInterestRate: resolvedRate,
+        monthlyPayment: resolvedPayment,
+        totalRepayment: resolvedTotal,
+        expirationDate: offerSource.expirationDate || new Date(Date.now() + 30 * 86400000).toISOString(),
+        alternativeTerms: offerSource.alternativeTerms,
+        isAccepted: offerSource.isAccepted || false,
+        isCounterOffer: offerSource.isCounterOffer || false,
+      } : undefined,
+    };
 }
 
 export const clientApi = {

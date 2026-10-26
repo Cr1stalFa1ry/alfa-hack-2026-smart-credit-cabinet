@@ -8,6 +8,7 @@ import { Button } from '../../components/common/Button';
 import { ApplicationStatusBadge } from '../../components/badges/ApplicationStatusBadge';
 import { ScoringRiskBadge } from '../../components/badges/ScoringRiskBadge';
 import { formatRubles, formatInn } from '../../utils/formatters';
+import { getClientFio } from '../../utils/statusHelpers';
 import {
   ShieldCheck,
   Search,
@@ -170,7 +171,10 @@ export const AnalystQueuePage: React.FC = () => {
                     <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500">
                       {app.id}
                     </span>
-                    <ApplicationStatusBadge status={app.status} />
+                    <ApplicationStatusBadge
+                      status={app.status}
+                      isAnalystView={true}
+                    />
                     {isPaused ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
                         Приостановленная деятельность / Перезапуск бизнеса

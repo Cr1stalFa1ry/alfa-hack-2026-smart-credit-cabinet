@@ -67,6 +67,8 @@ export interface CreditOffer {
     note: string;
   };
   isAccepted?: boolean;
+  isCounterOffer?: boolean;
+  reasonCode?: string;
 }
 
 export interface UploadedDocument {

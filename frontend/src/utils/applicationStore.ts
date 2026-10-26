@@ -257,7 +257,7 @@ class ApplicationStore {
         approvedTermMonths: Number(manualOffer?.term || app.requestedTermMonths),
         annualInterestRate: Number(manualOffer?.rate || 18.5),
         monthlyPayment: Number(manualOffer?.payment || 0),
-        totalRepayment: Number(manualOffer?.payment || 0) * Number(manualOffer?.term || 12),
+        totalRepayment: Number(manualOffer?.payment || 0) * Number(manualOffer?.term || app.requestedTermMonths || 12),
         expirationDate: new Date(Date.now() + 30 * 86400000).toISOString(),
       };
       this.addEvent(app.id, `Одобрено предложение: ${manualOffer?.amount} ₽, ${manualOffer?.term} мес. под ${manualOffer?.rate}%`, true, 'Специалист');

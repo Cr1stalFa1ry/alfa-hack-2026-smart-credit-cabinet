@@ -135,3 +135,25 @@ export const TRANSITION_DESCRIPTIONS: Record<string, string> = {
   T22: 'Договор подписан электронной подписью',
   T23: 'Кредитные средства зачислены на счёт',
 };
+
+/**
+ * Извлекает ФИО заёмщика из данных анкеты для отображения в интерфейсе аналитика
+ */
+export function getClientFio(app?: { companyName?: string; clientName?: string; inn?: string } | null): string {
+  if (!app) return 'клиента';
+
+  if (app.clientName && app.clientName.trim().length > 0) {
+    return app.clientName.trim();
+  }
+
+  const name = (app.companyName || '').trim();
+  if (/^ИП\s+[А-ЯЁa-zA-Z]/i.test(name)) {
+    return name.replace(/^ИП\s+/i, '').trim();
+  }
+
+  if (name && !name.includes('ИНН') && !name.toLowerCase().includes('ооо') && !name.toLowerCase().includes('ао')) {
+    return name;
+  }
+
+  return name || (app.inn ? `клиента (ИНН ${app.inn})` : 'клиента');
+}

@@ -30,6 +30,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { extractInquiriesHistory } from '../../utils/inquiriesHelpers';
+import { getClientFio } from '../../utils/statusHelpers';
 
 type ReviewTab = 'overview' | 'scoring' | 'dossier' | 'audit' | 'all';
 
@@ -124,22 +125,24 @@ export const AnalystReviewPage: React.FC = () => {
     if (isPrelaunch && !application.offer) {
       return null;
     }
-    if (application.offer) {
+    const activeOffer = application.offer || application.recommendedOffer;
+    if (activeOffer) {
       const p =
-        application.offer.monthlyPayment ||
-        calculateMonthlyPayment(
-          application.offer.approvedAmount,
-          application.offer.annualInterestRate,
-          application.offer.approvedTermMonths
-        );
+        activeOffer.monthlyPayment > 0
+          ? activeOffer.monthlyPayment
+          : calculateMonthlyPayment(
+              activeOffer.approvedAmount,
+              activeOffer.annualInterestRate,
+              activeOffer.approvedTermMonths
+            );
       return {
-        amount: application.offer.approvedAmount,
-        term: application.offer.approvedTermMonths,
-        rate: application.offer.annualInterestRate,
+        amount: activeOffer.approvedAmount,
+        term: activeOffer.approvedTermMonths,
+        rate: activeOffer.annualInterestRate,
         payment: p,
-        totalRepayment: application.offer.totalRepayment || p * application.offer.approvedTermMonths,
-        isCounterOffer: !!application.offer.alternativeTerms,
-        alternativeTerms: application.offer.alternativeTerms,
+        totalRepayment: activeOffer.totalRepayment > 0 ? activeOffer.totalRepayment : p * activeOffer.approvedTermMonths,
+        isCounterOffer: Boolean(activeOffer.isCounterOffer || activeOffer.alternativeTerms),
+        alternativeTerms: activeOffer.alternativeTerms,
       };
     }
     const score = application.scoring?.score ?? 75;
@@ -296,7 +299,10 @@ export const AnalystReviewPage: React.FC = () => {
             <h1 className="text-[30px] sm:text-[38px] font-bold tracking-[-0.045em] leading-[1.08] text-[#141414] m-0">
               {application.companyName}
             </h1>
-            <ApplicationStatusBadge status={application.status} />
+            <ApplicationStatusBadge
+              status={application.status}
+              isAnalystView={true}
+            />
           </div>
 
           <p className="text-[13px] text-[#686b70] mt-2 mb-0">

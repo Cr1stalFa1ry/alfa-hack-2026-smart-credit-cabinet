@@ -2,6 +2,7 @@ import { apiClient } from './apiClient';
 import { CreditApplication, ClientRequestItem } from '../types/application';
 import { mapBackendApplication } from './clientApi';
 import { applicationStore } from '../utils/applicationStore';
+import { calculateMonthlyPayment } from '../utils/formatters';
 
 export const analystApi = {
   getReviewQueue: async (): Promise<CreditApplication[]> => {
@@ -10,7 +11,17 @@ export const analystApi = {
       const data = (res.data as any)?.value || res.data;
       if (Array.isArray(data)) {
         const mapped = data
-          .map(mapBackendApplication)
+          .map((item: any) => {
+            const mappedApp = mapBackendApplication(item);
+            const cached = applicationStore.getById(mappedApp.id);
+            if (cached?.companyName && !cached.companyName.includes('ИНН') && mappedApp.companyName.includes('ИНН')) {
+              mappedApp.companyName = cached.companyName;
+            }
+            if (cached?.clientName && !mappedApp.clientName) {
+              mappedApp.clientName = cached.clientName;
+            }
+            return mappedApp;
+          })
           .filter((a) => !a.id.startsWith('DEMO-') && !a.id.includes('DEMO'))
           .filter((a) => a.status !== 'draft');
         applicationStore.syncApps(mapped);
@@ -109,11 +120,13 @@ export const analystApi = {
       console.warn('Backend approve error (handled offline):', err);
     }
 
+    const resolvedPayment = params.monthlyPayment || calculateMonthlyPayment(params.approvedAmount, params.annualInterestRate, params.approvedTermMonths);
+
     applicationStore.setStatus(id, 'approved', params.comment || 'Одобрено специалистом', {
       amount: params.approvedAmount,
       term: params.approvedTermMonths,
       rate: params.annualInterestRate,
-      payment: params.monthlyPayment || Math.round(params.approvedAmount / params.approvedTermMonths),
+      payment: resolvedPayment,
       description: params.comment || 'Условия согласованы',
     });
 
